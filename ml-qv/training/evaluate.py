@@ -41,20 +41,21 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from models.valuation import feature_columns, ValuationModel
 from models.depreciation import DepreciationModel
 from training.synthetic_data import generate_valuation_data
+# from training.retail_data import RetailPriceFetcher  # Amazon PA API — disabled for now
 
 # ── Style ──────────────────────────────────────────────────────────────────────
 sns.set_theme(style="whitegrid", palette="muted", font_scale=1.1)
 PALETTE = {
     "laptop":     "#4C72B0",
-    "desktop":    "#55A868",
-    "server":     "#C44E52",
-    "phone":      "#8172B2",
-    "tablet":     "#937860",
-    "networking": "#DA8BC3",
-    "monitor":    "#8C8C8C",
-    "software":   "#CCB974",
-    "license":    "#64B5CD",
-    "other":      "#BBBBBB",
+    # "desktop":    "#55A868",
+    # "server":     "#C44E52",
+    # "phone":      "#8172B2",
+    # "tablet":     "#937860",
+    # "networking": "#DA8BC3",
+    # "monitor":    "#8C8C8C",
+    # "software":   "#CCB974",
+    # "license":    "#64B5CD",
+    # "other":      "#BBBBBB",
 }
 CONDITION_PALETTE = {"A": "#2ECC71", "B": "#F39C12", "C": "#E74C3C"}
 
@@ -248,6 +249,210 @@ def chart_depreciation_curves(dep_model: DepreciationModel) -> str:
     return _fig_to_b64(fig)
 
 
+def chart_price_trajectory_by_type(val_pipeline: Pipeline, df_train: pd.DataFrame) -> str:
+    """Predicted FMV for each asset type across ages 0–72 months.
+
+    Holds condition=B and specs at per-type medians from the training data so
+    each line reflects only the age-driven depreciation as learned by the model.
+    """
+    age_steps = list(range(0, 73, 6))  # 0, 6, 12, … 72
+    asset_types = list(PALETTE.keys())
+
+    # Per-type median specs from training data (fallback to global median).
+    global_medians = {
+        "cpu_score":      float(df_train["cpu_score"].median()),
+        "ram_gb":         float(df_train["ram_gb"].median()),
+        "storage_gb":     float(df_train["storage_gb"].median()),
+        "original_price": float(df_train["original_price"].median()),
+    }
+    type_medians: dict[str, dict] = {}
+    for atype in asset_types:
+        grp = df_train[df_train["asset_type"] == atype]
+        if len(grp) < 5:
+            type_medians[atype] = global_medians.copy()
+        else:
+            type_medians[atype] = {
+                "cpu_score":      float(grp["cpu_score"].median()),
+                "ram_gb":         float(grp["ram_gb"].median()),
+                "storage_gb":     float(grp["storage_gb"].median()),
+                "original_price": float(grp["original_price"].median()),
+            }
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+
+    for atype in asset_types:
+        meds = type_medians[atype]
+        rows = []
+        for age in age_steps:
+            rows.append({
+                "asset_type":     atype,
+                "condition_grade": "B",
+                "age_months":     age,
+                "cpu_score":      meds["cpu_score"],
+                "ram_gb":         meds["ram_gb"],
+                "storage_gb":     meds["storage_gb"],
+                "original_price": meds["original_price"],
+            })
+        grid = pd.DataFrame(rows)[feature_columns()]
+        predicted = val_pipeline.predict(grid)
+
+        # Normalise to % of age-0 price so different-value types sit on the same scale.
+        baseline = predicted[0] if predicted[0] > 0 else 1.0
+        pct = (predicted / baseline) * 100
+
+        ax.plot(age_steps, pct,
+                label=f"{atype} (${meds['original_price']:,.0f} baseline)",
+                color=PALETTE[atype], linewidth=2.2, marker="o", markersize=4)
+
+    ax.axhline(100, color="#cccccc", lw=0.8, linestyle="--")
+    ax.set_xlabel("Asset Age (months)")
+    ax.set_ylabel("Predicted Value (% of new price)")
+    ax.set_title("Model-Predicted Price Trajectory by Asset Type\n"
+                 "(Condition B · per-type median specs · normalised to age-0 price)")
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x:.0f}%"))
+    ax.set_xticks(age_steps)
+    ax.legend(fontsize=8, ncol=2)
+    fig.tight_layout()
+    return _fig_to_b64(fig)
+
+
+def chart_fmv_vs_depreciation(
+    val_pipeline: Pipeline,
+    df_train: pd.DataFrame,
+    dep_model: "DepreciationModel",
+    retail_prices: dict[str, float] | None = None,
+) -> str:
+    """Overlay ML-predicted FMV against the depreciation model's forecast.
+
+    Both series start from the same age-0 valuation so the y-axis is in
+    absolute dollars and crossings are immediately visible. A cross means the
+    two models disagree on the current trajectory — useful for spotting where
+    the rule-based depreciation diverges from what the market actually pays.
+
+    If ``retail_prices`` is provided (keyed by asset_type), a horizontal band
+    is drawn showing the current Amazon street price for a new unit, making
+    the discount-from-retail gap visible at every age point.
+
+    Solid lines   = GBR valuation model (market-anchored)
+    Dashed lines  = Exponential depreciation model (fitted priors)
+    Dotted lines  = Amazon retail price for new unit (reference ceiling)
+    """
+    age_steps = list(range(0, 73, 6))
+    asset_types = list(PALETTE.keys())
+
+    global_medians = {
+        "cpu_score":      float(df_train["cpu_score"].median()),
+        "ram_gb":         float(df_train["ram_gb"].median()),
+        "storage_gb":     float(df_train["storage_gb"].median()),
+        "original_price": float(df_train["original_price"].median()),
+    }
+    type_medians: dict[str, dict] = {}
+    for atype in asset_types:
+        grp = df_train[df_train["asset_type"] == atype]
+        type_medians[atype] = {
+            k: float(grp[k].median()) if len(grp) >= 5 else global_medians[k]
+            for k in global_medians
+        }
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+    cross_annotations: list[tuple[float, float, str]] = []
+
+    for atype in asset_types:
+        meds = type_medians[atype]
+        color = PALETTE[atype]
+
+        # ── Valuation model predictions (absolute $) ─────────────────────────
+        rows = [
+            {
+                "asset_type":      atype,
+                "condition_grade": "B",
+                "age_months":      age,
+                "cpu_score":       meds["cpu_score"],
+                "ram_gb":          meds["ram_gb"],
+                "storage_gb":      meds["storage_gb"],
+                "original_price":  meds["original_price"],
+            }
+            for age in age_steps
+        ]
+        val_preds = val_pipeline.predict(pd.DataFrame(rows)[feature_columns()])
+
+        # ── Depreciation model forecast (same age-0 anchor) ──────────────────
+        # forecast() returns (YYYY-MM, value) for months 1…horizon from today,
+        # so index i → age (i+1) months.  Age 0 = the anchor itself.
+        anchor = float(val_preds[0])
+        dep_points = dep_model.forecast(
+            starting_value=anchor,
+            horizon_months=age_steps[-1],
+            type_weights={atype: 1.0},
+        )
+        dep_by_age: dict[int, float] = {0: anchor}
+        for idx, (_, v) in enumerate(dep_points):
+            dep_by_age[idx + 1] = v
+        dep_values = [dep_by_age.get(age, float("nan")) for age in age_steps]
+
+        ax.plot(age_steps, val_preds,
+                color=color, linewidth=2.2, marker="o", markersize=3,
+                label=f"{atype} — valuation model")
+        ax.plot(age_steps, dep_values,
+                color=color, linewidth=1.8, linestyle="--",
+                label=f"{atype} — depreciation model")
+
+        # Detect crossings (sign changes in the difference series)
+        diff = np.array(val_preds) - np.array(dep_values, dtype=float)
+        for i in range(len(diff) - 1):
+            if np.isnan(diff[i]) or np.isnan(diff[i + 1]):
+                continue
+            if diff[i] * diff[i + 1] < 0:
+                # Linear interpolation for approximate crossing month
+                t = age_steps[i] + (age_steps[i + 1] - age_steps[i]) * (
+                    -diff[i] / (diff[i + 1] - diff[i])
+                )
+                crossing_val = float(np.interp(t, age_steps, val_preds))
+                cross_annotations.append((t, crossing_val, atype))
+
+    # ── Retail reference overlay (Amazon PA API — disabled for now) ───────────
+    # if retail_prices:
+    #     for atype, retail in retail_prices.items():
+    #         if atype not in PALETTE:
+    #             continue
+    #         color = PALETTE[atype]
+    #         ax.axhline(retail, color=color, linewidth=1.2, linestyle=":", alpha=0.7)
+    #         ax.text(age_steps[-1] + 0.5, retail,
+    #                 f"  {atype} retail\n  ${retail:,.0f}",
+    #                 va="center", ha="left", fontsize=6.5, color=color, alpha=0.85)
+    #         if atype == asset_types[0]:
+    #             first_type_preds = val_pipeline.predict(
+    #                 pd.DataFrame([{
+    #                     "asset_type": atype, "condition_grade": "B",
+    #                     "age_months": age, **{k: type_medians[atype][k]
+    #                     for k in ("cpu_score", "ram_gb", "storage_gb", "original_price")},
+    #                 } for age in age_steps])[feature_columns()]
+    #             )
+    #             ax.fill_between(age_steps, first_type_preds, retail,
+    #                             where=[p < retail for p in first_type_preds],
+    #                             alpha=0.06, color=color,
+    #                             label=f"{atype} discount from retail")
+
+    # Mark crossings
+    for t, v, atype in cross_annotations:
+        ax.annotate(
+            f"✕ {atype}\n~{t:.0f}mo",
+            xy=(t, v), xytext=(t + 3, v * 1.06),
+            fontsize=7, color=PALETTE.get(atype, "#555"),
+            arrowprops=dict(arrowstyle="-", color="#aaa", lw=0.8),
+        )
+
+    ax.set_xlabel("Asset Age (months)")
+    ax.set_ylabel("Predicted Value ($)")
+    ax.set_title("Fair Market Value vs Depreciation Model\n"
+                 "(Solid = GBR valuation · Dashed = exponential depreciation · Condition B)")
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+    ax.set_xticks(age_steps)
+    ax.legend(fontsize=7, ncol=2)
+    fig.tight_layout()
+    return _fig_to_b64(fig)
+
+
 def chart_confidence_vs_accuracy(df_test: pd.DataFrame, preds: np.ndarray,
                                   confidences: np.ndarray) -> str:
     """Bucket predictions by confidence and show actual MAE per bucket."""
@@ -359,6 +564,13 @@ def main() -> None:
         "--artifact", action="store_true",
         help="Load saved .joblib from $ML_MODEL_DIR instead of training in-memory",
     )
+    # parser.add_argument(
+    #     "--retail", action="store_true",
+    #     help=(
+    #         "Fetch current Amazon retail prices and overlay them on the FMV/depreciation "
+    #         "chart. Requires AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_ASSOCIATE_TAG."
+    #     ),
+    # )
     args = parser.parse_args()
 
     print("=== GuildMark ML Evaluation ===")
@@ -437,6 +649,19 @@ def main() -> None:
         dep_priors[str(asset_type)] = decay
     dep_model = DepreciationModel(dep_priors)
 
+    # ── Retail prices (Amazon PA API — disabled for now) ─────────────────────
+    # retail_prices: dict[str, float] = {}
+    # if args.retail:
+    #     print("Fetching Amazon retail prices...")
+    #     retail_prices = RetailPriceFetcher().fetch_by_type(list(PALETTE.keys()))
+    #     if retail_prices:
+    #         print("  Retail reference prices:")
+    #         for atype, price in sorted(retail_prices.items()):
+    #             print(f"    {atype:<12} ${price:,.2f}")
+    #     else:
+    #         print("  No retail prices returned — overlay will be skipped.")
+    retail_prices: dict[str, float] = {}
+
     # ── Generate charts ───────────────────────────────────────────────────────
     print("Generating charts...")
     charts = {
@@ -448,6 +673,11 @@ def main() -> None:
         "price_by_condition": chart_price_by_condition(df_all),
         "depreciation":       chart_depreciation_curves(dep_model),
         "confidence_vs_acc":  chart_confidence_vs_accuracy(df_test, preds, confidences),
+        "price_trajectory":   chart_price_trajectory_by_type(val_pipeline, df_train),
+        "fmv_vs_dep":         chart_fmv_vs_depreciation(
+                                  val_pipeline, df_train, dep_model,
+                                  retail_prices=retail_prices or None,
+                              ),
     }
 
     # ── Assemble HTML ─────────────────────────────────────────────────────────
@@ -458,6 +688,10 @@ def main() -> None:
         + _metric_card("MAPE", f"{mape:.1f}%")
         + _metric_card("Avg Confidence", f"{avg_conf:.3f}")
         + _metric_card("Test Rows", f"{len(df_test):,}")
+        # + "".join(                                          # Amazon PA API — disabled
+        #     _metric_card(f"Retail ({atype})", f"${price:,.0f}")
+        #     for atype, price in sorted(retail_prices.items())
+        # )
     )
 
     sections = (
@@ -508,6 +742,25 @@ def main() -> None:
             "Do higher confidence scores correlate with lower MAE? "
             "Blue bars = actual MAE per confidence bucket; red line = number of predictions in each bucket.",
             charts["confidence_vs_acc"],
+        )
+        + _chart_section(
+            "FMV vs Depreciation Model (crossover chart)",
+            "Solid lines = what the GBR model predicts the market will pay at each age. "
+            "Dashed lines = what the exponential depreciation model forecasts from the same starting value. "
+            "Dotted lines = current Amazon retail price for a new unit (run with --retail to populate). "
+            "A crossing (✕) flags where the two models diverge — the valuation model has picked up "
+            "a market signal (e.g. slow early depreciation on premium SKUs, or accelerated drop past peak) "
+            "that the simpler decay curve misses. "
+            "The shaded band shows the discount-from-retail gap for the primary asset type.",
+            charts["fmv_vs_dep"],
+        )
+        + _chart_section(
+            "Price Trajectory by Asset Type (0–72 months)",
+            "What the model predicts will happen to each device category's value over 6 years. "
+            "Condition B, per-type median specs, normalised to 100% at age 0 so curves are comparable "
+            "across categories with very different absolute prices. "
+            "Steeper drops = faster depreciation as learned from real market data.",
+            charts["price_trajectory"],
         )
     )
 

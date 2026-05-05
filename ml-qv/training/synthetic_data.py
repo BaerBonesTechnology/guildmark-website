@@ -17,15 +17,15 @@ _RNG = np.random.default_rng(seed=42)
 # Coarse anchors per asset type — typical new-unit price range, USD.
 _TYPE_ANCHORS = {
     "laptop": (900, 2400),
-    "desktop": (650, 1800),
-    "server": (1800, 6500),
-    "phone": (350, 1100),
-    "tablet": (300, 1000),
-    "networking": (400, 1500),
-    "monitor": (180, 600),
-    "software": (40, 250),
-    "license": (30, 200),
-    "other": (200, 800),
+    # "desktop": (650, 1800),
+    # "server": (1800, 6500),
+    # "phone": (350, 1100),
+    # "tablet": (300, 1000),
+    # "networking": (400, 1500),
+    # "monitor": (180, 600),
+    # "software": (40, 250),
+    # "license": (30, 200),
+    # "other": (200, 800),
 }
 
 _CONDITION_DECAY = {"A": 1.00, "B": 0.78, "C": 0.55}

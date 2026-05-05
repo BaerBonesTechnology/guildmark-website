@@ -179,8 +179,11 @@ Files in `api/migrations/` are applied automatically on every API boot by `Migra
 | `0001_init.sql` | companies, users, refresh_tokens, assets, listings, buyer_offers, mdm_connections, tax_invoices, valuation_snapshots |
 | `0002_mailing_list.sql` | mailing_list |
 | `0003_orders.sql` | orders |
+| `0004_subscriptions.sql` | subscriptions |
+| `0005_order_fees.sql` | (alters orders — adds fee snapshot columns) |
+| `0006_asset_valuations.sql` | asset_valuations |
 
-Next migration file: `0004_*.sql`.
+Next migration file: `0007_*.sql`.
 
 ---
 
@@ -219,6 +222,7 @@ valuation/estimate.dart  POST /valuation/estimate  (proxies to ML service)
 webhooks/fedex/          POST /webhooks/fedex
 dashboard/               GET /dashboard
 assets/                  GET /assets
+assets/[id]/valuations   GET /assets/:id/valuations   (ML valuation history for an asset)
 ```
 
 ### ML service (Python / FastAPI) — `ml-qv/`

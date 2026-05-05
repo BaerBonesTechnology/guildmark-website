@@ -41,10 +41,9 @@ if errorlevel 1 (
 :: ── Move to the folder containing this script ─────────────────────────────────
 cd /d "%~dp0"
 
-:: ── Load secrets — Doppler (prod/CI) or .env fallback (local) ────────────────
-call :load_env
-
-:: ── Detect Doppler ────────────────────────────────────────────────────────────
+:: ── Detect Doppler FIRST — before any .env loading ───────────────────────────
+:: If Doppler is available it injects secrets into the docker compose subprocess.
+:: We must NOT pre-load those variables from .env or Doppler won't override them.
 set "DOPPLER_RUN="
 where doppler >nul 2>&1
 if not errorlevel 1 (
@@ -57,6 +56,18 @@ if not errorlevel 1 (
             echo [guildmark] WARNING: doppler.yaml found but not logged in. Run: doppler login ^&^& doppler setup
         )
     )
+)
+
+:: ── Load secrets — skip if Doppler is active (it owns the secrets) ───────────
+if "!DOPPLER_RUN!"=="" (
+    call :load_env
+) else (
+    :: Doppler injects secrets; still set port/display defaults locally.
+    if not defined API_PORT       set "API_PORT=8080"
+    if not defined POSTGRES_PORT  set "POSTGRES_PORT=5432"
+    if not defined GUILDMARK_PORT set "GUILDMARK_PORT=3000"
+    if not defined DEVDASH_PORT   set "DEVDASH_PORT=3001"
+    if not defined ML_PORT        set "ML_PORT=8001"
 )
 
 :: ── Dispatch ──────────────────────────────────────────────────────────────────
