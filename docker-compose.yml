@@ -9,6 +9,11 @@
 # Env vars are read from .env (copy .env.example to get started).
 # VITE_* build args are baked into the frontend JS bundles at build time —
 # rebuild the image if you change them: docker compose build guildmark devdash
+#
+# Networking:
+#   All services communicate over the internal Docker network.
+#   Only the nginx reverse proxy exposes a public port (80).
+#   Cloudflare sits in front of nginx and handles TLS.
 # ---------------------------------------------------------------------------
 
 services:
@@ -73,26 +78,24 @@ services:
       FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
       FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
-    ports:
-      - "${API_PORT:-8080}:8080"
+    # Port not exposed publicly — nginx proxies to api:8080 internally.
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────
   ml:
-    build: ./ml
+    build: ./ml-qv
     profiles: ["ml"]
     restart: unless-stopped
     environment:
       ML_PORT:      ${ML_PORT:-8001}
       ML_MODEL_DIR: /app/model_artifacts
-    ports:
-      - "${ML_PORT:-8001}:8001"
     volumes:
-      - ./ml/model_artifacts:/app/model_artifacts
+      - ./ml-qv/model_artifacts:/app/model_artifacts
     healthcheck:
       test:     ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 10s
       timeout:  5s
       retries:  5
+    # Port not exposed publicly — nginx proxies to ml:8001 internally.
 
   # ── GuildMark marketplace frontend ───────────────────────────────────────
   guildmark:
@@ -100,14 +103,13 @@ services:
       context:    ./guildmark
       dockerfile: Dockerfile
       args:
-        VITE_API_URL:   ${VITE_API_URL:-http://localhost:8080}
+        VITE_API_URL:   ${VITE_API_URL:-https://api.guildmark.co}
         VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-true}
         VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-false}
     restart: unless-stopped
     depends_on:
       - api
-    ports:
-      - "${GUILDMARK_PORT:-3000}:80"
+    # Port not exposed publicly — nginx proxies to guildmark:80 internally.
 
   # ── DevDash admin panel ───────────────────────────────────────────────────
   devdash:
@@ -115,13 +117,25 @@ services:
       context:    ./devdash
       dockerfile: Dockerfile
       args:
-        VITE_API_URL:       ${VITE_API_URL:-http://localhost:8080}
-        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-http://localhost:8081}
+        VITE_API_URL:       ${VITE_API_URL:-https://api.guildmark.co}
+        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-https://api.guildmark.co}
     restart: unless-stopped
     depends_on:
       - api
+    # Port not exposed publicly — nginx proxies to devdash:80 internally.
+
+  # ── NGINX reverse proxy ───────────────────────────────────────────────────
+  nginx:
+    build:
+      context:    ./nginx
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+      - guildmark
+      - devdash
     ports:
-      - "${DEVDASH_PORT:-3001}:80"
+      - "80:80"
 
 volumes:
   postgres_data:

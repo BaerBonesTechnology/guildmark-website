@@ -1,0 +1,26 @@
+# GuildMark — Doppler secrets config
+# ---------------------------------------------------------------------------
+# Doppler replaces the committed .env file in staging and production.
+# The start.sh / start.cmd scripts detect Doppler automatically and prefix
+# all `docker compose` commands with `doppler run --` when authenticated.
+#
+# First-time setup (one-time per machine):
+#   1. Install the CLI  → https://docs.doppler.com/docs/install-cli
+#   2. doppler login
+#   3. doppler setup          ← pick the guildmark project + your environment
+#
+# Environments (create these in the Doppler dashboard):
+#   dev   — local development (mirrors .env.example defaults)
+#   stg   — staging server
+#   prd   — production server
+#
+# Usage after setup:
+#   ./start.sh                # Doppler detected automatically
+#   doppler run -- docker compose up -d      # manual equivalent
+#   doppler secrets download --format env    # inspect resolved values
+#   doppler secrets set RESEND_API_KEY=...   # update a secret
+# ---------------------------------------------------------------------------
+
+setup:
+  project: guildmark
+  config: dev

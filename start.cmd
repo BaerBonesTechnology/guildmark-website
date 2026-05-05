@@ -41,8 +41,23 @@ if errorlevel 1 (
 :: ── Move to the folder containing this script ─────────────────────────────────
 cd /d "%~dp0"
 
-:: ── Load .env (sets all vars into this session) ───────────────────────────────
+:: ── Load secrets — Doppler (prod/CI) or .env fallback (local) ────────────────
 call :load_env
+
+:: ── Detect Doppler ────────────────────────────────────────────────────────────
+set "DOPPLER_RUN="
+where doppler >nul 2>&1
+if not errorlevel 1 (
+    if exist "doppler.yaml" (
+        doppler whoami >nul 2>&1
+        if not errorlevel 1 (
+            set "DOPPLER_RUN=doppler run -- "
+            echo [guildmark] Doppler authenticated -- secrets will be injected at runtime
+        ) else (
+            echo [guildmark] WARNING: doppler.yaml found but not logged in. Run: doppler login ^&^& doppler setup
+        )
+    )
+)
 
 :: ── Dispatch ──────────────────────────────────────────────────────────────────
 if /i "%MODE%"=="down"    goto :do_down
@@ -61,7 +76,7 @@ if /i "%MODE%"=="build" set "BUILD_FLAG=--build"
 if /i "%MODE%"=="ml"    set "PROFILE_FLAG=--profile ml"
 
 echo [guildmark] starting all services in Docker...
-docker compose %PROFILE_FLAG% up -d %BUILD_FLAG%
+%DOPPLER_RUN%docker compose %PROFILE_FLAG% up -d %BUILD_FLAG%
 if errorlevel 1 ( echo [guildmark] ERROR: docker compose failed. & exit /b 1 )
 
 call :wait_for_postgres
@@ -77,13 +92,13 @@ if /i "%MODE%"=="ml" echo    ML service    http://localhost:%ML_PORT%
 echo.
 echo  Streaming logs  ^(Ctrl+C to stop^) ...
 echo.
-docker compose logs -f --tail=20
+%DOPPLER_RUN%docker compose logs -f --tail=20
 goto :eof
 
 :: =============================================================================
 :do_db_only
 echo [guildmark] starting Postgres...
-docker compose up -d postgres
+%DOPPLER_RUN%docker compose up -d postgres
 if errorlevel 1 ( echo [guildmark] ERROR: docker compose failed. & exit /b 1 )
 call :wait_for_postgres
 
@@ -97,13 +112,13 @@ echo    DevDash:   cd devdash  ^&^&  pnpm dev
 echo.
 echo  Press any key to stop Postgres and exit.
 pause >nul
-docker compose down --remove-orphans
+%DOPPLER_RUN%docker compose down --remove-orphans
 goto :eof
 
 :: =============================================================================
 :do_dev
 echo [guildmark] starting Postgres in Docker...
-docker compose up -d postgres
+%DOPPLER_RUN%docker compose up -d postgres
 if errorlevel 1 ( echo [guildmark] ERROR: docker compose failed. & exit /b 1 )
 call :wait_for_postgres
 
@@ -131,20 +146,20 @@ echo  Press any key here to stop Postgres and close this window.
 echo.
 pause >nul
 echo [guildmark] stopping Postgres...
-docker compose down --remove-orphans
+%DOPPLER_RUN%docker compose down --remove-orphans
 goto :eof
 
 :: =============================================================================
 :do_down
 echo [guildmark] stopping all services...
-docker compose down --remove-orphans
-docker compose --profile ml down --remove-orphans 2>nul
+%DOPPLER_RUN%docker compose down --remove-orphans
+%DOPPLER_RUN%docker compose --profile ml down --remove-orphans 2>nul
 echo [guildmark] done.
 goto :eof
 
 :: =============================================================================
 :do_logs
-docker compose logs -f --tail=50
+%DOPPLER_RUN%docker compose logs -f --tail=50
 goto :eof
 
 :: =============================================================================
@@ -193,7 +208,7 @@ goto :eof
 echo [guildmark] waiting for Postgres...
 set /a _pg=0
 :_pg_loop
-docker compose exec postgres pg_isready -q >nul 2>&1
+%DOPPLER_RUN%docker compose exec postgres pg_isready -q >nul 2>&1
 if not errorlevel 1 ( echo [guildmark] Postgres ready & goto :eof )
 set /a _pg+=1
 if %_pg% geq 60 (

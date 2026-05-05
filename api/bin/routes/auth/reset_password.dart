@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:postgres/postgres.dart';
 
 import '../../lib/auth/password.dart';
 import '../../lib/db/pool.dart';

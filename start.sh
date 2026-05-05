@@ -64,20 +64,37 @@ fi
 # ── Move to repo root (where this script lives) ──────────────────────────────
 cd "$(dirname "$0")"
 
-# ── Load .env ─────────────────────────────────────────────────────────────────
+# ── Load secrets — Doppler (prod/CI) or .env fallback (local) ────────────────
 # Strip \r so Windows-saved (CRLF) .env files don't break bash sourcing.
 _source_env() { set -a; source <(sed 's/\r$//' "$1"); set +a; }
 
-if [[ -f .env ]]; then
-  log "loading .env"
-  _source_env .env
-elif [[ -f .env.example ]]; then
-  warn "no .env found — copying .env.example. Edit values before using in prod."
-  cp .env.example .env
-  _source_env .env
-else
-  warn "no .env or .env.example found — using built-in defaults."
+_USE_DOPPLER=false
+if command -v doppler >/dev/null 2>&1 && [[ -f doppler.yaml ]]; then
+  if doppler whoami >/dev/null 2>&1; then
+    _USE_DOPPLER=true
+    ok "Doppler authenticated — secrets will be injected at runtime"
+  else
+    warn "doppler.yaml found but not logged in — run: doppler login && doppler setup"
+  fi
 fi
+
+if [[ "$_USE_DOPPLER" == "false" ]]; then
+  if [[ -f .env ]]; then
+    log "loading .env"
+    _source_env .env
+  elif [[ -f .env.example ]]; then
+    warn "no .env found — copying .env.example. Edit values before using in prod."
+    cp .env.example .env
+    _source_env .env
+  else
+    warn "no .env or .env.example found — using built-in defaults."
+  fi
+fi
+
+# Build the full compose invocation — with Doppler prefix when authenticated.
+DOPPLER_PREFIX=()
+[[ "$_USE_DOPPLER" == "true" ]] && DOPPLER_PREFIX=(doppler run --)
+DC=("${DOPPLER_PREFIX[@]}" "${COMPOSE[@]}")
 
 # ── Cleanup trap ──────────────────────────────────────────────────────────────
 cleanup() {
@@ -86,7 +103,7 @@ cleanup() {
     log "stopping background jobs..."
     jobs -p | xargs -r kill 2>/dev/null || true
     log "stopping Docker services..."
-    "${COMPOSE[@]}" down --remove-orphans 2>/dev/null || true
+    "${DC[@]}" down --remove-orphans 2>/dev/null || true
   fi
   ok "bye."
 }
@@ -119,8 +136,8 @@ require_tool() {
 
 if [[ "$MODE" == "down" ]]; then
   log "stopping all services..."
-  "${COMPOSE[@]}" down --remove-orphans
-  "${COMPOSE[@]}" --profile ml down --remove-orphans 2>/dev/null || true
+  "${DC[@]}" down --remove-orphans
+  "${DC[@]}" --profile ml down --remove-orphans 2>/dev/null || true
   ok "all services stopped."
   trap - INT TERM EXIT
   exit 0
@@ -128,7 +145,7 @@ fi
 
 if [[ "$MODE" == "logs" ]]; then
   trap - INT TERM EXIT
-  exec "${COMPOSE[@]}" logs -f --tail=50
+  exec "${DC[@]}" logs -f --tail=50
 fi
 
 # ── Full Docker (default / --build / --ml) ────────────────────────────────────
@@ -140,9 +157,9 @@ if [[ "$MODE" == "docker" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
   [[ "$MODE" == "ml" ]] && PROFILE_FLAG=(--profile ml)
 
   log "starting all services in Docker..."
-  "${COMPOSE[@]}" "${PROFILE_FLAG[@]}" up -d "${BUILD_FLAG[@]}"
+  "${DC[@]}" "${PROFILE_FLAG[@]}" up -d "${BUILD_FLAG[@]}"
 
-  wait_for_service "postgres"  60 "${COMPOSE[*]} exec -T postgres pg_isready -q"
+  wait_for_service "postgres"  60 "${DC[*]} exec -T postgres pg_isready -q"
   wait_for_service "Dart API"  90 "curl -fsS http://localhost:${API_PORT:-8080}/health 2>/dev/null || curl -fsS http://localhost:${API_PORT:-8080}/"
 
   printf "\n%s%sGuildMark is up%s\n" "$C_BOLD" "$C_GREEN" "$C_RESET"
@@ -153,15 +170,15 @@ if [[ "$MODE" == "docker" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
   [[ "$MODE" == "ml" ]] && printf "  %-18s http://localhost:%s\n" "ML service:" "${ML_PORT:-8001}"
   printf "\n  %sStreaming logs (Ctrl+C to stop):%s\n\n" "$C_DIM" "$C_RESET"
 
-  "${COMPOSE[@]}" logs -f --tail=20
+  "${DC[@]}" logs -f --tail=20
   exit 0
 fi
 
 # ── DB only ───────────────────────────────────────────────────────────────────
 if [[ "$MODE" == "db-only" ]]; then
   log "starting Postgres..."
-  "${COMPOSE[@]}" up -d postgres
-  wait_for_service "postgres" 60 "${COMPOSE[*]} exec -T postgres pg_isready -q"
+  "${DC[@]}" up -d postgres
+  wait_for_service "postgres" 60 "${DC[*]} exec -T postgres pg_isready -q"
   ok "Postgres is up on localhost:${POSTGRES_PORT:-5432}"
   printf "\n  Run each app locally:\n"
   printf "    API:       DATABASE_URL='postgres://%s:%s@localhost:%s/%s' dart_frog dev  (from api/bin/)\n" \
@@ -180,8 +197,8 @@ if [[ "$MODE" == "dev" ]]; then
   require_tool pnpm        "Install: npm install -g pnpm"
 
   log "starting Postgres in Docker..."
-  "${COMPOSE[@]}" up -d postgres
-  wait_for_service "postgres" 60 "${COMPOSE[*]} exec -T postgres pg_isready -q"
+  "${DC[@]}" up -d postgres
+  wait_for_service "postgres" 60 "${DC[*]} exec -T postgres pg_isready -q"
 
   # Ensure Dart deps + codegen are ready.
   if [[ ! -d api/bin/.dart_tool ]]; then
