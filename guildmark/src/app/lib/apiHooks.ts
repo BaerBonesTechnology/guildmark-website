@@ -25,6 +25,7 @@ import type { TaxInvoice, InvoiceType } from "../models/invoice";
 import type { PortfolioSummary } from "../models/portfolio";
 import type { PaginatedResponse } from "../models/pagination";
 import type { ValuationEstimateRequest, ValuationEstimateResponse } from "../models/valuation";
+import type { AssetValuationsResponse } from "../models/asset_valuation";
 
 // ---------------------------------------------------------------------------
 // Query key factory — centralizes cache key naming
@@ -49,6 +50,9 @@ export const queryKeys = {
 
   // Dashboard
   dashboard:         ()                  => ["dashboard"] as const,
+
+  // Valuation history
+  assetValuations:   (id: string)        => ["asset-valuations", id] as const,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -357,5 +361,26 @@ export function useValuationEstimate(req: ValuationEstimateRequest | undefined) 
     enabled:   !!req,
     staleTime: 5 * 60 * 1000,   // 5 minutes — same input → same model output
     retry:     1,               // ML service may be cold-starting; retry once
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Asset valuation history
+// ---------------------------------------------------------------------------
+
+/**
+ * Full per-asset valuation history — all ML valuations ever recorded for this
+ * asset, newest first. Includes listing prices and price-to-FMV ratios where
+ * the valuation was triggered by a listing creation.
+ *
+ * Pass `null` to disable (e.g. before a row is selected).
+ */
+export function useAssetValuations(assetId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.assetValuations(assetId ?? ""),
+    queryFn:  () =>
+      api.get<AssetValuationsResponse>(`/assets/${assetId}/valuations?limit=100`),
+    enabled:   !!assetId,
+    staleTime: 30 * 1000,
   });
 }

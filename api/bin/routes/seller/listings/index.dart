@@ -9,6 +9,7 @@ import '../../../lib/db/pool.dart';
 import '../../../lib/http_helpers.dart';
 import '../../../lib/ml/ml_client.dart';
 import '../../../lib/repos/asset_repo.dart';
+import '../../../lib/repos/asset_valuation_repo.dart';
 import '../../../lib/repos/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -51,22 +52,35 @@ Future<Response> onRequest(RequestContext context) async {
 
       // Get ML valuation so we can flag overpriced listings at creation time.
       double? fmv;
+      String? mlVersion;
+      double? mlConfidence;
+      final ageMonths = _ageMonths(asset.purchaseDate);
+
       try {
         final valuation = await ml.estimateFairMarketValue(ValuationRequest(
           assetType:      asset.assetType,
           modelName:      asset.modelName,
           conditionGrade: asset.conditionGrade,
-          ageMonths:      _ageMonths(asset.purchaseDate),
+          ageMonths:      ageMonths,
           cpuScore:       asset.cpuScore,
           ramGb:          asset.ramGb,
           storageGb:      asset.storageGb,
           originalPrice:  asset.originalPurchasePrice,
         ));
-        fmv = valuation.fairMarketValue;
+        fmv           = valuation.fairMarketValue;
+        mlVersion     = valuation.modelVersion;
+        mlConfidence  = valuation.confidence;
       } on MlServiceException {
         // Non-fatal — we still create the listing; it will be flagged
         // 'insufficient_data' by the repo.
       }
+
+      // Tell the ML service about this model so the next training run fetches
+      // real eBay market data for it. Fire-and-forget — never blocks the response.
+      ml.trackModel(
+        modelName: asset.modelName,
+        assetType: asset.assetType,
+      ).ignore();
 
       final listing = await ListingRepo(db).create(
         companyId:      auth.companyId,
@@ -74,6 +88,25 @@ Future<Response> onRequest(RequestContext context) async {
         listedPrice:    price,
         fairMarketValue: fmv,
       );
+
+      // Record valuation history — fire-and-forget so a DB hiccup here
+      // never rolls back the listing creation.
+      if (fmv != null && mlVersion != null && mlConfidence != null) {
+        AssetValuationRepo(db).record(
+          assetId:        assetId,
+          listingId:      listing.id,
+          source:         'listing',
+          modelName:      asset.modelName,
+          assetType:      asset.assetType,
+          conditionGrade: asset.conditionGrade,
+          ageMonths:      ageMonths,
+          fairMarketValue: fmv,
+          confidence:     mlConfidence,
+          modelVersion:   mlVersion,
+          listedPrice:    price,
+        ).ignore();
+      }
+
       return Response.json(statusCode: 201, body: listing.toJson());
 
     default:

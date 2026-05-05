@@ -49,3 +49,8 @@ class DepreciationPoint(BaseModel):
 class DepreciationResponse(BaseModel):
     forecast:      list[DepreciationPoint]
     model_version: str
+
+
+class TrackModelRequest(BaseModel):
+    model_name: str = Field(min_length=1, max_length=200)
+    asset_type: AssetType

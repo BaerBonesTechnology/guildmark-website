@@ -103,6 +103,26 @@ class MlClient {
     return pts.map(DepreciationPoint.fromJson).toList();
   }
 
+  /// Notify the ML service that a new model has been listed so it can be
+  /// included in the next eBay training query set.
+  ///
+  /// Fire-and-forget — call with `.ignore()` at the listing creation site.
+  /// Swallows all errors so a downed ML service never blocks listing creation.
+  Future<void> trackModel({
+    required String modelName,
+    required String assetType,
+  }) async {
+    try {
+      await _client.post(
+        Uri.parse('$baseUrl/data/track'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'model_name': modelName, 'asset_type': assetType}),
+      );
+    } catch (_) {
+      // Non-fatal — ML service may be unavailable or the --profile ml not active.
+    }
+  }
+
   void close() => _client.close();
 }
 

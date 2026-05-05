@@ -21,6 +21,7 @@ services:
   # ── Postgres ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    platform: linux/amd64
     restart: unless-stopped
     environment:
       POSTGRES_DB:       ${POSTGRES_DB}
@@ -88,13 +89,25 @@ services:
     environment:
       ML_PORT:      ${ML_PORT:-8001}
       ML_MODEL_DIR: /app/model_artifacts
+      # eBay credentials — used by train_valuation at startup to fetch real
+      # market prices. If absent, training falls back to synthetic data only.
+      EBAY_APP_ID:          ${EBAY_APP_ID:-}
+      EBAY_CERT_ID:         ${EBAY_CERT_ID:-}
+      # Amazon PA API — disabled for now (retail price reference overlay)
+      # AMAZON_ACCESS_KEY:    ${AMAZON_ACCESS_KEY:-}
+      # AMAZON_SECRET_KEY:    ${AMAZON_SECRET_KEY:-}
+      # AMAZON_ASSOCIATE_TAG: ${AMAZON_ASSOCIATE_TAG:-}
+      # Set RETRAIN=1 to force re-training even if artifacts already exist.
+      RETRAIN:              ${RETRAIN:-0}
     volumes:
       - ./ml-qv/model_artifacts:/app/model_artifacts
     healthcheck:
-      test:     ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
-      interval: 10s
-      timeout:  5s
-      retries:  5
+      # start_period covers the training pass on first boot.
+      test:         ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval:     30s
+      timeout:      10s
+      retries:      10
+      start_period: 120s
     # Port not exposed publicly — nginx proxies to ml:8001 internally.
 
   # ── GuildMark marketplace frontend ───────────────────────────────────────

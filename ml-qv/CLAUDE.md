@@ -61,12 +61,13 @@ main.py                       FastAPI app — /health, /predict/valuation, /pred
 schemas.py                    Pydantic request/response models (mirrors ml_client.dart)
 models/valuation.py           ValuationModel — GradientBoostingRegressor + rules-based fallback
 models/depreciation.py        DepreciationModel — exponential decay forecaster, per-type priors
-training/synthetic_data.py    Generates plausible training records when real data is unavailable
+training/synthetic_data.py    Generates plausible training records (age/price signal eBay can't provide)
 training/data_retrieval.py    DataGrabber — eBay Browse API OAuth client for real price data
-training/train_valuation.py   Trains and saves valuation.joblib to $ML_MODEL_DIR
-training/train_depreciation.py Trains and saves depreciation.joblib to $ML_MODEL_DIR
+training/train_valuation.py   Hybrid eBay + synthetic training; saves valuation.joblib
+training/train_depreciation.py Synthetic-based decay prior fitting; saves depreciation.joblib
+training/evaluate.py          Evaluation report generator — runs in-memory train+eval, writes eval_output/report.html
 tests/test_valuation.py       Unit tests
-requirements.txt              fastapi, uvicorn, scikit-learn, xgboost, pandas, numpy, joblib, requests
+requirements.txt              fastapi, uvicorn, scikit-learn, xgboost, pandas, numpy, joblib, requests, matplotlib, seaborn
 Dockerfile                    Container build (prod)
 ```
 
@@ -85,11 +86,14 @@ Artifacts are loaded from `$ML_MODEL_DIR` (default `./models/`):
 **To train and generate artifacts:**
 ```bash
 cd ml-qv
-python -m training.train_valuation       # writes models/valuation.joblib
-python -m training.train_depreciation    # writes models/depreciation.joblib
-```
+# With real eBay data (recommended — requires EBAY_APP_ID + EBAY_CERT_ID in env):
+EBAY_APP_ID=... EBAY_CERT_ID=... python -m training.train_valuation
+python -m training.train_depreciation    # always synthetic (eBay has no age_months)
 
-Both scripts currently use synthetic data. Pass real eBay data via `DataGrabber` for better accuracy.
+# Evaluate model quality and generate a visual HTML report:
+python -m training.evaluate              # trains in-memory, writes eval_output/report.html
+python -m training.evaluate --artifact  # loads saved .joblib instead of re-training
+```
 
 ---
 
@@ -117,9 +121,8 @@ Requires `EBAY_APP_ID` and `EBAY_CERT_ID` env vars.
 See the **ML Developer** section of `TEAM.md` and `ROADMAP.md`.
 
 Priority items:
-1. **Train and commit initial artifacts** — run both training scripts, place `.joblib` files in the Docker-mounted `model_artifacts/` directory so the service stops using the fallback
-2. **Wire real eBay data into training** — use `DataGrabber` instead of `synthetic_data` in `train_valuation.py`; requires `EBAY_APP_ID` + `EBAY_CERT_ID` in `.env`
-3. **Confidence threshold definitions** — decide the threshold below which the API should surface a warning in the UI; communicate to Frontend Developer
-4. **Retraining pipeline** — ingest completed orders (`status = 'complete'`) from the `orders` table as ground truth; coordinate with Backend Developer on DB access
-5. **GuildMark Score algorithm** — design and implement using order history, dispute rate, payment timeliness, company age
-6. **Carbon offset model** — estimate kg CO₂ saved per device reuse
+1. **Train and commit initial artifacts** — run both training scripts with eBay credentials, place `.joblib` files in the Docker-mounted `model_artifacts/` directory so the service stops using the fallback. Run `evaluate.py` first to check model quality before committing.
+2. **Confidence threshold definitions** — decide the threshold below which the API should surface a warning in the UI (current heuristic is based on original_price ratio; consider switching to quantile regression). Communicate threshold to Frontend Developer.
+3. **Retraining pipeline** — ingest completed orders (`status = 'complete'`) from the `orders` table as ground truth; coordinate with Backend Developer on DB access
+4. **GuildMark Score algorithm** — design and implement using order history, dispute rate, payment timeliness, company age
+5. **Carbon offset model** — estimate kg CO₂ saved per device reuse

@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install OS deps for numpy / scipy / xgboost compiled wheels.
+# OS deps for numpy / scipy / xgboost compiled wheels.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential libgomp1 \
     && rm -rf /var/lib/apt/lists/*
@@ -15,16 +15,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Flat layout (no app/ package): source modules sit directly under /app.
+# Source modules — flat layout (no app/ package).
 COPY __init__.py main.py schemas.py setup.py pyproject.toml ./
-COPY models/   ./models/
-COPY training/ ./training/
+COPY models/    ./models/
+COPY training/  ./training/
+COPY entrypoint.sh ./
 
-# Train baseline models at build time so the image ships ready-to-serve.
-# In real deployments you'd download trained artifacts from object storage instead.
-RUN mkdir -p "$ML_MODEL_DIR" \
-    && python -m training.train_valuation \
-    && python -m training.train_depreciation
+RUN chmod +x entrypoint.sh
+
+# Artifact directory — populated at startup or by the mounted host volume.
+# Training runs at container startup (entrypoint.sh) if artifacts are absent,
+# using eBay credentials injected from the environment (Doppler / .env).
+RUN mkdir -p "$ML_MODEL_DIR"
 
 EXPOSE 8001
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+ENTRYPOINT ["./entrypoint.sh"]

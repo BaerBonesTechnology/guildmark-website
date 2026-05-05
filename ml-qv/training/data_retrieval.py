@@ -81,7 +81,6 @@ _REQUIRED_COLS = [
     "ram_gb",
     "storage_gb",
     "original_price",
-    "sem3_msrp",
     "fmv",
 ]
 
@@ -181,7 +180,7 @@ class DataGrabber:
 
         # 4. Impute spec fields per condition bucket (better than global median).
         numeric_specs = ["age_months", "cpu_score", "ram_gb", "storage_gb",
-                         "original_price", "sem3_msrp"]
+                         "original_price"]
         for col in numeric_specs:
             if col not in df.columns:
                 df[col] = float("nan")
@@ -222,13 +221,13 @@ class DataGrabber:
             .mean()
             .round(2)
             .to_dict()
-        )
+        ) # type: ignore
 
     # -------------------------------------------------------------------------
     # eBay OAuth
     # -------------------------------------------------------------------------
 
-    def _get_token(self) -> str:
+    def _get_token(self) -> str | None:
         """Return a valid application-level OAuth token, refreshing if needed."""
         if self._token and time.time() < self._token_expires_at - 60:
             return self._token
@@ -261,7 +260,7 @@ class DataGrabber:
     # eBay Browse API search + pagination
     # -------------------------------------------------------------------------
 
-    def _paginate_search(self, query: str, token: str) -> list[dict[str, Any]]:
+    def _paginate_search(self, query: str, token: str | None) -> list[dict[str, Any]]:
         """Collect up to ``_MAX_LISTINGS`` fixed-price items across pages."""
         items: list[dict[str, Any]] = []
         offset = 0
@@ -281,7 +280,7 @@ class DataGrabber:
     def _search_page(
             self,
             query: str,
-            token: str,
+            token: str | None,
             *,
             offset: int = 0,
             limit: int = _PAGE_SIZE,
@@ -296,7 +295,7 @@ class DataGrabber:
         resp = requests.get(
             f"{self._base_url}{_SEARCH_PATH}",
             headers={
-                "Authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {token}" if token else "",
                 "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
                 "Content-Type": "application/json",
             },
@@ -363,7 +362,6 @@ class DataGrabber:
             "ram_gb": float(ram_gb) if ram_gb else float("nan"),
             "storage_gb": float(storage_gb) if storage_gb else float("nan"),
             "original_price": float("nan"),  # MSRP not available from listings
-            "sem3_msrp": float("nan"),
             "fmv": fmv,
         }
 

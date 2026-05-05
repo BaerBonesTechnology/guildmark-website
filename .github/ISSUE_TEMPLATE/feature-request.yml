@@ -1,0 +1,66 @@
+name: Request a Feature
+description: Suggest a new feature or improvement.
+title: "[Feature Request]: "
+labels: ["enhancement", "triage"]
+projects: ["GuildMarket"]
+assignees: 
+  - BaerBonesTechnology
+type: enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature or improvement!
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe your feature request
+      description: What do you want to see in GuildMarket?
+      placeholder: Tell us about your idea!
+      value: "I have a great idea for a new feature!"
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Nice to have
+        - Would use
+        - Blocker
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: How would you use this feature in your workflow?
+      placeholder: Describe your use cases!
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        If you have any relevant screenshots, mockups, or sketches of your idea, please share them here!
+  - type: upload
+    id: attachments
+    attributes:
+      label: Upload attachments
+      description: Add any relevant screenshots, mockups, or sketches to help illustrate your idea. This will be automatically formatted into an attachment gallery, so no need for backticks.
+      multiple: true
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        We review all feature requests, but we can't promise to implement everything. The more details and context you can provide, the better we can evaluate and prioritize your suggestion. Thanks again for helping us make GuildMarket better!

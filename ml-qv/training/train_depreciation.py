@@ -1,8 +1,12 @@
 """Fit per-asset-type monthly decay priors for the depreciation forecaster.
 
-Until we have real portfolio history, we derive priors directly from the
-synthetic valuation data: for each asset_type, fit log(fmv/original_price) ~
-age_months and convert the slope into a monthly multiplicative decay.
+Uses synthetic data intentionally — eBay Browse API listings do not expose
+device age (age_months), which is the key independent variable for fitting
+the decay curve.  Once the platform accumulates real closed orders
+(status = 'complete'), those rows can serve as ground truth here instead.
+
+For each asset_type: fit log(fmv / original_price) ~ age_months and convert
+the OLS slope into a monthly multiplicative decay rate.
 
 Run:
     python -m training.train_depreciation
