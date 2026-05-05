@@ -68,6 +68,13 @@ Future<Response> onRequest(RequestContext context) async {
         // 'insufficient_data' by the repo.
       }
 
+      // Tell the ML service about this model so the next training run fetches
+      // real eBay market data for it. Fire-and-forget — never blocks the response.
+      ml.trackModel(
+        modelName: asset.modelName,
+        assetType: asset.assetType,
+      ).ignore();
+
       final listing = await ListingRepo(db).create(
         companyId:      auth.companyId,
         assetId:        assetId,

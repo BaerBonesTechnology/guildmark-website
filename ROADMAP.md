@@ -101,7 +101,8 @@ Per-device add-on available at all tiers. Pricing is discounted for paying membe
 ## 🔧 In Progress
 
 ### ML Service (`ml-qv/`)
-- The FastAPI service is substantially built: `/health`, `/predict/valuation`, `/predict/depreciation`, `ValuationModel` (GradientBoostingRegressor with rules-based fallback), `DepreciationModel` (exponential decay), training scripts, synthetic data generator, eBay OAuth data retrieval client, `requirements.txt`, `Dockerfile`.
+- The FastAPI service is substantially built: `/health`, `/predict/valuation`, `/predict/depreciation`, `ValuationModel` (GradientBoostingRegressor with rules-based fallback), `DepreciationModel` (exponential decay), training scripts, synthetic data generator, `requirements.txt`, `Dockerfile`.
+- `train_valuation.py` now fetches real eBay fixed-price listings via `DataGrabber` (17 queries across 7 asset types) and blends with synthetic data for age/price signal that eBay doesn't expose. Ready to run once `EBAY_APP_ID` and `EBAY_CERT_ID` are in the environment.
 - **Remaining gap:** model artifacts (`valuation.joblib`, `depreciation.joblib`) have not been trained and placed — the service runs in fallback mode (confidence 0.40) until they are.
 - Note: `ml/` is an empty scaffold placeholder — the real service is in `ml-qv/`.
 
@@ -163,7 +164,7 @@ Per-device add-on available at all tiers. Pricing is discounted for paying membe
 
 ### ML Service
 - **Train and place model artifacts** — run `python -m training.train_valuation` and `train_depreciation` in `ml-qv/`; mount resulting `.joblib` files at `$ML_MODEL_DIR` in Docker so the service exits fallback mode
-- **Wire real eBay data into training** — `DataGrabber` is built; swap `synthetic_data` for it in the training scripts (requires `EBAY_APP_ID` + `EBAY_CERT_ID`)
+- **Wire real eBay data into training** — ✅ Done. `train_valuation.py` now uses `DataGrabber` with a hybrid eBay + synthetic approach.
 - **Confidence threshold warnings** — define the threshold (e.g. < 0.55) below which the valuation route should add a warning flag; surface it in the GuildMark and AMPS UIs
 - **Retraining pipeline** — ingest `orders` rows where `status = 'complete'` as ground truth; coordinate with Backend Developer on DB access pattern
 

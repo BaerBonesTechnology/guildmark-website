@@ -1,13 +1,11 @@
 """Synthetic training data generator.
 
-Until real closed-deal data is flowing, models train on plausible synthetic
-records. The shape matches what the live system will eventually feed in via
-the assets table.
+Used to supplement eBay data for features the Browse API does not expose
+(age_months, original_price, cpu_score). The shape matches what the live
+system will eventually feed in via the assets table.
 
 The "anchor" price here represents the customer's original purchase price
-(`original_price` on the asset row). Earlier iterations also carried a
-Semantics3 MSRP feature; that was removed when Semantics3's API was
-deprecated, leaving original_price as the only price reference.
+(`original_price` on the asset row).
 """
 from __future__ import annotations
 
