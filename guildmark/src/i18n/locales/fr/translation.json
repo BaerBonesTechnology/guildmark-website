@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "GuildMark",
+    "tagline": "Échange de Matériel Certifié",
+    "trademark": "GuildMark™ est une marque déposée de Baerhous Media Group, LLC."
+  },
+  "nav": {
+    "home": "Accueil",
+    "marketplace": "Marché",
+    "dashboard": "Tableau de bord",
+    "calculator": "Pulse du Marché",
+    "offload": "Décharger",
+    "myListings": "Mes annonces",
+    "gmPro": "GM Pro",
+    "signIn": "Se connecter",
+    "signUpFree": "S'inscrire gratuitement",
+    "logout": "Se déconnecter"
+  },
+  "prelaunch": {
+    "badge": "Bientôt disponible · Bêta privée",
+    "headline": "Le marché secondaire du matériel informatique, <accent>organisé</accent>.",
+    "description": "GuildMark connecte les équipes informatiques des moyennes entreprises qui renouvellent leur matériel avec des PME à la recherche d'équipements certifiés et à prix équitable — sans intermédiaires ni tableurs.",
+    "emailPlaceholder": "vous@entreprise.com",
+    "joinButton": "Rejoindre la liste",
+    "noSpam": "Pas de spam. Nous vous contacterons à l'ouverture de l'accès anticipé.",
+    "successTitle": "Vous êtes sur la liste.",
+    "successBody": "Nous vous contacterons à l'ouverture de l'accès anticipé.",
+    "readResearch": "Lire l'étude de marché",
+    "getInTouch": "Nous contacter"
+  },
+  "footer": {
+    "copyright": "© {{year}} Baerhous Media Group, LLC.",
+    "trademark": "GuildMark™ est une marque déposée de Baerhous Media Group, LLC.",
+    "marketResearch": "Études de Marché"
+  },
+  "auth": {
+    "welcomeTitle": "Bienvenue sur GuildMark",
+    "welcomeSubtitle": "Connectez-vous pour accéder à votre tableau de bord d'actifs informatiques",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion en cours...",
+    "noAccount": "Pas encore de compte ?",
+    "signUpFree": "S'inscrire gratuitement"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "emailRequired": "L'adresse e-mail est requise",
+    "invalidEmail": "Adresse e-mail invalide"
+  },
+  "insights": {
+    "title": "Études de Marché",
+    "subtitle": "Études de Marché · 2025–2026"
+  }
+}

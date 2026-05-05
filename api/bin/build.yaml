@@ -1,0 +1,19 @@
+# Global json_serializable config.
+#
+# - field_rename: snake          — Dart camelCase  ->  snake_case JSON keys
+# - generic_argument_factories   — required for PaginatedResponse<T>.fromJson
+# - explicit_to_json             — generate full toJson trees rather than
+#                                   relying on dynamic dispatch (safer with
+#                                   nested freezed classes)
+# - include_if_null: false       — drop null fields from output, matching
+#                                   the existing API behavior
+
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          field_rename:               snake
+          generic_argument_factories: true
+          explicit_to_json:           true
+          include_if_null:            false

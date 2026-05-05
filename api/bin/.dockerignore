@@ -1,0 +1,13 @@
+.dart_tool/
+build/
+.dart_frog/
+.git/
+.env
+.env.local
+*.freezed.dart
+*.g.dart
+.idea/
+.vscode/
+*.md
+.DS_Store
+test/

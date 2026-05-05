@@ -1,0 +1,127 @@
+# GuildMark — full-stack Docker Compose
+# ---------------------------------------------------------------------------
+# Quick-start:
+#   docker compose up                       # all services (prod-like)
+#   docker compose up postgres api          # API + DB only
+#   docker compose --profile ml up          # include optional ML service
+#   docker compose build --no-cache         # force-rebuild all images
+#
+# Env vars are read from .env (copy .env.example to get started).
+# VITE_* build args are baked into the frontend JS bundles at build time —
+# rebuild the image if you change them: docker compose build guildmark devdash
+# ---------------------------------------------------------------------------
+
+services:
+
+  # ── Postgres ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
+
+  # ── Dart Frog API ─────────────────────────────────────────────────────────
+  api:
+    build:
+      context:    ./api/bin
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      API_PORT:                ${API_PORT:-8080}
+      DATABASE_URL:            ${DATABASE_URL}
+      JWT_ACCESS_SECRET:       ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET:      ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
+      JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
+      # Point at the compose ML service; falls back to empty (API degrades gracefully).
+      ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
+      CORS_ORIGIN:             ${CORS_ORIGIN:-http://localhost:3000}
+      GM_DEBUG:                ${GM_DEBUG:-false}
+      SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
+      SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-sandbox}
+      GM_WALLET_ACH_ROUTING:   ${GM_WALLET_ACH_ROUTING:-}
+      GM_WALLET_ACH_ACCOUNT:   ${GM_WALLET_ACH_ACCOUNT:-}
+      JAMF_PRO_CLIENT_ID:      ${JAMF_PRO_CLIENT_ID:-}
+      JAMF_PRO_CLIENT_SECRET:  ${JAMF_PRO_CLIENT_SECRET:-}
+      INTUNE_TENANT_ID:        ${INTUNE_TENANT_ID:-}
+      INTUNE_CLIENT_ID:        ${INTUNE_CLIENT_ID:-}
+      INTUNE_CLIENT_SECRET:    ${INTUNE_CLIENT_SECRET:-}
+      EBAY_APP_ID:             ${EBAY_APP_ID:-}
+      EBAY_CERT_ID:            ${EBAY_CERT_ID:-}
+      EBAY_DEV_ID:             ${EBAY_DEV_ID:-}
+      BACKMARKET_API_KEY:      ${BACKMARKET_API_KEY:-}
+      RESEND_API_KEY:          ${RESEND_API_KEY:-}
+      ESCROW_API_KEY:          ${ESCROW_API_KEY:-}
+      ESCROW_EMAIL:            ${ESCROW_EMAIL:-}
+      ESCROW_ENVIRONMENT:      ${ESCROW_ENVIRONMENT:-sandbox}
+      FEDEX_CLIENT_ID:         ${FEDEX_CLIENT_ID:-}
+      FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
+      FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
+      FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  # ── Python ML service (optional — opt-in with --profile ml) ──────────────
+  ml:
+    build: ./ml
+    profiles: ["ml"]
+    restart: unless-stopped
+    environment:
+      ML_PORT:      ${ML_PORT:-8001}
+      ML_MODEL_DIR: /app/model_artifacts
+    ports:
+      - "${ML_PORT:-8001}:8001"
+    volumes:
+      - ./ml/model_artifacts:/app/model_artifacts
+    healthcheck:
+      test:     ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+  # ── GuildMark marketplace frontend ───────────────────────────────────────
+  guildmark:
+    build:
+      context:    ./guildmark
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:   ${VITE_API_URL:-http://localhost:8080}
+        VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-true}
+        VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-false}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${GUILDMARK_PORT:-3000}:80"
+
+  # ── DevDash admin panel ───────────────────────────────────────────────────
+  devdash:
+    build:
+      context:    ./devdash
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:       ${VITE_API_URL:-http://localhost:8080}
+        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-http://localhost:8081}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${DEVDASH_PORT:-3001}:80"
+
+volumes:
+  postgres_data:

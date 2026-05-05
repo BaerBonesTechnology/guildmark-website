@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "GuildMark",
+    "tagline": "Certified Hardware Exchange",
+    "trademark": "GuildMark™ is a trademark of Baerhous Media Group, LLC."
+  },
+  "nav": {
+    "home": "Home",
+    "marketplace": "Marketplace",
+    "dashboard": "Fleet Dashboard",
+    "calculator": "Market Pulse",
+    "offload": "Offload",
+    "myListings": "My Listings",
+    "gmPro": "GM Pro",
+    "signIn": "Sign In",
+    "signUpFree": "Sign Up Free",
+    "logout": "Logout"
+  },
+  "prelaunch": {
+    "badge": "Coming Soon · Private Beta",
+    "headline": "The IT hardware secondary market, <accent>organized</accent>.",
+    "description": "GuildMark connects mid-market IT teams offloading refreshed hardware with small and medium businesses looking for certified, fairly priced gear — no brokers, no spreadsheets.",
+    "emailPlaceholder": "your@company.com",
+    "joinButton": "Join the list",
+    "noSpam": "No spam. We'll reach out when early access opens.",
+    "successTitle": "You're on the list.",
+    "successBody": "We'll be in touch when early access opens.",
+    "readResearch": "Read the market research",
+    "getInTouch": "Get in touch"
+  },
+  "footer": {
+    "copyright": "© {{year}} Baerhous Media Group, LLC.",
+    "trademark": "GuildMark™ is a trademark of Baerhous Media Group, LLC.",
+    "marketResearch": "Market Research & Insights"
+  },
+  "auth": {
+    "welcomeTitle": "Welcome to GuildMark",
+    "welcomeSubtitle": "Sign in to access your IT asset dashboard",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "noAccount": "Don't have an account?",
+    "signUpFree": "Sign up free"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "emailRequired": "email is required",
+    "invalidEmail": "Invalid email address"
+  },
+  "insights": {
+    "title": "Market Research & Insights",
+    "subtitle": "Market Research · 2025–2026"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "GuildMark",
+    "tagline": "Intercambio de Hardware Certificado",
+    "trademark": "GuildMark™ es una marca registrada de Baerhous Media Group, LLC."
+  },
+  "nav": {
+    "home": "Inicio",
+    "marketplace": "Mercado",
+    "dashboard": "Panel de Flota",
+    "calculator": "Pulso de Mercado",
+    "offload": "Transferir",
+    "myListings": "Mis Anuncios",
+    "gmPro": "GM Pro",
+    "signIn": "Iniciar sesión",
+    "signUpFree": "Registrarse gratis",
+    "logout": "Cerrar sesión"
+  },
+  "prelaunch": {
+    "badge": "Próximamente · Beta Privada",
+    "headline": "El mercado secundario de hardware de TI, <accent>organizado</accent>.",
+    "description": "GuildMark conecta equipos de TI de mediana empresa que renuevan hardware con pequeñas y medianas empresas que buscan equipo certificado y con precios justos — sin intermediarios ni hojas de cálculo.",
+    "emailPlaceholder": "tu@empresa.com",
+    "joinButton": "Unirme a la lista",
+    "noSpam": "Sin spam. Te avisaremos cuando abra el acceso anticipado.",
+    "successTitle": "Estás en la lista.",
+    "successBody": "Te contactaremos cuando abra el acceso anticipado.",
+    "readResearch": "Leer la investigación de mercado",
+    "getInTouch": "Contactar"
+  },
+  "footer": {
+    "copyright": "© {{year}} Baerhous Media Group, LLC.",
+    "trademark": "GuildMark™ es una marca registrada de Baerhous Media Group, LLC.",
+    "marketResearch": "Investigación de Mercado"
+  },
+  "auth": {
+    "welcomeTitle": "Bienvenido a GuildMark",
+    "welcomeSubtitle": "Inicia sesión para acceder a tu panel de activos de TI",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "signIn": "Iniciar sesión",
+    "signingIn": "Iniciando sesión...",
+    "noAccount": "¿No tienes cuenta?",
+    "signUpFree": "Regístrate gratis"
+  },
+  "errors": {
+    "generic": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "emailRequired": "El correo electrónico es obligatorio",
+    "invalidEmail": "Dirección de correo electrónico no válida"
+  },
+  "insights": {
+    "title": "Investigación de Mercado",
+    "subtitle": "Investigación de Mercado · 2025–2026"
+  }
+}
