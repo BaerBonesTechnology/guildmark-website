@@ -12,7 +12,7 @@ echo.
 ::
 :: Usage:
 ::   start.cmd              Full Docker - all services
-::   start.cmd --prod       Production Docker - uses docker-compose.prod.yml
+::                          Automatically uses docker-compose.prod.yml on master branch.
 ::   start.cmd --dev        Dev mode - DB in Docker, apps in separate windows
 ::   start.cmd --db-only    Postgres only
 ::   start.cmd --build      Rebuild all images then start
@@ -23,7 +23,6 @@ echo.
 
 :: -- Parse args ---------------------------------------------------------------
 set "MODE=docker"
-if /i "%~1"=="--prod"    set "MODE=prod"
 if /i "%~1"=="--dev"     set "MODE=dev"
 if /i "%~1"=="--db-only" set "MODE=db-only"
 if /i "%~1"=="--build"   set "MODE=build"
@@ -77,16 +76,19 @@ if "!DOPPLER_RUN!"=="" (
     if not defined ML_PORT        set "ML_PORT=8001"
 )
 
-:: -- Prod compose file override -----------------------------------------------
+:: -- Auto prod compose — use docker-compose.prod.yml on master branch ---------
 set "COMPOSE_FILE_FLAG="
-if /i "%MODE%"=="prod" set "COMPOSE_FILE_FLAG=-f docker-compose.prod.yml"
+for /f "delims=" %%B in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "_GIT_BRANCH=%%B"
+if /i "!_GIT_BRANCH!"=="master" (
+    set "COMPOSE_FILE_FLAG=-f docker-compose.prod.yml"
+    echo [guildmark] on master branch -- using docker-compose.prod.yml
+)
 
 :: -- Dispatch ---------------------------------------------------------------
 if /i "%MODE%"=="down"    goto :do_down
 if /i "%MODE%"=="logs"    goto :do_logs
 if /i "%MODE%"=="dev"     goto :do_dev
 if /i "%MODE%"=="db-only" goto :do_db_only
-if /i "%MODE%"=="prod"    goto :do_docker
 goto :do_docker
 
 :: =============================================================================
@@ -263,7 +265,7 @@ echo  GuildMark - full-stack start script for Windows CMD
 echo.
 echo  Usage:
 echo    start.cmd              Full Docker - all four services
-echo    start.cmd --prod       Production Docker - uses docker-compose.prod.yml
+echo                           (uses docker-compose.prod.yml automatically on master)
 echo    start.cmd --dev        DB in Docker, each app in its own CMD window
 echo    start.cmd --db-only    Postgres only
 echo    start.cmd --build      Rebuild all images then start

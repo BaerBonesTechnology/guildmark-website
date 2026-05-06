@@ -1,16 +1,16 @@
 # GuildMark — Production Docker Compose
 # ---------------------------------------------------------------------------
-# Deployment on DigitalOcean (or any VPS with Docker Engine)
+# Builds images locally from source and starts all services.
+# Run from the repo root on master branch (start.sh / start.cmd auto-selects
+# this file when on master).
 #
-# Usage:
+# Manual usage:
 #   docker compose -f docker-compose.prod.yml up -d
-#
-# All images are pulled from Docker Hub (codingbyjamarcus/*).
-# Environment variables are read from .env on the deployment machine.
+#   docker compose -f docker-compose.prod.yml up -d --build   # force rebuild
 #
 # Networking:
 #   All services communicate over the internal Docker network.
-#   Only nginx exposes port 80 (Cloudflare sits in front for TLS).
+#   nginx exposes ports 80 + 443 (Cloudflare sits in front for TLS).
 # ---------------------------------------------------------------------------
 
 services:
@@ -34,8 +34,9 @@ services:
 
   # ── Dart Frog API ─────────────────────────────────────────────────────────
   api:
-    image: codingbyjamarcus/api:latest
-    pull_policy: always
+    build:
+      context:    ./api/bin
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
@@ -73,10 +74,10 @@ services:
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
       FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
 
-  # ── Python ML service ───────────────────────────────────────────────────
+  # ── Python ML service (optional — opt-in with --profile ml) ──────────────
   ml:
-    image: codingbyjamarcus/ml:latest
-    pull_policy: always
+    build: ./ml-qv
+    profiles: ["ml"]
     restart: unless-stopped
     environment:
       ML_PORT:      ${ML_PORT:-8001}
@@ -95,31 +96,34 @@ services:
 
   # ── GuildMark marketplace frontend ───────────────────────────────────────
   guildmark:
-    image: codingbyjamarcus/guildmark:latest
-    pull_policy: always
+    build:
+      context:    ./guildmark
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:   ${VITE_API_URL:-https://api.guildmark.co}
+        VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-true}
+        VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-false}
     restart: unless-stopped
     depends_on:
       - api
-    environment:
-      VITE_API_URL:   ${VITE_API_URL:-https://api.guildmark.co}
-      VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-true}
-      VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-false}
 
   # ── DevDash admin panel ───────────────────────────────────────────────────
   devdash:
-    image: codingbyjamarcus/devdash:latest
-    pull_policy: always
+    build:
+      context:    ./devdash
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:       ${VITE_API_URL:-https://api.guildmark.co}
+        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-https://api.guildmark.co}
     restart: unless-stopped
     depends_on:
       - api
-    environment:
-      VITE_API_URL:       ${VITE_API_URL:-https://api.guildmark.co}
-      ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-https://api.guildmark.co}
 
   # ── NGINX reverse proxy ───────────────────────────────────────────────────
   nginx:
-    image: codingbyjamarcus/nginx:latest
-    pull_policy: always
+    build:
+      context:    ./nginx
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       - api
@@ -127,6 +131,9 @@ services:
       - devdash
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro
 
 volumes:
   postgres_data:

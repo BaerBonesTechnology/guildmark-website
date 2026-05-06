@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./start.sh              Full Docker — all four services in containers.
-#   ./start.sh --prod       Production Docker — uses docker-compose.prod.yml.
+#                           Automatically uses docker-compose.prod.yml on master branch.
 #   ./start.sh --dev        Dev mode — DB in Docker, apps run locally with HMR.
 #   ./start.sh --db-only    Postgres only (use when running apps individually).
 #   ./start.sh --build      Force-rebuild all Docker images, then start.
@@ -32,7 +32,6 @@ err()  { printf "%s[guildmark]%s %s%s%s\n" "$C_BLUE" "$C_RESET" "$C_RED"    "$*"
 # ── Parse args ───────────────────────────────────────────────────────────────
 MODE="docker"
 case "${1:-}" in
-  --prod)    MODE="prod"     ;;
   --dev)     MODE="dev"      ;;
   --db-only) MODE="db-only"  ;;
   --build)   MODE="build"    ;;
@@ -40,16 +39,12 @@ case "${1:-}" in
   --logs)    MODE="logs"     ;;
   --ml)      MODE="ml"       ;;
   -h|--help)
-    sed -n '2,15p' "$0"
+    sed -n '2,14p' "$0"
     exit 0
     ;;
   "") ;;
   *) err "Unknown flag: $1 (try --help)"; exit 2 ;;
 esac
-
-# ── Prod compose file override ────────────────────────────────────────────────
-# When --prod is passed, all docker compose commands use docker-compose.prod.yml.
-[[ "$MODE" == "prod" ]] && export COMPOSE_FILE=docker-compose.prod.yml
 
 # ── Check for Docker ──────────────────────────────────────────────────────────
 if ! docker info >/dev/null 2>&1; then
@@ -70,6 +65,13 @@ fi
 # ── Move to repo root (where this script lives) ──────────────────────────────
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO_ROOT"
+
+# ── Auto prod compose — use docker-compose.prod.yml on master branch ─────────
+_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+if [[ "$_GIT_BRANCH" == "master" ]]; then
+  export COMPOSE_FILE=docker-compose.prod.yml
+  warn "on master branch — using docker-compose.prod.yml"
+fi
 
 # ── Set up daily deployment cron job at 3 AM ─────────────────────────────────
 setup_cron() {
@@ -101,7 +103,7 @@ EOF
 }
 
 # Set up cron when running in docker/prod/build/ml mode
-if [[ "$MODE" == "docker" || "$MODE" == "prod" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
+if [[ "$MODE" == "docker" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
   setup_cron
 fi
 
@@ -190,7 +192,7 @@ if [[ "$MODE" == "logs" ]]; then
 fi
 
 # ── Full Docker (default / --build / --ml) ────────────────────────────────────
-if [[ "$MODE" == "docker" || "$MODE" == "prod" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
+if [[ "$MODE" == "docker" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
   BUILD_FLAG=()
   [[ "$MODE" == "build" ]] && BUILD_FLAG=(--build)
 
