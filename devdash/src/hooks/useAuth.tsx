@@ -4,7 +4,7 @@ const API = import.meta.env.VITE_API_URL ?? "https://api.guildmark.co";
 
 interface AuthCtx {
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -15,19 +15,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => sessionStorage.getItem("devdash_token")
   );
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${API}/auth/login`, {
+  const login = useCallback(async (username: string, password: string) => {
+    const res = await fetch(`${API}/admin/auth`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-      credentials: "include",
+      body: JSON.stringify({ username, password }),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body?.error ?? "Login failed");
     }
-    const data = await res.json() as { access_token: string; user: { role: string } };
-    if (data.user.role !== "admin") throw new Error("Admin access required");
+    const data = await res.json() as { access_token: string };
     sessionStorage.setItem("devdash_token", data.access_token);
     setToken(data.access_token);
   }, []);

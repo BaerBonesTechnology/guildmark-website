@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await login(username, password);
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -41,15 +41,16 @@ export function Login() {
             </div>
           )}
           <div className="space-y-1">
-            <label className="text-xs text-slate-400 font-mono uppercase tracking-wide">Email</label>
+            <label className="text-xs text-slate-400 font-mono uppercase tracking-wide">Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               required
               disabled={loading}
+              autoComplete="username"
               className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
-              placeholder="admin@guildmark.co"
+              placeholder="admin"
             />
           </div>
           <div className="space-y-1">

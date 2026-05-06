@@ -5,22 +5,33 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
+import { SignupRequest } from "../models/auth";
 import { CheckCircle2, DollarSign, Shield, Truck } from "lucide-react";
 
 export function Signup() {
   const [formData, setFormData] = useState({
     company: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock signup - in production this would call an API
-    login(formData.email, formData.password);
+
+    const signUpReq: SignupRequest = {
+      email: formData.email,
+      password: formData.password,
+      full_name: formData.fullName,
+      company_name: formData.company,
+      company_size: null,
+      industry:  null,
+    };
+
+    signup(signUpReq);
     navigate("/dashboard");
   };
 
