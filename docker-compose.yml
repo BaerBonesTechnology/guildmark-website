@@ -79,6 +79,9 @@ services:
       FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
       FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
+      ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
+      ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
+      ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-}
     # Port not exposed publicly — nginx proxies to api:8080 internally.
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────
@@ -135,7 +138,8 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    # Port not exposed publicly — nginx proxies to devdash:80 internally.
+    ports:
+      - "${DEVDASH_PORT:-3001}:80"
 
   # ── NGINX reverse proxy ───────────────────────────────────────────────────
   nginx:
@@ -150,6 +154,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"    # API        → localhost:8080
+      - "3001:3001"    # DevDash    → localhost:3001
+      - "8001:8001"    # ML service → localhost:8001 (only useful with --profile ml)
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
 

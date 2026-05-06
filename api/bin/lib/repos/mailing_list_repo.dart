@@ -56,7 +56,7 @@ class MailingListRepo {
       INSERT INTO mailing_list (email, source)
       VALUES (@email, @source)
       ON CONFLICT (email) DO NOTHING
-      RETURNING id, email, source, notes, contacted_at, created_at
+      RETURNING id, email::text, source, notes, contacted_at, created_at
       ''',
       parameters: {'email': email.toLowerCase().trim(), 'source': source},
     );
@@ -74,7 +74,7 @@ class MailingListRepo {
         uncontactedOnly ? 'WHERE contacted_at IS NULL' : '';
     final result = await _db.query(
       '''
-      SELECT id, email, source, notes, contacted_at, created_at
+      SELECT id, email::text, source, notes, contacted_at, created_at
       FROM mailing_list
       $where
       ORDER BY created_at DESC
@@ -102,7 +102,7 @@ class MailingListRepo {
       SET contacted_at = now(),
           notes = COALESCE(@notes, notes)
       WHERE id = @id
-      RETURNING id, email, source, notes, contacted_at, created_at
+      RETURNING id, email::text, source, notes, contacted_at, created_at
       ''',
       parameters: {'id': id, 'notes': notes},
     );
@@ -119,7 +119,7 @@ class MailingListRepo {
       '''
       UPDATE mailing_list SET notes = @notes
       WHERE id = @id
-      RETURNING id, email, source, notes, contacted_at, created_at
+      RETURNING id, email::text, source, notes, contacted_at, created_at
       ''',
       parameters: {'id': id, 'notes': notes},
     );

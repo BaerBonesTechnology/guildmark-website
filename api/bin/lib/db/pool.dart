@@ -59,6 +59,16 @@ class Db {
     );
   }
 
+  /// Execute a raw SQL statement using the simple query protocol.
+  ///
+  /// Use this for DDL (CREATE TABLE, CREATE INDEX, etc.).  Unlike the default
+  /// extended-query (prepared-statement) path, simple-query mode skips the
+  /// prepare step and sends SQL directly to postgres, which means it works
+  /// with multi-command DDL and `$$`-quoted function bodies without truncation.
+  Future<Result> rawExecute(String sql) {
+    return _pool.execute(sql, queryMode: QueryMode.simple);
+  }
+
   /// Run a block inside a transaction.
   Future<T> tx<T>(Future<T> Function(TxSession session) action) {
     return _pool.runTx(action);

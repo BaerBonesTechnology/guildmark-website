@@ -19,20 +19,31 @@ Middleware _corsMiddleware() {
   return (handler) {
     return (context) async {
       final cfg = context.read<AppConfig>();
+      final allowed = [
+        cfg.corsOrigin,
+        if (cfg.adminCorsOrigin != null) cfg.adminCorsOrigin!,
+      ].join(',');
+      final origin = _resolveOrigin(
+        context.request.headers['origin'] ?? '',
+        allowed,
+      );
       if (context.request.method == HttpMethod.options) {
-        return Response(
-          headers: _corsHeaders(cfg.corsOrigin),
-        );
+        return Response(headers: _corsHeaders(origin));
       }
       final response = await handler(context);
       return response.copyWith(
-        headers: {
-          ...response.headers,
-          ..._corsHeaders(cfg.corsOrigin),
-        },
+        headers: {...response.headers, ..._corsHeaders(origin)},
       );
     };
   };
+}
+
+String _resolveOrigin(String requestOrigin, String allowed) {
+  final origins = allowed.split(',').map((s) => s.trim()).toSet();
+  if (origins.contains('*') || origins.contains(requestOrigin)) {
+    return requestOrigin.isEmpty ? '*' : requestOrigin;
+  }
+  return origins.first;
 }
 
 Map<String, String> _corsHeaders(String origin) => {

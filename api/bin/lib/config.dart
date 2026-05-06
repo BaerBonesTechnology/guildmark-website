@@ -45,6 +45,9 @@ class AppConfig {
     this.fedexClientSecret,
     this.fedexWebhookSecret,
     this.fedexSandbox = true,
+    this.adminAuthUser,
+    this.adminAuthPass,
+    this.adminCorsOrigin,
   });
 
   factory AppConfig.fromEnv() {
@@ -104,6 +107,9 @@ class AppConfig {
       fedexClientSecret: optional('FEDEX_CLIENT_SECRET'),
       fedexWebhookSecret: optional('FEDEX_WEBHOOK_SECRET'),
       fedexSandbox: (Platform.environment['FEDEX_ENVIRONMENT'] ?? 'sandbox') != 'production',
+      adminAuthUser: optional('ADMIN_AUTH_USER'),
+      adminAuthPass: optional('ADMIN_AUTH_PASS'),
+      adminCorsOrigin: optional('ADMIN_CORS_ORIGIN'),
     );
   }
 
@@ -157,4 +163,12 @@ class AppConfig {
   final String? fedexClientSecret;
   final String? fedexWebhookSecret;
   final bool fedexSandbox;
+
+  // DevDash bootstrap credentials — checked by POST /admin/auth.
+  // When null the endpoint returns 503.
+  final String? adminAuthUser;
+  final String? adminAuthPass;
+
+  // Allowed CORS origin for DevDash requests. Falls back to corsOrigin when null.
+  final String? adminCorsOrigin;
 }

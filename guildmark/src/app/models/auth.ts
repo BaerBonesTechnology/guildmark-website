@@ -19,8 +19,8 @@ export interface SignupRequest {
   password:     string;
   full_name:    string;
   company_name: string;
-  company_size: string;
-  industry:     string;
+  company_size: string | null;
+  industry:     string | null;
 }
 
 export interface EmailPayload {
