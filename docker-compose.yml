@@ -82,6 +82,11 @@ services:
       ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
       ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
       ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-}
+    volumes:
+      # Migrations live outside the build context (./api/bin) so they are
+      # mounted at runtime.  MigrationRunner defaults to "../migrations"
+      # relative to CWD (/app/bin), which resolves to /app/migrations here.
+      - ./api/migrations:/app/migrations:ro
     # Port not exposed publicly — nginx proxies to api:8080 internally.
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────

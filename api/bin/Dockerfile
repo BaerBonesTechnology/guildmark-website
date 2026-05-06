@@ -24,7 +24,11 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/build/bin/server /app/server
+# WORKDIR must be /app/bin so the MigrationRunner's default relative path
+# "../migrations" resolves to /app/migrations, which is volume-mounted from
+# ./api/migrations in docker-compose.
+WORKDIR /app/bin
+COPY --from=build /app/build/bin/server ./server
 
 EXPOSE 8080
-CMD ["/app/server"]
+CMD ["./server"]
