@@ -3,6 +3,7 @@
 #
 # Usage:
 #   ./start.sh              Full Docker — all four services in containers.
+#                           Automatically uses docker-compose.prod.yml on master branch.
 #   ./start.sh --dev        Dev mode — DB in Docker, apps run locally with HMR.
 #   ./start.sh --db-only    Postgres only (use when running apps individually).
 #   ./start.sh --build      Force-rebuild all Docker images, then start.
@@ -62,7 +63,49 @@ else
 fi
 
 # ── Move to repo root (where this script lives) ──────────────────────────────
-cd "$(dirname "$0")"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$REPO_ROOT"
+
+# ── Auto prod compose — use docker-compose.prod.yml on master branch ─────────
+_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+if [[ "$_GIT_BRANCH" == "master" ]]; then
+  export COMPOSE_FILE=docker-compose.prod.yml
+  warn "on master branch — using docker-compose.prod.yml"
+fi
+
+# ── Set up daily deployment cron job at 3 AM ─────────────────────────────────
+setup_cron() {
+  local deploy_script="$REPO_ROOT/scripts/deploy.sh"
+  local cron_entry="0 3 * * * $deploy_script >> /var/log/guildmark-deploy.log 2>&1"
+  
+  mkdir -p "$REPO_ROOT/scripts"
+  
+  # Create deploy script if missing
+  if [[ ! -f "$deploy_script" ]]; then
+    cat > "$deploy_script" << 'EOF'
+#!/bin/bash
+set -e
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_DIR"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment..."
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment complete"
+EOF
+    chmod +x "$deploy_script"
+  fi
+  
+  # Add to crontab if not already present
+  if ! crontab -l 2>/dev/null | grep -q "$deploy_script"; then
+    (crontab -l 2>/dev/null || echo "") | grep -v "$deploy_script" | { cat; echo "$cron_entry"; } | crontab -
+    ok "cron job added: daily pull and redeploy at 3 AM"
+  fi
+}
+
+# Set up cron when running in docker/prod/build/ml mode
+if [[ "$MODE" == "docker" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
+  setup_cron
+fi
 
 # ── Load secrets — Doppler (prod/CI) or .env fallback (local) ────────────────
 # Strip \r so Windows-saved (CRLF) .env files don't break bash sourcing.

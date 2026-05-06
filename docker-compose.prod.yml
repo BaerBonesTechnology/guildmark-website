@@ -1,19 +1,16 @@
-# GuildMark — full-stack Docker Compose
+# GuildMark — Production Docker Compose
 # ---------------------------------------------------------------------------
-# Quick-start:
-#   docker compose up                       # all services (prod-like)
-#   docker compose up postgres api          # API + DB only
-#   docker compose --profile ml up          # include optional ML service
-#   docker compose build --no-cache         # force-rebuild all images
+# Builds images locally from source and starts all services.
+# Run from the repo root on master branch (start.sh / start.cmd auto-selects
+# this file when on master).
 #
-# Env vars are read from .env (copy .env.example to get started).
-# VITE_* build args are baked into the frontend JS bundles at build time —
-# rebuild the image if you change them: docker compose build guildmark devdash
+# Manual usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml up -d --build   # force rebuild
 #
 # Networking:
 #   All services communicate over the internal Docker network.
-#   Only the nginx reverse proxy exposes a public port (80).
-#   Cloudflare sits in front of nginx and handles TLS.
+#   nginx exposes ports 80 + 443 (Cloudflare sits in front for TLS).
 # ---------------------------------------------------------------------------
 
 services:
@@ -27,8 +24,6 @@ services:
       POSTGRES_DB:       ${POSTGRES_DB}
       POSTGRES_USER:     ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -53,9 +48,8 @@ services:
       JWT_REFRESH_SECRET:      ${JWT_REFRESH_SECRET}
       JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
       JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
-      # Point at the compose ML service; falls back to empty (API degrades gracefully).
       ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
-      CORS_ORIGIN:             ${CORS_ORIGIN:-http://localhost:3000}
+      CORS_ORIGIN:             ${CORS_ORIGIN}
       GM_DEBUG:                ${GM_DEBUG:-false}
       SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
       SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
@@ -79,7 +73,6 @@ services:
       FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
       FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
-    # Port not exposed publicly — nginx proxies to api:8080 internally.
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────
   ml:
@@ -89,26 +82,17 @@ services:
     environment:
       ML_PORT:      ${ML_PORT:-8001}
       ML_MODEL_DIR: /app/model_artifacts
-      # eBay credentials — used by train_valuation at startup to fetch real
-      # market prices. If absent, training falls back to synthetic data only.
-      EBAY_APP_ID:          ${EBAY_APP_ID:-}
-      EBAY_CERT_ID:         ${EBAY_CERT_ID:-}
-      # Amazon PA API — disabled for now (retail price reference overlay)
-      # AMAZON_ACCESS_KEY:    ${AMAZON_ACCESS_KEY:-}
-      # AMAZON_SECRET_KEY:    ${AMAZON_SECRET_KEY:-}
-      # AMAZON_ASSOCIATE_TAG: ${AMAZON_ASSOCIATE_TAG:-}
-      # Set RETRAIN=1 to force re-training even if artifacts already exist.
-      RETRAIN:              ${RETRAIN:-0}
+      EBAY_APP_ID:  ${EBAY_APP_ID:-}
+      EBAY_CERT_ID: ${EBAY_CERT_ID:-}
+      RETRAIN:      ${RETRAIN:-0}
     volumes:
-      - ./ml-qv/model_artifacts:/app/model_artifacts
+      - ml_artifacts:/app/model_artifacts
     healthcheck:
-      # start_period covers the training pass on first boot.
       test:         ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval:     30s
       timeout:      10s
       retries:      10
       start_period: 120s
-    # Port not exposed publicly — nginx proxies to ml:8001 internally.
 
   # ── GuildMark marketplace frontend ───────────────────────────────────────
   guildmark:
@@ -122,7 +106,6 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    # Port not exposed publicly — nginx proxies to guildmark:80 internally.
 
   # ── DevDash admin panel ───────────────────────────────────────────────────
   devdash:
@@ -135,7 +118,6 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    # Port not exposed publicly — nginx proxies to devdash:80 internally.
 
   # ── NGINX reverse proxy ───────────────────────────────────────────────────
   nginx:
@@ -155,3 +137,4 @@ services:
 
 volumes:
   postgres_data:
+  ml_artifacts:

@@ -26,3 +26,5 @@
 **/model_artifacts/
 **/*.egg-info/
 **/pip-wheel-metadata/
+*.key
+*.pem

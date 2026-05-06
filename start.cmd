@@ -2,12 +2,18 @@
 setlocal enabledelayedexpansion
 title GuildMark Stack
 
+REM Daily deployment tip
+echo [guildmark] On Windows, use Task Scheduler to run scripts\deploy.sh daily at 3 AM
+echo [guildmark] On Linux/macOS, ./start.sh sets up cron automatically
+echo.
+
 :: ---------------------------------------------------------------------------
-:: GuildMark — full-stack start script for Windows CMD
+:: GuildMark - full-stack start script for Windows CMD
 ::
 :: Usage:
-::   start.cmd              Full Docker — all services
-::   start.cmd --dev        Dev mode — DB in Docker, apps in separate windows
+::   start.cmd              Full Docker - all services
+::                          Automatically uses docker-compose.prod.yml on master branch.
+::   start.cmd --dev        Dev mode - DB in Docker, apps in separate windows
 ::   start.cmd --db-only    Postgres only
 ::   start.cmd --build      Rebuild all images then start
 ::   start.cmd --down       Stop all containers
@@ -15,7 +21,7 @@ title GuildMark Stack
 ::   start.cmd --ml         Full Docker including ML service
 :: ---------------------------------------------------------------------------
 
-:: ── Parse args ───────────────────────────────────────────────────────────────
+:: -- Parse args ---------------------------------------------------------------
 set "MODE=docker"
 if /i "%~1"=="--dev"     set "MODE=dev"
 if /i "%~1"=="--db-only" set "MODE=db-only"
@@ -31,17 +37,17 @@ if not "%~1"=="" if "!MODE!"=="docker" (
     exit /b 1
 )
 
-:: ── Check Docker ──────────────────────────────────────────────────────────────
+:: -- Check Docker ---------------------------------------------------------------
 docker info >nul 2>&1
 if errorlevel 1 (
     echo [guildmark] ERROR: Docker is not running. Start Docker Desktop first.
     exit /b 1
 )
 
-:: ── Move to the folder containing this script ─────────────────────────────────
+:: -- Move to the folder containing this script --------------------------------
 cd /d "%~dp0"
 
-:: ── Detect Doppler FIRST — before any .env loading ───────────────────────────
+:: -- Detect Doppler FIRST - before any .env loading ---------------------------
 :: If Doppler is available it injects secrets into the docker compose subprocess.
 :: We must NOT pre-load those variables from .env or Doppler won't override them.
 set "DOPPLER_RUN="
@@ -58,7 +64,7 @@ if not errorlevel 1 (
     )
 )
 
-:: ── Load secrets — skip if Doppler is active (it owns the secrets) ───────────
+:: -- Load secrets - skip if Doppler is active (it owns the secrets) -----------
 if "!DOPPLER_RUN!"=="" (
     call :load_env
 ) else (
@@ -70,7 +76,15 @@ if "!DOPPLER_RUN!"=="" (
     if not defined ML_PORT        set "ML_PORT=8001"
 )
 
-:: ── Dispatch ──────────────────────────────────────────────────────────────────
+:: -- Auto prod compose — use docker-compose.prod.yml on master branch ---------
+set "COMPOSE_FILE_FLAG="
+for /f "delims=" %%B in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "_GIT_BRANCH=%%B"
+if /i "!_GIT_BRANCH!"=="master" (
+    set "COMPOSE_FILE_FLAG=-f docker-compose.prod.yml"
+    echo [guildmark] on master branch -- using docker-compose.prod.yml
+)
+
+:: -- Dispatch ---------------------------------------------------------------
 if /i "%MODE%"=="down"    goto :do_down
 if /i "%MODE%"=="logs"    goto :do_logs
 if /i "%MODE%"=="dev"     goto :do_dev
@@ -87,7 +101,7 @@ if /i "%MODE%"=="build" set "BUILD_FLAG=--build"
 if /i "%MODE%"=="ml"    set "PROFILE_FLAG=--profile ml"
 
 echo [guildmark] starting all services in Docker...
-%DOPPLER_RUN%docker compose %PROFILE_FLAG% up -d %BUILD_FLAG%
+%DOPPLER_RUN%docker compose %COMPOSE_FILE_FLAG% %PROFILE_FLAG% up -d %BUILD_FLAG%
 if errorlevel 1 ( echo [guildmark] ERROR: docker compose failed. & exit /b 1 )
 
 call :wait_for_postgres
@@ -101,7 +115,7 @@ echo    API           http://localhost:%API_PORT%
 echo    Postgres      localhost:%POSTGRES_PORT%
 if /i "%MODE%"=="ml" echo    ML service    http://localhost:%ML_PORT%
 echo.
-echo  Streaming logs  ^(Ctrl+C to stop^) ...
+echo  Streaming logs  (Ctrl+C to stop) ...
 echo.
 %DOPPLER_RUN%docker compose logs -f --tail=20
 goto :eof
@@ -133,17 +147,17 @@ echo [guildmark] starting Postgres in Docker...
 if errorlevel 1 ( echo [guildmark] ERROR: docker compose failed. & exit /b 1 )
 call :wait_for_postgres
 
-:: Rewrite DATABASE_URL for local dev — the root .env points at the Docker
+:: Rewrite DATABASE_URL for local dev - the root .env points at the Docker
 :: service hostname "postgres" which only resolves inside the Docker network.
 :: When the API runs locally it must connect via localhost instead.
 set "DATABASE_URL=postgres://%POSTGRES_USER%:%POSTGRES_PASSWORD%@localhost:%POSTGRES_PORT%/%POSTGRES_DB%"
 
 echo [guildmark] opening service windows...
 
-:: /d sets the working directory for each new window — avoids nested-quote issues.
-start "GuildMark — API  ^(dart_frog^)"  /d "%~dp0api\bin"   cmd /k dart_frog dev
-start "GuildMark — UI   ^(Vite^)"       /d "%~dp0guildmark" cmd /k pnpm dev --port %GUILDMARK_PORT%
-start "GuildMark — DevDash ^(Vite^)"    /d "%~dp0devdash"   cmd /k pnpm dev --port %DEVDASH_PORT%
+:: /d sets the working directory for each new window - avoids nested-quote issues.
+start "GuildMark - API  (dart_frog)"  /d "%~dp0api\bin"   cmd /k dart_frog dev
+start "GuildMark - UI   (Vite)"       /d "%~dp0guildmark" cmd /k pnpm dev --port %GUILDMARK_PORT%
+start "GuildMark - DevDash (Vite)"    /d "%~dp0devdash"   cmd /k pnpm dev --port %DEVDASH_PORT%
 
 echo.
 echo  GuildMark dev stack ready
@@ -247,10 +261,11 @@ goto :_api_loop
 :: =============================================================================
 :show_help
 echo.
-echo  GuildMark — full-stack start script for Windows CMD
+echo  GuildMark - full-stack start script for Windows CMD
 echo.
 echo  Usage:
-echo    start.cmd              Full Docker — all four services
+echo    start.cmd              Full Docker - all four services
+echo                           (uses docker-compose.prod.yml automatically on master)
 echo    start.cmd --dev        DB in Docker, each app in its own CMD window
 echo    start.cmd --db-only    Postgres only
 echo    start.cmd --build      Rebuild all images then start
