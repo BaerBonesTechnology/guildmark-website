@@ -3,6 +3,7 @@
 #
 # Usage:
 #   ./start.sh              Full Docker — all four services in containers.
+#   ./start.sh --prod       Production Docker — uses docker-compose.prod.yml.
 #   ./start.sh --dev        Dev mode — DB in Docker, apps run locally with HMR.
 #   ./start.sh --db-only    Postgres only (use when running apps individually).
 #   ./start.sh --build      Force-rebuild all Docker images, then start.
@@ -31,6 +32,7 @@ err()  { printf "%s[guildmark]%s %s%s%s\n" "$C_BLUE" "$C_RESET" "$C_RED"    "$*"
 # ── Parse args ───────────────────────────────────────────────────────────────
 MODE="docker"
 case "${1:-}" in
+  --prod)    MODE="prod"     ;;
   --dev)     MODE="dev"      ;;
   --db-only) MODE="db-only"  ;;
   --build)   MODE="build"    ;;
@@ -38,12 +40,16 @@ case "${1:-}" in
   --logs)    MODE="logs"     ;;
   --ml)      MODE="ml"       ;;
   -h|--help)
-    sed -n '2,14p' "$0"
+    sed -n '2,15p' "$0"
     exit 0
     ;;
   "") ;;
   *) err "Unknown flag: $1 (try --help)"; exit 2 ;;
 esac
+
+# ── Prod compose file override ────────────────────────────────────────────────
+# When --prod is passed, all docker compose commands use docker-compose.prod.yml.
+[[ "$MODE" == "prod" ]] && export COMPOSE_FILE=docker-compose.prod.yml
 
 # ── Check for Docker ──────────────────────────────────────────────────────────
 if ! docker info >/dev/null 2>&1; then
@@ -62,7 +68,42 @@ else
 fi
 
 # ── Move to repo root (where this script lives) ──────────────────────────────
-cd "$(dirname "$0")"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$REPO_ROOT"
+
+# ── Set up daily deployment cron job at 3 AM ─────────────────────────────────
+setup_cron() {
+  local deploy_script="$REPO_ROOT/scripts/deploy.sh"
+  local cron_entry="0 3 * * * $deploy_script >> /var/log/guildmark-deploy.log 2>&1"
+  
+  mkdir -p "$REPO_ROOT/scripts"
+  
+  # Create deploy script if missing
+  if [[ ! -f "$deploy_script" ]]; then
+    cat > "$deploy_script" << 'EOF'
+#!/bin/bash
+set -e
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_DIR"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment..."
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment complete"
+EOF
+    chmod +x "$deploy_script"
+  fi
+  
+  # Add to crontab if not already present
+  if ! crontab -l 2>/dev/null | grep -q "$deploy_script"; then
+    (crontab -l 2>/dev/null || echo "") | grep -v "$deploy_script" | { cat; echo "$cron_entry"; } | crontab -
+    ok "cron job added: daily pull and redeploy at 3 AM"
+  fi
+}
+
+# Set up cron when running in docker/prod/build/ml mode
+if [[ "$MODE" == "docker" || "$MODE" == "prod" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
+  setup_cron
+fi
 
 # ── Load secrets — Doppler (prod/CI) or .env fallback (local) ────────────────
 # Strip \r so Windows-saved (CRLF) .env files don't break bash sourcing.
@@ -149,7 +190,7 @@ if [[ "$MODE" == "logs" ]]; then
 fi
 
 # ── Full Docker (default / --build / --ml) ────────────────────────────────────
-if [[ "$MODE" == "docker" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
+if [[ "$MODE" == "docker" || "$MODE" == "prod" || "$MODE" == "build" || "$MODE" == "ml" ]]; then
   BUILD_FLAG=()
   [[ "$MODE" == "build" ]] && BUILD_FLAG=(--build)
 
