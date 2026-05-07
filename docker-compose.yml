@@ -36,6 +36,8 @@ services:
       interval: 5s
       timeout:  5s
       retries:  10
+    networks:
+      - guildmark-net
 
   # ── Dart Frog API ─────────────────────────────────────────────────────────
   api:
@@ -87,6 +89,8 @@ services:
       # mounted at runtime.  MigrationRunner defaults to "../migrations"
       # relative to CWD (/app/bin), which resolves to /app/migrations here.
       - ./api/migrations:/app/migrations:ro
+    networks:
+      - guildmark-net
     # Port not exposed publicly — nginx proxies to api:8080 internally.
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────
@@ -109,6 +113,8 @@ services:
       RETRAIN:              ${RETRAIN:-0}
     volumes:
       - ./ml-qv/model_artifacts:/app/model_artifacts
+    networks:
+      - guildmark-net
     healthcheck:
       # start_period covers the training pass on first boot.
       test:         ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
@@ -130,6 +136,8 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    networks:
+      - guildmark-net
     # Port not exposed publicly — nginx proxies to guildmark:80 internally.
 
   # ── DevDash admin panel ───────────────────────────────────────────────────
@@ -143,6 +151,8 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    networks:
+      - guildmark-net
     ports:
       - "${DEVDASH_PORT:-3001}:80"
 
@@ -159,11 +169,23 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"    # API        → localhost:8080
-      - "3001:3001"    # DevDash    → localhost:3001
-      - "8001:8001"    # ML service → localhost:8001 (only useful with --profile ml)
+      - "8080:8080"    # API (prod)        → localhost:8080
+      - "3001:3001"    # DevDash (prod)    → localhost:3001
+      - "8001:8001"    # ML (prod)         → localhost:8001 (only with --profile ml)
+      - "9080:9080"    # API (staging)     → localhost:9080
+      - "4001:4001"    # DevDash (staging) → localhost:4001
+      - "9001:9001"    # ML (staging)      → localhost:9001 (only with --profile ml-stg)
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - guildmark-net
+
+  # All other services also join guildmark-net so nginx can reach staging
+  # containers started by docker-compose.staging.yml on the same network.
 
 volumes:
   postgres_data:
+
+networks:
+  guildmark-net:
+    name: guildmark-net   # fixed name — no project-name prefix

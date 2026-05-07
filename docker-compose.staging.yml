@@ -1,0 +1,155 @@
+# GuildMark — Staging Docker Compose
+# ---------------------------------------------------------------------------
+# Runs alongside docker-compose.yml (prod) on the same server.
+# All services join the shared guildmark-net network so the prod nginx
+# container can proxy staging subdomains to these containers.
+#
+# Usage:
+#   doppler run --config stg -- docker compose -f docker-compose.staging.yml up -d
+#   doppler run --config stg -- docker compose -f docker-compose.staging.yml up -d --build
+#   doppler run --config stg -- docker compose -f docker-compose.staging.yml logs -f
+#   doppler run --config stg -- docker compose -f docker-compose.staging.yml down
+#
+# ⚠  DATABASE_URL in Doppler stg config must use the internal service name:
+#      postgres://guildmark-stg:<pass>@postgres-stg:5432/guildmark-stg
+#    NOT postgres:6432 — that is the host-exposed port, not the Docker hostname.
+#
+# Ports exposed on the host (mirrored through the prod nginx container):
+#   localhost:9080  → staging API
+#   localhost:4001  → staging DevDash
+#   localhost:9001  → staging ML (only with --profile ml-stg)
+# ---------------------------------------------------------------------------
+
+services:
+
+  # ── Postgres (staging) ────────────────────────────────────────────────────
+  postgres-stg:
+    image: postgres:16-alpine
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-6432}:5432"
+    volumes:
+      - postgres_stg_data:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
+    networks:
+      - guildmark-net
+
+  # ── Dart Frog API (staging) ───────────────────────────────────────────────
+  api-stg:
+    build:
+      context:    ./api/bin
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres-stg:
+        condition: service_healthy
+    environment:
+      API_PORT:                ${API_PORT:-9080}
+      DATABASE_URL:            ${DATABASE_URL}
+      JWT_ACCESS_SECRET:       ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET:      ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
+      JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
+      ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml-stg:9001}
+      CORS_ORIGIN:             ${CORS_ORIGIN:-https://staging.guildmark.co}
+      GM_DEBUG:                ${GM_DEBUG:-true}
+      SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
+      SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-sandbox}
+      GM_WALLET_ACH_ROUTING:   ${GM_WALLET_ACH_ROUTING:-}
+      GM_WALLET_ACH_ACCOUNT:   ${GM_WALLET_ACH_ACCOUNT:-}
+      JAMF_PRO_CLIENT_ID:      ${JAMF_PRO_CLIENT_ID:-}
+      JAMF_PRO_CLIENT_SECRET:  ${JAMF_PRO_CLIENT_SECRET:-}
+      INTUNE_TENANT_ID:        ${INTUNE_TENANT_ID:-}
+      INTUNE_CLIENT_ID:        ${INTUNE_CLIENT_ID:-}
+      INTUNE_CLIENT_SECRET:    ${INTUNE_CLIENT_SECRET:-}
+      EBAY_APP_ID:             ${EBAY_APP_ID:-}
+      EBAY_CERT_ID:            ${EBAY_CERT_ID:-}
+      EBAY_DEV_ID:             ${EBAY_DEV_ID:-}
+      BACKMARKET_API_KEY:      ${BACKMARKET_API_KEY:-}
+      RESEND_API_KEY:          ${RESEND_API_KEY:-}
+      ESCROW_API_KEY:          ${ESCROW_API_KEY:-}
+      ESCROW_EMAIL:            ${ESCROW_EMAIL:-}
+      ESCROW_ENVIRONMENT:      ${ESCROW_ENVIRONMENT:-sandbox}
+      FEDEX_CLIENT_ID:         ${FEDEX_CLIENT_ID:-}
+      FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
+      FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
+      FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
+      ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
+      ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
+      ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-https://staging.devdash.guildmark.co}
+    volumes:
+      - ./api/migrations:/app/migrations:ro
+    networks:
+      - guildmark-net
+    # Port not exposed publicly — prod nginx proxies to api-stg:9080 internally.
+
+  # ── Python ML service (staging, optional — opt-in with --profile ml-stg) ──
+  ml-stg:
+    build: ./ml-qv
+    profiles: ["ml-stg"]
+    restart: unless-stopped
+    environment:
+      ML_PORT:      ${ML_PORT:-9001}
+      ML_MODEL_DIR: /app/model_artifacts
+      EBAY_APP_ID:  ${EBAY_APP_ID:-}
+      EBAY_CERT_ID: ${EBAY_CERT_ID:-}
+      RETRAIN:      ${RETRAIN:-0}
+    volumes:
+      - ./ml-qv/model_artifacts_stg:/app/model_artifacts
+    healthcheck:
+      test:         ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9001/health')"]
+      interval:     30s
+      timeout:      10s
+      retries:      10
+      start_period: 120s
+    networks:
+      - guildmark-net
+
+  # ── GuildMark marketplace frontend (staging) ──────────────────────────────
+  guildmark-stg:
+    build:
+      context:    ./guildmark
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:   ${VITE_API_URL:-https://staging.api.guildmark.co}
+        VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-false}
+        VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-true}
+    restart: unless-stopped
+    depends_on:
+      - api-stg
+    networks:
+      - guildmark-net
+    # Port not exposed publicly — prod nginx proxies to guildmark-stg:80 internally.
+
+  # ── DevDash admin panel (staging) ─────────────────────────────────────────
+  devdash-stg:
+    build:
+      context:    ./devdash
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:       ${VITE_API_URL:-https://staging.api.guildmark.co}
+        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-https://staging.api.guildmark.co}
+    restart: unless-stopped
+    depends_on:
+      - api-stg
+    networks:
+      - guildmark-net
+    # Port not exposed publicly — prod nginx proxies to devdash-stg:80 internally.
+
+volumes:
+  postgres_stg_data:
+
+networks:
+  guildmark-net:
+    external: true   # created by docker-compose.yml (prod) — must be up first
+    name: guildmark-net
