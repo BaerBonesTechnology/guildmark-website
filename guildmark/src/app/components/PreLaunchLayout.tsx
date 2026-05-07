@@ -90,10 +90,8 @@ export function PreLaunchLayout() {
       <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
-            <p className="text-xl font-mono tracking-tight text-foreground">
-              Guild<span className="text-[#3B82F6]">Mark</span>
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5 font-mono">{t("brand.tagline")}</p>
+              <img src="img/logo-long.svg" className="w-50"/>
+            <p className="text-xs text-muted-foreground mt-0.5 mx-2 font-mono">{t("brand.tagline")}</p>
           </div>
           <button
             onClick={toggleTheme}
