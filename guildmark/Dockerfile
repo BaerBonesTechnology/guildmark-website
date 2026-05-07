@@ -13,8 +13,8 @@ RUN pnpm install --no-frozen-lockfile
 COPY . .
 
 # Build args become Vite env vars at build time.
-ARG VITE_API_URL=https://api.guildmark.co
-ARG VITE_IS_LAUNCH=true
+ARG VITE_API_URL=""
+ARG VITE_IS_LAUNCH=false
 ARG VITE_IS_DEBUG=false
 
 RUN VITE_API_URL=$VITE_API_URL \
