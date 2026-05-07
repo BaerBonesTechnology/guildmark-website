@@ -153,8 +153,7 @@ services:
       - api
     networks:
       - guildmark-net
-    ports:
-      - "${DEVDASH_PORT:-3001}:80"
+    # Port not exposed directly — nginx proxies to devdash:80 on host port 3001.
 
   # ── NGINX reverse proxy ───────────────────────────────────────────────────
   nginx:
