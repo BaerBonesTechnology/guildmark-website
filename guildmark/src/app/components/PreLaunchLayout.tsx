@@ -4,6 +4,7 @@ import { Sun, Moon, BookOpen, X } from "lucide-react";
 import { Drawer } from "vaul";
 import { useTheme } from "../hooks/useTheme";
 import { InsightPage } from "../pages/Insights";
+import logoLong from "../../logo-long.svg";
 
 // ---------------------------------------------------------------------------
 // Insights bottom sheet
@@ -90,7 +91,7 @@ export function PreLaunchLayout() {
       <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
-              <img src="/img/logo-long.svg" className="w-50"/>
+              <img src={logoLong} className="w-50"/>
             <p className="text-xs text-muted-foreground mt-0.5 mx-2 font-mono">{t("brand.tagline")}</p>
           </div>
           <button
