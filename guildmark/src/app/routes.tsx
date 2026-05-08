@@ -17,6 +17,7 @@ import { HowItWorks } from "./pages/HowItWorks";
 import { Layout } from "./components/Layout";
 import { PreLaunchLayout } from "./components/PreLaunchLayout";
 import { AMPSLayout } from "./components/AMPSLayout";
+import { ComplianceLayout } from "./components/ComplianceLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PortfolioOverview } from "./pages/amps/PortfolioOverview";
 import { AssetInventory } from "./pages/amps/AssetInventory";
@@ -25,6 +26,23 @@ import { Invoices } from "./pages/amps/Invoices";
 import { Settings } from "./pages/amps/Settings";
 import { InsightPage } from "./pages/Insights";
 import { PreLaunch } from "./pages/PreLaunch";
+import { Contact } from "./pages/Contact";
+import { TermsOfService } from "./pages/compliance/TermsOfService";
+import { PrivacyPolicy } from "./pages/compliance/PrivacyPolicy";
+import { SellerPlatformAgreement } from "./pages/compliance/SellerPlatformAgreement";
+import { SellerLetterOfIntent } from "./pages/compliance/SellerLetterOfIntent";
+import { PartnerLetterOfIntent } from "./pages/compliance/PartnerLetterOfIntent";
+import { PartnerGuildmarkAgreement } from "./pages/compliance/PartnerGuildmarkAgreement";
+
+// ── Shared compliance children ─────────────────────────────────────────────
+const complianceChildren = [
+  { path: "terms",              Component: TermsOfService },
+  { path: "privacy-policy",     Component: PrivacyPolicy },
+  { path: "seller-agreement",   Component: SellerPlatformAgreement },
+  { path: "seller-loi",         Component: SellerLetterOfIntent },
+  { path: "partner-loi",        Component: PartnerLetterOfIntent },
+  { path: "partner-agreement",  Component: PartnerGuildmarkAgreement },
+];
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +57,7 @@ export const router = createBrowserRouter([
       { path: "how-it-works", Component: HowItWorks },
       { path: "marketplace", Component: Marketplace },
       { path: "insights", Component: InsightPage },
+      { path: "contact",  Component: Contact },
       {
         path: "dashboard",
         element: <ProtectedRoute />,
@@ -92,8 +111,9 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "*",
-    element: <Navigate to="/" replace />,
+    path: "/compliance",
+    Component: ComplianceLayout,
+    children: complianceChildren,
   },
   {
     path: "/amps",
@@ -112,11 +132,15 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  },
 ]);
 
 /**
  * Pre-launch router — used when didLaunch === false.
- * Only /insights is accessible alongside the waitlist landing page.
+ * Only /insights and /compliance/* are accessible alongside the waitlist landing.
  * All other paths redirect to the pre-launch hero.
  */
 export const preLaunchRouter = createBrowserRouter([
@@ -127,7 +151,16 @@ export const preLaunchRouter = createBrowserRouter([
       { index: true, Component: PreLaunch },
       // Redirect /insights to the bottom sheet so direct URL navigation works
       { path: "insights", element: <Navigate to="/?sheet=insights" replace /> },
-      { path: "*",        Component: PreLaunch },
+      { path: "contact",  Component: Contact },
     ],
+  },
+  {
+    path: "/compliance",
+    Component: ComplianceLayout,
+    children: complianceChildren,
+  },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   },
 ]);

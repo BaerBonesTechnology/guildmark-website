@@ -27,6 +27,7 @@
 **/*.egg-info/
 **/pip-wheel-metadata/
 *.key
+*.docx
 *.pem
 
 CLAUDE.md

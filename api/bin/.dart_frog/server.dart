@@ -23,6 +23,7 @@ import '../routes/marketplace/stats.dart' as marketplace_stats;
 import '../routes/marketplace/listings/index.dart' as marketplace_listings_index;
 import '../routes/marketplace/listings/[id].dart' as marketplace_listings_$id;
 import '../routes/dashboard/index.dart' as dashboard_index;
+import '../routes/contact/index.dart' as contact_index;
 import '../routes/buyer/offers/index.dart' as buyer_offers_index;
 import '../routes/auth/signup.dart' as auth_signup;
 import '../routes/auth/reset_password.dart' as auth_reset_password;
@@ -49,6 +50,7 @@ import '../routes/admin/waitlist/[id]/contact.dart' as admin_waitlist_$id_contac
 import '../routes/admin/users/index.dart' as admin_users_index;
 import '../routes/admin/users/[id]/index.dart' as admin_users_$id_index;
 import '../routes/admin/orders/expire_inspections.dart' as admin_orders_expire_inspections;
+import '../routes/admin/analytics/index.dart' as admin_analytics_index;
 
 import '../routes/_middleware.dart' as middleware;
 
@@ -79,6 +81,7 @@ Handler buildRootHandler() {
     ..mount('/marketplace', (context) => buildMarketplaceHandler()(context))
     ..mount('/marketplace/listings', (context) => buildMarketplaceListingsHandler()(context))
     ..mount('/dashboard', (context) => buildDashboardHandler()(context))
+    ..mount('/contact', (context) => buildContactHandler()(context))
     ..mount('/buyer/offers', (context) => buildBuyerOffersHandler()(context))
     ..mount('/auth', (context) => buildAuthHandler()(context))
     ..mount('/assets', (context) => buildAssetsHandler()(context))
@@ -95,7 +98,8 @@ Handler buildRootHandler() {
     ..mount('/admin/waitlist/<id>', (context,id,) => buildAdminWaitlist$idHandler(id,)(context))
     ..mount('/admin/users', (context) => buildAdminUsersHandler()(context))
     ..mount('/admin/users/<id>', (context,id,) => buildAdminUsers$idHandler(id,)(context))
-    ..mount('/admin/orders', (context) => buildAdminOrdersHandler()(context));
+    ..mount('/admin/orders', (context) => buildAdminOrdersHandler()(context))
+    ..mount('/admin/analytics', (context) => buildAdminAnalyticsHandler()(context));
   return pipeline.addHandler(router);
 }
 
@@ -187,6 +191,13 @@ Handler buildDashboardHandler() {
   final pipeline = const Pipeline();
   final router = Router()
     ..all('/', (context) => dashboard_index.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildContactHandler() {
+  final pipeline = const Pipeline();
+  final router = Router()
+    ..all('/', (context) => contact_index.onRequest(context,));
   return pipeline.addHandler(router);
 }
 
@@ -306,6 +317,13 @@ Handler buildAdminOrdersHandler() {
   final pipeline = const Pipeline();
   final router = Router()
     ..all('/expire_inspections', (context) => admin_orders_expire_inspections.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildAdminAnalyticsHandler() {
+  final pipeline = const Pipeline();
+  final router = Router()
+    ..all('/', (context) => admin_analytics_index.onRequest(context,));
   return pipeline.addHandler(router);
 }
 

@@ -5,7 +5,37 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
-import { CheckCircle2, DollarSign, Shield, Truck } from "lucide-react";
+import {
+  CheckCircle2, TrendingUp, Shield, Truck, Store,
+  BarChart2, Layers, Lock, ArrowRight, Zap,
+} from "lucide-react";
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+
+function FeatureItem({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2 text-sm text-muted-foreground">
+      <CheckCircle2 className="w-4 h-4 text-[#3B82F6] mt-0.5 shrink-0" />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function Step({ n, title, body }: { n: number; title: string; body: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="w-7 h-7 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
+        {n}
+      </div>
+      <div>
+        <p className="text-sm font-semibold font-mono">{title}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{body}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export function Signup() {
   const [formData, setFormData] = useState({
@@ -45,8 +75,9 @@ export function Signup() {
 
   return (
     <div className="min-h-[calc(100vh-200px)] py-12">
-      <div className="max-w-6xl mx-auto grid grid-cols-2 gap-8 items-start">
-        {/* Left: Sign Up Form */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+
+        {/* ── Left: Sign Up Form ──────────────────────────────────────────── */}
         <Card className="font-mono">
           <CardHeader className="space-y-2">
             <CardTitle className="text-2xl">Create Your Account</CardTitle>
@@ -60,7 +91,7 @@ export function Signup() {
                   type="text"
                   placeholder="Jamie Williams"
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                   className="font-mono"
                   required
                 />
@@ -72,7 +103,7 @@ export function Signup() {
                   type="text"
                   placeholder="Guildmark Enterprises, LLC"
                   value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  onChange={e => setFormData({ ...formData, company: e.target.value })}
                   className="font-mono"
                   required
                 />
@@ -84,7 +115,7 @@ export function Signup() {
                   type="email"
                   placeholder="you@company.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="font-mono"
                   required
                 />
@@ -96,7 +127,7 @@ export function Signup() {
                   type="password"
                   placeholder="Create a secure password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
                   className="font-mono"
                   required
                 />
@@ -108,7 +139,7 @@ export function Signup() {
                   type="password"
                   placeholder="Re-enter your password"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
                   className="font-mono"
                   required
                 />
@@ -119,153 +150,161 @@ export function Signup() {
               )}
 
               <Button type="submit" className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
-                Create Account - Free Forever
+                Create Account — Free Forever
+                <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
 
-              <div className="text-center text-sm text-muted-foreground">
-                <p className="font-mono">
-                  Already have an account?{" "}
-                  <Link to="/login" className="text-[#3B82F6] hover:underline">
-                    Sign in
-                  </Link>
-                </p>
-              </div>
+              <p className="text-center text-sm text-muted-foreground font-mono">
+                Already have an account?{" "}
+                <Link to="/login" className="text-[#3B82F6] hover:underline">
+                  Sign in
+                </Link>
+              </p>
             </form>
           </CardContent>
         </Card>
 
-        {/* Right: Pricing & Benefits */}
-        <div className="space-y-6">
-          {/* Free Forever Badge */}
-          <Card className="bg-gradient-to-br from-[#3B82F6]/10 to-background border-[#3B82F6]/30 font-mono">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xl font-bold">
-                  $0
+        {/* ── Right: Platform story ───────────────────────────────────────── */}
+        <div className="space-y-5">
+
+          {/* Value prop */}
+          <div className="space-y-1">
+            <h2 className="text-2xl font-mono">The IT asset platform built for IT teams</h2>
+            <p className="text-sm text-muted-foreground font-mono">
+              GuildMark combines a fleet management suite with a B2B hardware marketplace —
+              so you can track what you have, know what it's worth, and sell it when you're ready.
+            </p>
+          </div>
+
+          {/* AMPS */}
+          <Card className="font-mono">
+            <CardContent className="pt-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
+                  <Layers className="w-5 h-5 text-[#3B82F6]" />
                 </div>
                 <div>
-                  <h3 className="text-xl mb-2">Free Account Forever</h3>
-                  <p className="text-sm text-muted-foreground">
-                    No monthly fees, no subscription charges, no hidden costs. Only pay when you sell.
-                  </p>
+                  <h3 className="font-semibold">AMPS — Asset Management & Portfolio System</h3>
+                  <p className="text-xs text-muted-foreground">Your fleet command centre</p>
                 </div>
               </div>
+              <ul className="space-y-2">
+                <FeatureItem>
+                  <strong>Depreciation analytics</strong> — real-time value tracking and AI-powered "value cliff" warnings before hardware loses resale value
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>MDM sync</strong> — pull your fleet directly from Jamf Pro, Jamf School, or Microsoft Intune
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>Portfolio overview</strong> — total fleet value, condition breakdown, and per-asset valuations in one dashboard
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>CSV bulk import</strong> — upload hundreds of assets at once; we calculate market value automatically
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>Invoice generation</strong> — produce tax invoices for every sale directly from the platform
+                </FeatureItem>
+              </ul>
             </CardContent>
           </Card>
 
-          {/* Transparent Pricing */}
+          {/* Marketplace */}
           <Card className="font-mono">
-            <CardHeader>
-              <CardTitle>Simple, Transparent Pricing</CardTitle>
-              <CardDescription>Only pay when you successfully sell assets</CardDescription>
+            <CardContent className="pt-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
+                  <Store className="w-5 h-5 text-[#3B82F6]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">B2B Marketplace</h3>
+                  <p className="text-xs text-muted-foreground">Hardware trading between verified businesses</p>
+                </div>
+              </div>
+              <ul className="space-y-2">
+                <FeatureItem>
+                  <strong>List instantly</strong> — push assets from AMPS to the marketplace in one click with AI-priced listings
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>Offer management</strong> — receive, counter, and accept buyer offers with a full negotiation inbox
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>Escrow payments</strong> — every transaction is secured through Escrow.com; funds held until delivery is confirmed
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>Optional data wipe</strong> — ship to our Orlando facility, get paid on arrival, we handle NIST 800-88 certified wiping and delivery to the buyer
+                </FeatureItem>
+                <FeatureItem>
+                  <strong>Prepaid shipping</strong> — labels for 1–5 units or pallet pickup for 6+; or ship direct to the buyer yourself
+                </FeatureItem>
+              </ul>
+            </CardContent>
+          </Card>
+
+          {/* How it works */}
+          <Card className="font-mono">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">How it works</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-3 pb-3 border-b">
-                <div className="w-10 h-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-[#3B82F6]" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-baseline justify-between mb-1">
-                    <h4 className="font-semibold">Platform Fee</h4>
-                    <span className="text-lg text-[#3B82F6]">8%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Percentage of final sale price. Covers marketplace, payments, and customer support.
-                  </p>
-                </div>
-              </div>
+              <Step
+                n={1}
+                title="Import your fleet"
+                body="Connect your MDM or upload a CSV. GuildMark instantly values every asset against live market data."
+              />
+              <Step
+                n={2}
+                title="List what you want to sell"
+                body="Push assets to the marketplace. Buyers submit offers — you accept, counter, or decline."
+              />
+              <Step
+                n={3}
+                title="Get paid"
+                body="With data wipe: ship to Orlando, paid on arrival. Without: ship direct to buyer, payment on delivery confirmation."
+              />
+            </CardContent>
+          </Card>
 
-              <div className="flex items-start gap-3 pb-3 border-b">
-                <div className="w-10 h-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-[#3B82F6]" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-baseline justify-between mb-1">
-                    <h4 className="font-semibold">Data Wipe Service</h4>
-                    <span className="text-lg text-[#3B82F6]">$8 <span className="text-xs text-muted-foreground">/asset</span></span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Optional service. Ship to our Orlando facility → Get paid on arrival → We wipe data & deliver to buyer.
-                    NIST 800-88 certified with compliance certificates.
-                  </p>
-                </div>
+          {/* Pricing summary */}
+          <Card className="font-mono border-[#3B82F6]/20 bg-[#3B82F6]/5">
+            <CardContent className="pt-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-mono font-bold text-[#3B82F6]">$0</span>
+                <span className="text-sm text-muted-foreground">to get started — no subscription, ever</span>
               </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <Truck className="w-5 h-5 text-[#3B82F6]" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-baseline justify-between mb-1">
-                    <h4 className="font-semibold">Shipping Fee</h4>
-                    <span className="text-lg text-[#3B82F6]">Actual Cost</span>
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                {[
+                  { icon: BarChart2, label: "Platform fee", value: "12% on sale" },
+                  { icon: Shield,    label: "Data wipe",    value: "Flat rate / asset" },
+                  { icon: Truck,     label: "Shipping",     value: "Actual cost" },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="text-center space-y-1">
+                    <div className="flex justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
+                        <Icon className="w-4 h-4 text-[#3B82F6]" />
+                      </div>
+                    </div>
+                    <p className="text-xs font-semibold">{value}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    To Orlando facility (with data wipe) or direct to buyer (without). Prepaid labels for 1-5 units, pallet pickup for 6+.
-                  </p>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Example Calculation */}
-          <Card className="font-mono bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-base">Example: Selling 10 MacBook Pros</CardTitle>
-              <CardDescription className="text-xs">With data wipe service (paid on Orlando arrival)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Market Value (10 × $1,800)</span>
-                <span className="font-semibold">$18,000</span>
+          {/* Trust signals */}
+          <div className="flex flex-wrap gap-3">
+            {[
+              { icon: Lock,   text: "Escrow-secured payments" },
+              { icon: Shield, text: "NIST 800-88 certified" },
+              { icon: Zap,    text: "Live market valuations" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 border rounded-full px-3 py-1.5">
+                <Icon className="w-3.5 h-3.5 text-[#3B82F6]" />
+                {text}
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Platform Fee (8%)</span>
-                <span className="text-red-500">-$1,440</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Data Wipe Service (10 × $8)</span>
-                <span className="text-red-500">-$80</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Shipping to Orlando</span>
-                <span className="text-red-500">-$120</span>
-              </div>
-              <div className="pt-2 border-t flex justify-between">
-                <span className="font-semibold">Paid on Arrival</span>
-                <span className="text-xl text-[#3B82F6] font-semibold">$16,360</span>
-              </div>
-              <p className="text-xs text-muted-foreground pt-2 border-t">
-                ✓ We handle data wipe & delivery to buyer<br/>
-                ✓ You're paid immediately upon arrival<br/>
-                *Without service: Ship direct to buyer for $16,440
-              </p>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
 
-          {/* What's Included */}
-          <Card className="font-mono">
-            <CardHeader>
-              <CardTitle className="text-base">What's Included Free</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {[
-                "Real-time depreciation analytics",
-                "Fleet efficiency dashboard",
-                "Unlimited marketplace listings",
-                "Bulk CSV asset upload",
-                "Offer management system",
-                "NIST compliance certificates",
-                "Prepaid shipping labels",
-                "5-day payment processing",
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

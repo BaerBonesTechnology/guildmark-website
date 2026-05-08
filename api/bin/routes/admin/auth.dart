@@ -4,6 +4,7 @@ import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/auth/jwt.dart';
 import '../../lib/config.dart';
+import '../../lib/crypto_utils.dart';
 import '../../lib/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -24,7 +25,10 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('username and password are required');
   }
 
-  if (username != cfg.adminAuthUser || password != cfg.adminAuthPass) {
+  // Use constant-time comparison to prevent timing-based credential inference.
+  final userMatch = constantTimeEquals(username, cfg.adminAuthUser!);
+  final passMatch = constantTimeEquals(password, cfg.adminAuthPass!);
+  if (!userMatch || !passMatch) {
     return unauthorized('Invalid credentials');
   }
 

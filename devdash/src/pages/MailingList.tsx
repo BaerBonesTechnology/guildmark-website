@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Mail, CheckCircle, Clock, RefreshCw, MessageSquare, Trash2 } from "lucide-react";
+import {
+  Mail, CheckCircle, Clock, RefreshCw,
+  Trash2, AlertCircle, Save,
+} from "lucide-react";
 import { useApi } from "../hooks/useAuth";
+import { RecordModal } from "../components/RecordModal";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface Subscriber {
   id: string;
@@ -16,12 +24,190 @@ interface ListResponse {
   entries: Subscriber[];
 }
 
+// ---------------------------------------------------------------------------
+// Subscriber detail modal
+// ---------------------------------------------------------------------------
+
+function SubscriberModal({
+  entry,
+  onClose,
+  onUpdated,
+  onDeleted,
+}: {
+  entry: Subscriber;
+  onClose: () => void;
+  onUpdated: (e: Subscriber) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const apiFetch = useApi();
+  const [notes, setNotes]         = useState(entry.notes ?? "");
+  const [saving, setSaving]       = useState(false);
+  const [contacting, setContacting] = useState(false);
+  const [deleting, setDeleting]   = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [error, setError]         = useState("");
+
+  const dirty = notes !== (entry.notes ?? "");
+
+  async function handleSaveNotes() {
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await apiFetch<Subscriber>(`/admin/waitlist/${entry.id}/notes`, {
+        method: "PATCH",
+        body: JSON.stringify({ notes }),
+      });
+      onUpdated(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleMarkContacted() {
+    setContacting(true);
+    setError("");
+    try {
+      const updated = await apiFetch<Subscriber>(`/admin/waitlist/${entry.id}/contact`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      onUpdated(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to mark contacted");
+    } finally {
+      setContacting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError("");
+    try {
+      await apiFetch(`/admin/waitlist/${entry.id}`, { method: "DELETE" });
+      onDeleted(entry.id);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+      setDeleting(false);
+      setConfirmDel(false);
+    }
+  }
+
+  const fmt = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : null;
+
+  const SOURCE_STYLES: Record<string, string> = {
+    waitlist: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    partner:  "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    contact:  "bg-slate-700/60 text-slate-400 border-slate-600",
+  };
+
+  return (
+    <RecordModal
+      icon={Mail}
+      iconColor="text-blue-400"
+      title={entry.email}
+      subtitle={`Added ${fmt(entry.created_at)}`}
+      badge={
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono border ${SOURCE_STYLES[entry.source] ?? SOURCE_STYLES.contact}`}>
+          {entry.source}
+        </span>
+      }
+      infoFields={[
+        { label: "Email",        value: entry.email },
+        { label: "Source",       value: entry.source },
+        { label: "Signed up",    value: fmt(entry.created_at) },
+        { label: "Contacted",    value: entry.contacted_at
+          ? <span className="flex items-center gap-1.5 text-green-400"><CheckCircle className="w-3.5 h-3.5" />{fmt(entry.contacted_at)}</span>
+          : <span className="flex items-center gap-1.5 text-amber-400"><Clock className="w-3.5 h-3.5" />Not yet contacted</span>
+        },
+      ]}
+      onClose={onClose}
+      footerLeft={
+        confirmDel ? (
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-mono">Remove subscriber?</span>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-3 py-1.5 text-xs font-mono rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-50"
+            >
+              {deleting ? "Removing…" : "Yes, remove"}
+            </button>
+            <button
+              onClick={() => setConfirmDel(false)}
+              className="px-3 py-1.5 text-xs font-mono rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setConfirmDel(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-slate-700 hover:border-red-500/30 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Remove
+          </button>
+        )
+      }
+      footerRight={
+        <div className="flex items-center gap-2">
+          {!entry.contacted_at && (
+            <button
+              onClick={handleMarkContacted}
+              disabled={contacting}
+              className="px-3 py-1.5 text-xs font-mono rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors disabled:opacity-50"
+            >
+              {contacting ? "Marking…" : "Mark contacted"}
+            </button>
+          )}
+          <button
+            onClick={handleSaveNotes}
+            disabled={!dirty || saving}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-mono rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-40"
+          >
+            <Save className="w-3.5 h-3.5" />
+            {saving ? "Saving…" : "Save notes"}
+          </button>
+        </div>
+      }
+    >
+      {/* Notes editor */}
+      <div>
+        <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-2">
+          Notes
+        </label>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          rows={4}
+          placeholder="Add internal notes about this subscriber…"
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+        />
+      </div>
+
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs text-red-400 font-mono bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
+    </RecordModal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+
 const LIMIT = 50;
 const MAX_RETRIES = 3;
 
 export function MailingList() {
-  // Stable ref — useApi() returns a new function every render.
-  const apiFetch = useApi();
+  const apiFetch    = useApi();
   const apiFetchRef = useRef(apiFetch);
   apiFetchRef.current = apiFetch;
 
@@ -31,68 +217,39 @@ export function MailingList() {
   const [error, setError]           = useState("");
   const [uncontactedOnly, setUncontactedOnly] = useState(false);
   const [offset, setOffset]         = useState(0);
-  const [notesModal, setNotesModal] = useState<Subscriber | null>(null);
-  const [notesValue, setNotesValue] = useState("");
-  // id of the row currently in "confirm delete" state
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selected, setSelected]     = useState<Subscriber | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-
     const params = new URLSearchParams({
-      limit:  String(LIMIT),
-      offset: String(offset),
+      limit: String(LIMIT), offset: String(offset),
       ...(uncontactedOnly ? { uncontacted: "true" } : {}),
     });
-
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         const data = await apiFetchRef.current<ListResponse>(`/admin/waitlist?${params}`);
         setEntries(data.entries);
         setTotal(data.total);
         setLoading(false);
-        return; // data found — done
+        return;
       } catch (err) {
-        if (attempt === MAX_RETRIES) {
-          setError(err instanceof Error ? err.message : "Failed to load");
-          setLoading(false);
-          return; // gave up — wait for manual refresh
-        }
+        if (attempt === MAX_RETRIES) { setError(err instanceof Error ? err.message : "Failed to load"); setLoading(false); return; }
         await new Promise(r => setTimeout(r, attempt * 600));
       }
     }
-  }, [offset, uncontactedOnly]); // apiFetch intentionally omitted — see ref above
+  }, [offset, uncontactedOnly]);
 
   useEffect(() => { load(); }, [load]);
 
-  async function markContacted(id: string, notes?: string) {
-    await apiFetchRef.current(`/admin/waitlist/${id}/contact`, {
-      method: "POST",
-      body: JSON.stringify({ notes }),
-    });
-    load();
+  function handleUpdated(updated: Subscriber) {
+    setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+    setSelected(updated);
   }
 
-  async function saveNotes() {
-    if (!notesModal) return;
-    await apiFetchRef.current(`/admin/waitlist/${notesModal.id}/notes`, {
-      method: "PATCH",
-      body: JSON.stringify({ notes: notesValue }),
-    });
-    setNotesModal(null);
-    load();
-  }
-
-  async function deleteSubscriber(id: string) {
-    try {
-      await apiFetchRef.current(`/admin/waitlist/${id}`, { method: "DELETE" });
-      setConfirmDelete(null);
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
-      setConfirmDelete(null);
-    }
+  function handleDeleted(id: string) {
+    setEntries(prev => prev.filter(e => e.id !== id));
+    setTotal(t => t - 1);
   }
 
   return (
@@ -132,12 +289,7 @@ export function MailingList() {
       {error && (
         <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 font-mono flex items-center justify-between">
           <span>{error}</span>
-          <button
-            onClick={load}
-            className="ml-4 text-xs text-red-400 hover:text-white underline underline-offset-2 shrink-0"
-          >
-            Try again
-          </button>
+          <button onClick={load} className="ml-4 text-xs text-red-400 hover:text-white underline underline-offset-2 shrink-0">Try again</button>
         </div>
       )}
 
@@ -151,20 +303,19 @@ export function MailingList() {
               <th className="px-4 py-3 text-left">Signed up</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-left">Notes</th>
-              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && entries.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-600">Loading…</td>
-              </tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-600">Loading…</td></tr>
             ) : entries.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-600">No subscribers found.</td>
-              </tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-600">No subscribers found.</td></tr>
             ) : entries.map(e => (
-              <tr key={e.id} className="border-t border-slate-800/60 hover:bg-slate-800/30 transition-colors">
+              <tr
+                key={e.id}
+                onClick={() => setSelected(e)}
+                className="border-t border-slate-800/60 hover:bg-slate-800/40 transition-colors cursor-pointer"
+              >
                 <td className="px-4 py-3 text-white">{e.email}</td>
                 <td className="px-4 py-3 text-slate-400">{e.source}</td>
                 <td className="px-4 py-3 text-slate-500">
@@ -173,62 +324,16 @@ export function MailingList() {
                 <td className="px-4 py-3">
                   {e.contacted_at ? (
                     <span className="flex items-center gap-1.5 text-green-400">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      Contacted
+                      <CheckCircle className="w-3.5 h-3.5" />Contacted
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-amber-400">
-                      <Clock className="w-3.5 h-3.5" />
-                      Pending
+                      <Clock className="w-3.5 h-3.5" />Pending
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-slate-500 max-w-xs truncate">
                   {e.notes ?? <span className="text-slate-700">—</span>}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => { setNotesModal(e); setNotesValue(e.notes ?? ""); }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
-                      title="Edit notes"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </button>
-                    {!e.contacted_at && (
-                      <button
-                        onClick={() => markContacted(e.id)}
-                        className="px-2.5 py-1 text-xs rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors border border-green-500/20"
-                      >
-                        Mark contacted
-                      </button>
-                    )}
-                    {confirmDelete === e.id ? (
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-400 font-mono">Remove?</span>
-                        <button
-                          onClick={() => deleteSubscriber(e.id)}
-                          className="px-2 py-0.5 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors"
-                        >
-                          Yes
-                        </button>
-                        <button
-                          onClick={() => setConfirmDelete(null)}
-                          className="px-2 py-0.5 text-xs rounded bg-slate-700 text-slate-400 hover:bg-slate-600 border border-slate-600 transition-colors"
-                        >
-                          No
-                        </button>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDelete(e.id)}
-                        className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Remove subscriber"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
                 </td>
               </tr>
             ))}
@@ -241,59 +346,20 @@ export function MailingList() {
         <div className="flex items-center justify-between mt-4 text-sm font-mono text-slate-500">
           <span>Showing {offset + 1}–{Math.min(offset + LIMIT, total)} of {total}</span>
           <div className="flex gap-2">
-            <button
-              onClick={() => setOffset(Math.max(0, offset - LIMIT))}
-              disabled={offset === 0}
-              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 disabled:opacity-40 transition-colors"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setOffset(offset + LIMIT)}
-              disabled={offset + LIMIT >= total}
-              className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 disabled:opacity-40 transition-colors"
-            >
-              Next
-            </button>
+            <button onClick={() => setOffset(Math.max(0, offset - LIMIT))} disabled={offset === 0} className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 disabled:opacity-40 transition-colors">Previous</button>
+            <button onClick={() => setOffset(offset + LIMIT)} disabled={offset + LIMIT >= total} className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 disabled:opacity-40 transition-colors">Next</button>
           </div>
         </div>
       )}
 
-      {/* Notes modal */}
-      {notesModal && (
-        <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4"
-          onClick={() => setNotesModal(null)}
-        >
-          <div
-            className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md"
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 className="text-sm font-mono text-white mb-1">Notes</h2>
-            <p className="text-xs text-slate-500 font-mono mb-4">{notesModal.email}</p>
-            <textarea
-              value={notesValue}
-              onChange={e => setNotesValue(e.target.value)}
-              rows={4}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 resize-none"
-              placeholder="Add notes about this subscriber..."
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setNotesModal(null)}
-                className="px-4 py-2 text-sm font-mono text-slate-400 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveNotes}
-                className="px-4 py-2 text-sm font-mono text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Modal */}
+      {selected && (
+        <SubscriberModal
+          entry={selected}
+          onClose={() => setSelected(null)}
+          onUpdated={handleUpdated}
+          onDeleted={handleDeleted}
+        />
       )}
     </div>
   );

@@ -31,8 +31,14 @@ Future<Response> onRequest(RequestContext context) async {
   if (sourceId == null || sourceId.isEmpty) {
     return badRequest('source_id is required');
   }
+  // 50,000,000 cents = USD $500,000 — generous ceiling for hardware asset
+  // transactions while catching runaway values from bugs or bad actors.
+  const maxAmountCents = 50000000;
   if (amountCents == null || amountCents <= 0) {
     return badRequest('amount_cents must be a positive integer');
+  }
+  if (amountCents > maxAmountCents) {
+    return badRequest('amount_cents exceeds maximum allowed value');
   }
 
   try {
