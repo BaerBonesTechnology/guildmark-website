@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router";
-import { Mail, LogOut } from "lucide-react";
+import { Mail, LogOut, Users } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 export function Dashboard() {
@@ -17,6 +17,19 @@ export function Dashboard() {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
+          <NavLink
+            to="/users"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-mono transition-colors ${
+                isActive
+                  ? "bg-blue-600/20 text-blue-400"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+              }`
+            }
+          >
+            <Users className="w-4 h-4" />
+            Users
+          </NavLink>
           <NavLink
             to="/mailing-list"
             className={({ isActive }) =>

@@ -5,34 +5,42 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
-import { SignupRequest } from "../models/auth";
 import { CheckCircle2, DollarSign, Shield, Truck } from "lucide-react";
 
 export function Signup() {
   const [formData, setFormData] = useState({
-    company: "",
-    fullName: "",
-    email: "",
-    password: "",
+    company:         "",
+    fullName:        "",
+    email:           "",
+    password:        "",
     confirmPassword: "",
   });
-  const { signup } = useAuth();
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const { signup, error } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPasswordError(null);
 
-    const signUpReq: SignupRequest = {
-      email: formData.email,
-      password: formData.password,
-      full_name: formData.fullName,
-      company_name: formData.company,
-      company_size: null,
-      industry:  null,
-    };
+    if (formData.password !== formData.confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
 
-    signup(signUpReq);
-    navigate("/dashboard");
+    try {
+      await signup({
+        email:        formData.email,
+        password:     formData.password,
+        full_name:    formData.fullName,
+        company_name: formData.company,
+        company_size: "0",
+        industry:     "unknown",
+      });
+      navigate("/dashboard");
+    } catch {
+      // error message is surfaced via useAuth's error state below
+    }
   };
 
   return (
@@ -47,10 +55,22 @@ export function Signup() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input
+                  type="text"
+                  placeholder="Jamie Williams"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  className="font-mono"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label>Company Name</Label>
                 <Input
                   type="text"
-                  placeholder="Guildmark Enterpises, LLC"
+                  placeholder="Guildmark Enterprises, LLC"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   className="font-mono"
@@ -93,6 +113,10 @@ export function Signup() {
                   required
                 />
               </div>
+
+              {(error || passwordError) && (
+                <p className="text-sm text-red-500 font-mono">{passwordError ?? error}</p>
+              )}
 
               <Button type="submit" className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
                 Create Account - Free Forever

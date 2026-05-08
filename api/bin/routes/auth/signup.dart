@@ -5,6 +5,8 @@
 /// Side:    Sets `astech_refresh` httpOnly cookie.
 library;
 
+import 'dart:io';
+
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/auth/jwt.dart';
@@ -27,61 +29,71 @@ Future<Response> onRequest(RequestContext context) async {
   final password = body['password'] as String?;
   final fullName = body['full_name'] as String?;
   final companyName = body['company_name'] as String?;
-  final companySize = body['company_size'] as String?;
-  final industry = body['industry'] as String?;
+  // company_size and industry are optional on the form — default gracefully.
+  final companySize = (body['company_size'] as String?)?.isNotEmpty == true
+      ? body['company_size'] as String
+      : 'unknown';
+  final industry = (body['industry'] as String?)?.isNotEmpty == true
+      ? body['industry'] as String
+      : 'unknown';
 
-  if ([email, password, fullName, companyName, companySize, industry]
+  if ([email, password, fullName, companyName]
       .any((v) => v == null || v!.isEmpty)) {
-    return badRequest('All fields are required');
+    return badRequest('Email, password, full name and company name are required');
   }
   if (password!.length < 8) {
     return badRequest('Password must be at least 8 characters',
         code: 'WEAK_PASSWORD');
   }
 
-  final db   = context.read<Db>();
-  final repo = UserRepo(db);
-  if (await repo.findByEmail(email!) != null) {
-    return jsonError(
-        409, 'EMAIL_TAKEN', 'An account with this email already exists');
+  try {
+    final db   = context.read<Db>();
+    final repo = UserRepo(db);
+    if (await repo.findByEmail(email!) != null) {
+      return jsonError(
+          409, 'EMAIL_TAKEN', 'An account with this email already exists');
+    }
+
+    final user = await repo.create(
+      email: email,
+      passwordHash: hashPassword(password),
+      fullName: fullName!,
+      companyName: companyName!,
+      companySize: companySize,
+      industry: industry,
+    );
+
+    // Every new company starts on the free tier.
+    await SubscriptionRepo(db).createFree(user.companyId);
+
+    final cfg = context.read<AppConfig>();
+    final jwt = context.read<JwtService>();
+    final accessToken = jwt.issueAccessToken(AccessClaims(
+      userId: user.id,
+      companyId: user.companyId,
+      role: user.role,
+    ));
+
+    final refreshPlain = generateRefreshTokenPlaintext();
+    await repo.insertRefreshToken(
+      userId: user.id,
+      plaintextToken: refreshPlain,
+      expiresAt: DateTime.now().toUtc().add(cfg.refreshTokenTtl),
+    );
+
+    return Response.json(
+      statusCode: 201,
+      body: {
+        'access_token': accessToken,
+        'user': user.toAuthUser(),
+      },
+      headers: {
+        'Set-Cookie':
+            'astech_refresh=$refreshPlain; Path=/auth; Max-Age=${cfg.refreshTokenTtl.inSeconds}; HttpOnly; SameSite=Strict; Secure',
+      },
+    );
+  } catch (e, st) {
+    stderr.writeln('[signup] ERROR: $e\n$st');
+    return serverError('Signup failed — please try again');
   }
-
-  final user = await repo.create(
-    email: email,
-    passwordHash: hashPassword(password),
-    fullName: fullName!,
-    companyName: companyName!,
-    companySize: companySize!,
-    industry: industry!,
-  );
-
-  // Every new company starts on the free tier.
-  await SubscriptionRepo(db).createFree(user.companyId);
-
-  final cfg = context.read<AppConfig>();
-  final jwt = context.read<JwtService>();
-  final accessToken = jwt.issueAccessToken(AccessClaims(
-    userId: user.id,
-    companyId: user.companyId,
-    role: user.role,
-  ));
-
-  final refreshPlain = generateRefreshTokenPlaintext();
-  await repo.insertRefreshToken(
-    userId: user.id,
-    plaintextToken: refreshPlain,
-    expiresAt: DateTime.now().toUtc().add(cfg.refreshTokenTtl),
-  );
-
-  return Response.json(
-    statusCode: 201,
-    body: {
-      'access_token': accessToken,
-      'user': user.toAuthUser(),
-    },
-    headers: {
-      'Set-Cookie':
-          'astech_refresh=$refreshPlain; Path=/auth; Max-Age=${cfg.refreshTokenTtl.inSeconds}; HttpOnly; SameSite=Strict; Secure',
-    },
-  );
 }

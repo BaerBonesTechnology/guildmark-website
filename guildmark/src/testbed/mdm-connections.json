@@ -1,0 +1,13 @@
+{
+  "connections": [
+    { "id": "1", "type": "Jamf Pro",           "status": "connected", "lastSync": "2 minutes ago", "deviceCount": 142, "server": "company.jamfcloud.com" },
+    { "id": "2", "type": "Microsoft Intune",   "status": "connected", "lastSync": "5 minutes ago", "deviceCount": 125, "server": "graph.microsoft.com"   }
+  ],
+  "syncHistory": [
+    { "timestamp": "2026-05-02 14:32", "source": "Jamf Pro",         "devices": 142, "status": "success", "duration": "3.2s" },
+    { "timestamp": "2026-05-02 14:27", "source": "Microsoft Intune", "devices": 125, "status": "success", "duration": "2.8s" },
+    { "timestamp": "2026-05-02 14:02", "source": "Jamf Pro",         "devices": 142, "status": "success", "duration": "3.1s" },
+    { "timestamp": "2026-05-02 13:57", "source": "Microsoft Intune", "devices": 124, "status": "success", "duration": "2.9s" },
+    { "timestamp": "2026-05-02 13:32", "source": "Jamf Pro",         "devices": 141, "status": "success", "duration": "3.0s" }
+  ]
+}

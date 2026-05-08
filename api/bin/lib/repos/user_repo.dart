@@ -44,7 +44,8 @@ class UserRepo {
   Future<UserRecord?> findByEmail(String email) async {
     final result = await _db.query(
       '''
-      SELECT u.id, u.company_id, u.email, u.password_hash, u.full_name, u.role,
+      SELECT u.id::text, u.company_id::text, u.email::text, u.password_hash,
+             u.full_name, u.role::text,
              c.name AS company_name
       FROM users u
       JOIN companies c ON c.id = u.company_id
@@ -56,13 +57,13 @@ class UserRepo {
     if (result.isEmpty) return null;
     final row = result.first.toColumnMap();
     return UserRecord(
-      id: row['id'] as String,
-      companyId: row['company_id'] as String,
-      email: row['email'] as String,
-      passwordHash: row['password_hash'] as String,
-      fullName: row['full_name'] as String,
-      role: row['role'] as String,
-      companyName: row['company_name'] as String,
+      id:           row['id'].toString(),
+      companyId:    row['company_id'].toString(),
+      email:        row['email'].toString(),
+      passwordHash: row['password_hash'].toString(),
+      fullName:     row['full_name'].toString(),
+      role:         row['role'].toString(),
+      companyName:  row['company_name'].toString(),
     );
   }
 
@@ -78,41 +79,41 @@ class UserRepo {
       final companyResult = await tx.execute(
         Sql.named(
           'INSERT INTO companies (name, size_band, industry) '
-          'VALUES (@name, @size, @industry) RETURNING id, name',
+          'VALUES (@name, @size, @industry) RETURNING id::text, name',
         ),
         parameters: {
-          'name': companyName,
-          'size': companySize,
-          'industry': industry
+          'name':     companyName,
+          'size':     companySize,
+          'industry': industry,
         },
       );
       final companyRow = companyResult.first.toColumnMap();
-      final companyId = companyRow['id'] as String;
-      final compName = companyRow['name'] as String;
+      final companyId  = companyRow['id'].toString();
+      final compName   = companyRow['name'].toString();
 
       final userResult = await tx.execute(
         Sql.named(
           'INSERT INTO users (company_id, email, password_hash, full_name, role) '
-          'VALUES (@cid, @email, @hash, @name, \'admin\') '
-          'RETURNING id, email, password_hash, full_name, role',
+          "VALUES (@cid, @email, @hash, @name, 'admin') "
+          'RETURNING id::text, email::text, password_hash, full_name, role::text',
         ),
         parameters: {
-          'cid': companyId,
+          'cid':   companyId,
           'email': email,
-          'hash': passwordHash,
-          'name': fullName,
+          'hash':  passwordHash,
+          'name':  fullName,
         },
       );
       final userRow = userResult.first.toColumnMap();
 
       return UserRecord(
-        id: userRow['id'] as String,
-        companyId: companyId,
-        email: userRow['email'] as String,
-        passwordHash: userRow['password_hash'] as String,
-        fullName: userRow['full_name'] as String,
-        role: userRow['role'] as String,
-        companyName: compName,
+        id:           userRow['id'].toString(),
+        companyId:    companyId,
+        email:        userRow['email'].toString(),
+        passwordHash: userRow['password_hash'].toString(),
+        fullName:     userRow['full_name'].toString(),
+        role:         userRow['role'].toString(),
+        companyName:  compName,
       );
     });
   }
@@ -143,14 +144,14 @@ class UserRepo {
     return _db.tx<UserRecord?>((tx) async {
       final lookup = await tx.execute(
         Sql.named(
-          'SELECT user_id FROM refresh_tokens '
+          'SELECT user_id::text FROM refresh_tokens '
           'WHERE token_hash = @h AND revoked_at IS NULL AND expires_at > now() '
           'FOR UPDATE',
         ),
         parameters: {'h': oldHash},
       );
       if (lookup.isEmpty) return null;
-      final userId = lookup.first.toColumnMap()['user_id'] as String;
+      final userId = lookup.first.toColumnMap()['user_id'].toString();
 
       await tx.execute(
         Sql.named(
@@ -167,7 +168,8 @@ class UserRepo {
 
       final userResult = await tx.execute(
         Sql.named(
-          'SELECT u.id, u.company_id, u.email, u.password_hash, u.full_name, u.role, '
+          'SELECT u.id::text, u.company_id::text, u.email::text, u.password_hash, '
+          '       u.full_name, u.role::text, '
           '       c.name AS company_name '
           'FROM users u JOIN companies c ON c.id = u.company_id '
           'WHERE u.id = @uid',
@@ -176,13 +178,13 @@ class UserRepo {
       );
       final row = userResult.first.toColumnMap();
       return UserRecord(
-        id: row['id'] as String,
-        companyId: row['company_id'] as String,
-        email: row['email'] as String,
-        passwordHash: row['password_hash'] as String,
-        fullName: row['full_name'] as String,
-        role: row['role'] as String,
-        companyName: row['company_name'] as String,
+        id:           row['id'].toString(),
+        companyId:    row['company_id'].toString(),
+        email:        row['email'].toString(),
+        passwordHash: row['password_hash'].toString(),
+        fullName:     row['full_name'].toString(),
+        role:         row['role'].toString(),
+        companyName:  row['company_name'].toString(),
       );
     });
   }

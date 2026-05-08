@@ -4,6 +4,7 @@ import "./index.css";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { MailingList } from "./pages/MailingList";
+import { Users } from "./pages/Users";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,8 @@ const router = createBrowserRouter([
     path: "/",
     element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
     children: [
-      { index: true, element: <Navigate to="/mailing-list" replace /> },
+      { index: true, element: <Navigate to="/users" replace /> },
+      { path: "users",        element: <Users /> },
       { path: "mailing-list", element: <MailingList /> },
     ],
   },

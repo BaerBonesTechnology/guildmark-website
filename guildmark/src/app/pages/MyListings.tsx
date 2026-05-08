@@ -7,80 +7,9 @@ import { Badge } from "../components/ui/badge";
 import { SpecPill } from "../components/SpecPill";
 import { CreateListingDialog } from "../components/CreateListingDialog";
 
-const myListings = [
-  {
-    id: "LST-MY-001",
-    item: "MacBook Pro 14\"",
-    specs: "M1 Pro / 16GB / 512GB",
-    condition: "Excellent",
-    quantity: 12,
-    pricePerUnit: 1650,
-    views: 145,
-    offers: 3,
-    status: "active",
-    listedDate: "2026-04-28",
-  },
-  {
-    id: "LST-MY-002",
-    item: "Dell Precision 5560",
-    specs: "i7-11850H / 32GB / 1TB",
-    condition: "Good",
-    quantity: 8,
-    pricePerUnit: 1400,
-    views: 89,
-    offers: 1,
-    status: "active",
-    listedDate: "2026-04-25",
-  },
-  {
-    id: "LST-MY-003",
-    item: "Surface Laptop 4",
-    specs: "i5-1135G7 / 8GB / 256GB",
-    condition: "Good",
-    quantity: 20,
-    pricePerUnit: 650,
-    views: 203,
-    offers: 7,
-    status: "pending",
-    listedDate: "2026-04-20",
-  },
-];
+const myListings: { id: string; item: string; specs: string; condition: string; quantity: number; pricePerUnit: number; views: number; offers: number; status: string; listedDate: string }[] = [];
 
-const recentOffers = [
-  {
-    id: "OFR-001",
-    listingId: "LST-MY-001",
-    buyer: "TechStart Ventures",
-    item: "MacBook Pro 14\"",
-    quantity: 5,
-    offerPrice: 1600,
-    yourPrice: 1650,
-    status: "pending",
-    timestamp: "2026-04-30 09:15",
-  },
-  {
-    id: "OFR-002",
-    listingId: "LST-MY-003",
-    buyer: "Marketing Solutions Co",
-    item: "Surface Laptop 4",
-    quantity: 15,
-    offerPrice: 620,
-    yourPrice: 650,
-    status: "pending",
-    timestamp: "2026-04-30 08:42",
-  },
-  {
-    id: "OFR-003",
-    listingId: "LST-MY-001",
-    buyer: "Cloud Systems LLC",
-    item: "MacBook Pro 14\"",
-    quantity: 12,
-    offerPrice: 1680,
-    yourPrice: 1650,
-    status: "pending",
-    timestamp: "2026-04-29 16:20",
-  },
-];
+const recentOffers: { id: string; listingId: string; buyer: string; item: string; quantity: number; offerPrice: number; yourPrice: number; status: string; timestamp: string }[] = [];
 
 export function MyListings() {
   const [activeTab, setActiveTab] = useState<"listings" | "offers">("listings");

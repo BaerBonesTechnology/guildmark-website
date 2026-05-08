@@ -5,14 +5,37 @@
 /// can opt in).
 library;
 
+import 'dart:io';
+
 import 'package:dart_frog/dart_frog.dart';
 
 import '../lib/auth/jwt.dart';
 import '../lib/config.dart';
 import '../lib/context.dart';
+import '../lib/http_helpers.dart';
 
 Handler middleware(Handler handler) {
-  return handler.use(_corsMiddleware()).use(_authMiddleware());
+  return handler
+      .use(_errorMiddleware())
+      .use(_corsMiddleware())
+      .use(_authMiddleware());
+}
+
+/// Catches any unhandled exception from downstream handlers and returns a
+/// structured JSON 500 instead of Dart Frog's default empty response.
+/// Also writes the stack trace to stderr so it shows up in `docker logs`.
+Middleware _errorMiddleware() {
+  return (handler) {
+    return (context) async {
+      try {
+        return await handler(context);
+      } catch (e, st) {
+        stderr.writeln('[error] ${context.request.method} '
+            '${context.request.uri.path} — $e\n$st');
+        return serverError('An unexpected error occurred');
+      }
+    };
+  };
 }
 
 Middleware _corsMiddleware() {

@@ -126,4 +126,13 @@ class MailingListRepo {
     if (result.isEmpty) return null;
     return MailingListEntry.fromRow(result.first.toColumnMap());
   }
+
+  /// Permanently remove a subscriber by id. Returns true if a row was deleted.
+  Future<bool> delete(String id) async {
+    final result = await _db.query(
+      'DELETE FROM mailing_list WHERE id = @id RETURNING id::text',
+      parameters: {'id': id},
+    );
+    return result.isNotEmpty;
+  }
 }

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, SlidersHorizontal, TrendingUp, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, TrendingUp, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -7,99 +7,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../components/ui/badge";
 import { SpecPill } from "../components/SpecPill";
 import { MarketSignal } from "../components/MarketSignal";
+import { api } from "../lib/api";
 
-const marketplaceListings = [
-  {
-    id: "LST-001",
-    seller: "TechCorp Solutions",
-    location: "San Francisco, CA",
-    quantity: 25,
-    item: "MacBook Pro 14\"",
-    specs: "M2 Pro / 16GB / 512GB",
-    condition: "Excellent",
-    pricePerUnit: 1850,
-    totalValue: 46250,
-    demand: 5,
-    verified: true,
-    daysListed: 2,
-  },
-  {
-    id: "LST-002",
-    seller: "Global Enterprises",
-    location: "Austin, TX",
-    quantity: 40,
-    item: "Dell XPS 15",
-    specs: "i7-12700H / 32GB / 1TB",
-    condition: "Good",
-    pricePerUnit: 1200,
-    totalValue: 48000,
-    demand: 4,
-    verified: true,
-    daysListed: 5,
-  },
-  {
-    id: "LST-003",
-    seller: "StartupHub Inc",
-    location: "Seattle, WA",
-    quantity: 15,
-    item: "MacBook Air",
-    specs: "M2 / 16GB / 512GB",
-    condition: "Excellent",
-    pricePerUnit: 1100,
-    totalValue: 16500,
-    demand: 5,
-    verified: true,
-    daysListed: 1,
-  },
-  {
-    id: "LST-004",
-    seller: "Finance Solutions LLC",
-    location: "New York, NY",
-    quantity: 60,
-    item: "ThinkPad X1 Carbon",
-    specs: "i7-1185G7 / 16GB / 512GB",
-    condition: "Good",
-    pricePerUnit: 950,
-    totalValue: 57000,
-    demand: 3,
-    verified: false,
-    daysListed: 12,
-  },
-  {
-    id: "LST-005",
-    seller: "Cloud Systems Co",
-    location: "Denver, CO",
-    quantity: 10,
-    item: "MacBook Pro 16\"",
-    specs: "M2 Max / 32GB / 1TB",
-    condition: "Excellent",
-    pricePerUnit: 2400,
-    totalValue: 24000,
-    demand: 5,
-    verified: true,
-    daysListed: 3,
-  },
-  {
-    id: "LST-006",
-    seller: "Marketing Agency Pro",
-    location: "Chicago, IL",
-    quantity: 20,
-    item: "Surface Laptop 5",
-    specs: "i7-1255U / 16GB / 512GB",
-    condition: "Fair",
-    pricePerUnit: 800,
-    totalValue: 16000,
-    demand: 2,
-    verified: true,
-    daysListed: 8,
-  },
-];
+const marketplaceListings: {
+  id: string;
+  seller: string;
+  location: string;
+  quantity: number;
+  item: string;
+  specs: string;
+  condition: string;
+  pricePerUnit: number;
+  totalValue: number;
+  demand: number;
+  verified: boolean;
+  daysListed: number;
+}[] = [];
 
 export function Marketplace() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [condition, setCondition] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+
+  const [totalListingCount, setTotalListingCount] = useState(0);
+  const [totalListingAvailable, setTotalListingAvailable] = useState(0);
+  const [totalListingValue, setTotalListingValue] = useState("0");
+  const [avgPPU, setAvgPPU] = useState("0");
+
+  useEffect(() => {
+    api.get<{
+      totalListings: number;
+      totalUnits: number;
+      avgPricePerUnit: number;
+      totalMarketValue: number;
+    }>("/marketplace/stats")
+      .then((res) => {
+        setTotalListingCount(res.totalListings);
+        setTotalListingAvailable(res.totalUnits);
+        setAvgPPU(res.avgPricePerUnit.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+        setTotalListingValue(res.totalMarketValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+      })
+      .catch(() => {});
+  }, []);
 
   const filteredListings = marketplaceListings
     .filter((listing) => {
@@ -129,25 +79,25 @@ export function Marketplace() {
         <Card className="font-mono">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Active Listings</p>
-            <p className="text-2xl font-mono text-foreground mt-1">142</p>
+            <p className="text-2xl font-mono text-foreground mt-1">{totalListingCount.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="font-mono">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Units Available</p>
-            <p className="text-2xl font-mono text-foreground mt-1">3,240</p>
+            <p className="text-2xl font-mono text-foreground mt-1">{totalListingAvailable.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="font-mono">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Avg Price/Unit</p>
-            <p className="text-2xl font-mono text-[#3B82F6] mt-1">$1,350</p>
+            <p className="text-2xl font-mono text-[#3B82F6] mt-1">${avgPPU}</p>
           </CardContent>
         </Card>
         <Card className="font-mono">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Market Value</p>
-            <p className="text-2xl font-mono text-[#3B82F6] mt-1">$4.3M</p>
+            <p className="text-2xl font-mono text-[#3B82F6] mt-1">${totalListingValue}</p>
           </CardContent>
         </Card>
       </div>

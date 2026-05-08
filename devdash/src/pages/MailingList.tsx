@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Mail, CheckCircle, Clock, RefreshCw, MessageSquare } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Mail, CheckCircle, Clock, RefreshCw, MessageSquare, Trash2 } from "lucide-react";
 import { useApi } from "../hooks/useAuth";
 
 interface Subscriber {
@@ -16,41 +16,58 @@ interface ListResponse {
   entries: Subscriber[];
 }
 
+const LIMIT = 50;
+const MAX_RETRIES = 3;
+
 export function MailingList() {
+  // Stable ref — useApi() returns a new function every render.
   const apiFetch = useApi();
-  const [entries, setEntries] = useState<Subscriber[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const apiFetchRef = useRef(apiFetch);
+  apiFetchRef.current = apiFetch;
+
+  const [entries, setEntries]       = useState<Subscriber[]>([]);
+  const [total, setTotal]           = useState(0);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState("");
   const [uncontactedOnly, setUncontactedOnly] = useState(false);
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset]         = useState(0);
   const [notesModal, setNotesModal] = useState<Subscriber | null>(null);
   const [notesValue, setNotesValue] = useState("");
-  const LIMIT = 50;
+  // id of the row currently in "confirm delete" state
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    try {
-      const params = new URLSearchParams({
-        limit: String(LIMIT),
-        offset: String(offset),
-        ...(uncontactedOnly ? { uncontacted: "true" } : {}),
-      });
-      const data = await apiFetch<ListResponse>(`/admin/waitlist?${params}`);
-      setEntries(data.entries);
-      setTotal(data.total);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
-    } finally {
-      setLoading(false);
+
+    const params = new URLSearchParams({
+      limit:  String(LIMIT),
+      offset: String(offset),
+      ...(uncontactedOnly ? { uncontacted: "true" } : {}),
+    });
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const data = await apiFetchRef.current<ListResponse>(`/admin/waitlist?${params}`);
+        setEntries(data.entries);
+        setTotal(data.total);
+        setLoading(false);
+        return; // data found — done
+      } catch (err) {
+        if (attempt === MAX_RETRIES) {
+          setError(err instanceof Error ? err.message : "Failed to load");
+          setLoading(false);
+          return; // gave up — wait for manual refresh
+        }
+        await new Promise(r => setTimeout(r, attempt * 600));
+      }
     }
-  }, [apiFetch, offset, uncontactedOnly]);
+  }, [offset, uncontactedOnly]); // apiFetch intentionally omitted — see ref above
 
   useEffect(() => { load(); }, [load]);
 
   async function markContacted(id: string, notes?: string) {
-    await apiFetch(`/admin/waitlist/${id}/contact`, {
+    await apiFetchRef.current(`/admin/waitlist/${id}/contact`, {
       method: "POST",
       body: JSON.stringify({ notes }),
     });
@@ -59,12 +76,23 @@ export function MailingList() {
 
   async function saveNotes() {
     if (!notesModal) return;
-    await apiFetch(`/admin/waitlist/${notesModal.id}/notes`, {
+    await apiFetchRef.current(`/admin/waitlist/${notesModal.id}/notes`, {
       method: "PATCH",
       body: JSON.stringify({ notes: notesValue }),
     });
     setNotesModal(null);
     load();
+  }
+
+  async function deleteSubscriber(id: string) {
+    try {
+      await apiFetchRef.current(`/admin/waitlist/${id}`, { method: "DELETE" });
+      setConfirmDelete(null);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+      setConfirmDelete(null);
+    }
   }
 
   return (
@@ -102,8 +130,14 @@ export function MailingList() {
       </div>
 
       {error && (
-        <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 font-mono">
-          {error}
+        <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 font-mono flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={load}
+            className="ml-4 text-xs text-red-400 hover:text-white underline underline-offset-2 shrink-0"
+          >
+            Try again
+          </button>
         </div>
       )}
 
@@ -169,6 +203,31 @@ export function MailingList() {
                         Mark contacted
                       </button>
                     )}
+                    {confirmDelete === e.id ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-400 font-mono">Remove?</span>
+                        <button
+                          onClick={() => deleteSubscriber(e.id)}
+                          className="px-2 py-0.5 text-xs rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="px-2 py-0.5 text-xs rounded bg-slate-700 text-slate-400 hover:bg-slate-600 border border-slate-600 transition-colors"
+                        >
+                          No
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(e.id)}
+                        className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Remove subscriber"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -202,8 +261,14 @@ export function MailingList() {
 
       {/* Notes modal */}
       {notesModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setNotesModal(null)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4"
+          onClick={() => setNotesModal(null)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
             <h2 className="text-sm font-mono text-white mb-1">Notes</h2>
             <p className="text-xs text-slate-500 font-mono mb-4">{notesModal.email}</p>
             <textarea

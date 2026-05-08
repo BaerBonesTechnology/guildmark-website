@@ -1,0 +1,7 @@
+{
+  "teamMembers": [
+    { "name": "Sarah Chen",      "email": "sarah@company.com", "role": "Admin"  },
+    { "name": "Mike Rodriguez",  "email": "mike@company.com",  "role": "Member" },
+    { "name": "Emma Thompson",   "email": "emma@company.com",  "role": "Viewer" }
+  ]
+}
