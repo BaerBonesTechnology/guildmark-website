@@ -1,0 +1,17 @@
+{
+  "invoices": [
+    { "id": "INV-2026-0042", "date": "2026-05-01", "asset": "MacBook Pro 16\" M2 (24 units)",    "type": "Sale",     "writeOffAmount": 48000, "marketValue": 48000 },
+    { "id": "INV-2026-0041", "date": "2026-04-28", "asset": "Dell PowerEdge R640 (8 units)",     "type": "Disposal", "writeOffAmount": 32000, "marketValue": 32000 },
+    { "id": "INV-2026-0040", "date": "2026-04-25", "asset": "MacBook Air M1 (38 units)",          "type": "Sale",     "writeOffAmount": 30400, "marketValue": 30400 },
+    { "id": "INV-2026-0039", "date": "2026-04-20", "asset": "HP EliteDesk 800 G6 (42 units)",    "type": "Donation", "writeOffAmount": 25200, "marketValue": 25200 },
+    { "id": "INV-2026-0038", "date": "2026-04-18", "asset": "iPad Pro 12.9\" (28 units)",         "type": "Sale",     "writeOffAmount": 22400, "marketValue": 22400 }
+  ],
+  "assetNames": [
+    "MacBook Pro 16\" M2",
+    "Dell PowerEdge R640",
+    "MacBook Air M1",
+    "HP EliteDesk 800 G6",
+    "iPad Pro 12.9\"",
+    "Dell OptiPlex 7080"
+  ]
+}

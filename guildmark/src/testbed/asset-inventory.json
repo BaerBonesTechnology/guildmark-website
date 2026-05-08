@@ -1,0 +1,14 @@
+[
+  { "id": "1",  "model": "MacBook Pro 16\" M2",   "type": "Laptop",  "condition": "A", "age": 14, "fairMarketValue": 2000, "bookValue": 2400, "depreciation": 16.7, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "2",  "model": "Dell PowerEdge R640",    "type": "Server",  "condition": "B", "age": 28, "fairMarketValue": 4000, "bookValue": 5200, "depreciation": 23.1, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "3",  "model": "MacBook Air M1",          "type": "Laptop",  "condition": "B", "age": 22, "fairMarketValue": 800,  "bookValue": 1000, "depreciation": 20.0, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "4",  "model": "HP EliteDesk 800 G6",    "type": "Desktop", "condition": "A", "age": 18, "fairMarketValue": 600,  "bookValue": 720,  "depreciation": 16.7, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "5",  "model": "iPad Pro 12.9\"",         "type": "Tablet",  "condition": "A", "age": 12, "fairMarketValue": 800,  "bookValue": 900,  "depreciation": 11.1, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "6",  "model": "Dell OptiPlex 7080",     "type": "Desktop", "condition": "B", "age": 24, "fairMarketValue": 600,  "bookValue": 800,  "depreciation": 25.0, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "7",  "model": "Surface Pro 8",           "type": "Tablet",  "condition": "C", "age": 32, "fairMarketValue": 800,  "bookValue": 1200, "depreciation": 33.3, "status": "At Risk", "lastSync": "2 mins ago" },
+  { "id": "8",  "model": "Lenovo ThinkPad X1",     "type": "Laptop",  "condition": "B", "age": 26, "fairMarketValue": 700,  "bookValue": 980,  "depreciation": 28.6, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "9",  "model": "Mac Mini M1",             "type": "Desktop", "condition": "A", "age": 16, "fairMarketValue": 700,  "bookValue": 820,  "depreciation": 14.6, "status": "Active",  "lastSync": "2 mins ago" },
+  { "id": "10", "model": "HP ProDesk 600 G5",      "type": "Desktop", "condition": "C", "age": 38, "fairMarketValue": 400,  "bookValue": 680,  "depreciation": 41.2, "status": "At Risk", "lastSync": "2 mins ago" },
+  { "id": "11", "model": "MacBook Pro 14\" M1",    "type": "Laptop",  "condition": "B", "age": 20, "fairMarketValue": 1500, "bookValue": 1950, "depreciation": 23.1, "status": "Active",  "lastSync": "5 mins ago" },
+  { "id": "12", "model": "Dell XPS 13",             "type": "Laptop",  "condition": "A", "age": 10, "fairMarketValue": 1100, "bookValue": 1250, "depreciation": 12.0, "status": "Active",  "lastSync": "5 mins ago" }
+]

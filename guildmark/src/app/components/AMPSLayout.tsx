@@ -35,7 +35,7 @@ export function AMPSLayout() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-lg font-semibold">Guild<span className="text-[#3B82F6]">Mark</span></span>
+                  <span className="font-mono text-lg font-semibold">Guild<span className="text-amps-accent">Mark</span></span>
                   <span className="rounded bg-gradient-to-r from-amps-accent to-amps-highlight px-2 py-0.5 text-xs font-semibold text-white">
                     GM Pro
                   </span>

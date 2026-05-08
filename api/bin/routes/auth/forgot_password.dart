@@ -44,6 +44,21 @@ Future<Response> onRequest(RequestContext context) async {
     final hash      = _hash(plaintext);
     final expiresAt = DateTime.now().toUtc().add(const Duration(hours: 1));
 
+    // Revoke any existing unused tokens for this user before issuing a new one.
+    // This ensures only the most-recently-requested token is ever valid,
+    // preventing a confused-deputy scenario where an older intercepted email
+    // can still be used after the user requested a fresh reset.
+    await db.query(
+      '''
+      UPDATE password_reset_tokens
+         SET used_at = NOW()
+       WHERE user_id = @uid
+         AND used_at IS NULL
+         AND expires_at > NOW()
+      ''',
+      parameters: {'uid': user.id},
+    );
+
     await db.query(
       '''
       INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
@@ -52,9 +67,7 @@ Future<Response> onRequest(RequestContext context) async {
       parameters: {'uid': user.id, 'hash': hash, 'exp': expiresAt},
     );
 
-    final frontendUrl = cfg.corsOrigin != '*'
-        ? cfg.corsOrigin
-        : 'https://app.guildmark.co';
+    final frontendUrl = cfg.corsOrigin;
     final resetLink = '$frontendUrl/reset-password?token=$plaintext';
 
     unawaited(mail.sendPasswordReset(toEmail: email, resetLink: resetLink));

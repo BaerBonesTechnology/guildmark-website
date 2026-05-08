@@ -24,14 +24,16 @@ Future<Response> onRequest(RequestContext context) async {
   final limit = int.tryParse(params['limit'] ?? '50') ?? 50;
   final offset = int.tryParse(params['offset'] ?? '0') ?? 0;
   final uncontactedOnly = params['uncontacted'] == 'true';
+  final source = params['source']; // e.g. 'partner', 'waitlist', 'contact'
 
   final repo = MailingListRepo(context.read<Db>());
   final entries = await repo.list(
     limit: limit.clamp(1, 200),
     offset: offset,
     uncontactedOnly: uncontactedOnly,
+    source: source,
   );
-  final total = await repo.count();
+  final total = await repo.count(source: source);
 
   return Response.json(body: {
     'total': total,

@@ -23,6 +23,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/config.dart';
+import '../../../lib/crypto_utils.dart';
 import '../../../lib/db/pool.dart';
 import '../../../lib/http_helpers.dart';
 import '../../../lib/repos/order_repo.dart';
@@ -195,11 +196,10 @@ String? _extractTrackingNumber(Map<String, dynamic> payload) {
 }
 
 /// HMAC-SHA256 webhook signature verification.
+/// Uses constant-time comparison to prevent timing-based bypass.
 bool _verifySignature(String body, String receivedSig, String secret) {
   if (receivedSig.isEmpty) return false;
   final mac = Hmac(sha256, utf8.encode(secret));
   final digest = mac.convert(utf8.encode(body)).toString();
-  // Constant-time comparison isn't strictly needed for hex strings but
-  // avoids timing-based bypass.
-  return digest == receivedSig;
+  return constantTimeEquals(digest, receivedSig);
 }

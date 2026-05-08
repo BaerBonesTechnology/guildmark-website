@@ -23,4 +23,4 @@
 
 setup:
   project: guildmark
-  config: dev
+  config: dev_personal

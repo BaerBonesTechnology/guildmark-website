@@ -1,0 +1,8 @@
+[
+  { "id": "LST-001", "seller": "TechCorp Solutions",    "location": "San Francisco, CA", "quantity": 42, "item": "MacBook Pro 14\"",    "specs": "M2 Pro / 16GB / 512GB",     "condition": "Excellent", "pricePerUnit": 1850, "totalValue": 46250, "demand": 5, "verified": true,  "daysListed": 2  },
+  { "id": "LST-002", "seller": "Global Enterprises",    "location": "Austin, TX",        "quantity": 56, "item": "Dell XPS 15",          "specs": "i7-12700H / 32GB / 1TB",    "condition": "Good",      "pricePerUnit": 1200, "totalValue": 48000, "demand": 4, "verified": true,  "daysListed": 5  },
+  { "id": "LST-003", "seller": "StartupHub Inc",        "location": "Seattle, WA",       "quantity": 15, "item": "MacBook Air",          "specs": "M2 / 16GB / 512GB",         "condition": "Excellent", "pricePerUnit": 1100, "totalValue": 16500, "demand": 5, "verified": true,  "daysListed": 1  },
+  { "id": "LST-004", "seller": "Finance Solutions LLC", "location": "New York, NY",      "quantity": 60, "item": "ThinkPad X1 Carbon",  "specs": "i7-1185G7 / 16GB / 512GB",  "condition": "Good",      "pricePerUnit": 950,  "totalValue": 57000, "demand": 3, "verified": false, "daysListed": 12 },
+  { "id": "LST-005", "seller": "Cloud Systems Co",      "location": "Denver, CO",        "quantity": 10, "item": "MacBook Pro 16\"",    "specs": "M2 Max / 32GB / 1TB",       "condition": "Excellent", "pricePerUnit": 2400, "totalValue": 24000, "demand": 5, "verified": true,  "daysListed": 3  },
+  { "id": "LST-006", "seller": "Marketing Agency Pro",  "location": "Chicago, IL",       "quantity": 20, "item": "Surface Laptop 5",    "specs": "i7-1255U / 16GB / 512GB",   "condition": "Fair",      "pricePerUnit": 800,  "totalValue": 16000, "demand": 2, "verified": true,  "daysListed": 8  }
+]

@@ -1,0 +1,24 @@
+{
+  "depreciationChart": [
+    { "month": "Apr 26", "current": 42500, "upgrade": 45000 },
+    { "month": "May 26", "current": 41200, "upgrade": 45000 },
+    { "month": "Jun 26", "current": 39800, "upgrade": 45000 },
+    { "month": "Jul 26", "current": 38100, "upgrade": 45000 },
+    { "month": "Aug 26", "current": 36200, "upgrade": 45000 },
+    { "month": "Sep 26", "current": 30100, "upgrade": 45000 },
+    { "month": "Oct 26", "current": 28500, "upgrade": 45000 },
+    { "month": "Nov 26", "current": 27200, "upgrade": 45000 },
+    { "month": "Dec 26", "current": 26100, "upgrade": 45000 },
+    { "month": "Jan 27", "current": 25200, "upgrade": 45000 },
+    { "month": "Feb 27", "current": 24500, "upgrade": 45000 },
+    { "month": "Mar 27", "current": 23800, "upgrade": 45000 }
+  ],
+  "highIntentAssets": [
+    { "tag": "MBP-2023-042", "specs": "M2 Pro / 16GB / 512GB", "demand": 5, "peakDate": "Sept 2026", "status": "ready" },
+    { "tag": "MBP-2023-018", "specs": "M2 Max / 32GB / 1TB",   "demand": 5, "peakDate": "Sept 2026", "status": "ready" },
+    { "tag": "MBA-2023-091", "specs": "M2 / 16GB / 256GB",      "demand": 5, "peakDate": "Oct 2026",  "status": "ready" },
+    { "tag": "WS-2022-004",  "specs": "Intel i9 / 64GB / 2TB",  "demand": 2, "peakDate": "May 2026",  "status": "hold"  },
+    { "tag": "MBP-2022-156", "specs": "M1 Pro / 16GB / 512GB",  "demand": 4, "peakDate": "Aug 2026",  "status": "ready" },
+    { "tag": "MBA-2022-203", "specs": "M1 / 8GB / 256GB",       "demand": 3, "peakDate": "Jul 2026",  "status": "hold"  }
+  ]
+}

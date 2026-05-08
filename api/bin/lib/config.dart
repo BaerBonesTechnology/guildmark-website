@@ -78,7 +78,22 @@ class AppConfig {
       jwtRefreshSecret: require('JWT_REFRESH_SECRET'),
       accessTokenTtl: Duration(seconds: requireInt('JWT_ACCESS_TTL_SECONDS')),
       refreshTokenTtl: Duration(seconds: requireInt('JWT_REFRESH_TTL_SECONDS')),
-      corsOrigin: Platform.environment['CORS_ORIGIN'] ?? '*',
+      corsOrigin: () {
+        final v = Platform.environment['CORS_ORIGIN'];
+        if (v == null || v.isEmpty) {
+          // In production a missing CORS_ORIGIN combined with
+          // Access-Control-Allow-Credentials would be a security
+          // misconfiguration. Throw loudly so it is caught at startup.
+          final env = Platform.environment['GM_DEBUG']?.toLowerCase();
+          final isDebugMode = env == 'true';
+          if (!isDebugMode) {
+            throw StateError('Missing required env var: CORS_ORIGIN');
+          }
+          // Development only — allow localhost origins.
+          return 'http://localhost:5173';
+        }
+        return v;
+      }(),
       isDebug: optionalBool('GM_DEBUG'),
       mlServiceUrl: optional('ML_SERVICE_URL'),
       squareAccessToken: require('SQUARE_ACCESS_TOKEN'),

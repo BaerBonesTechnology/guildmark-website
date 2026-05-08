@@ -61,16 +61,16 @@ class Subscription {
   double get sellerFeeRate => sellerFeePct(plan);
 
   factory Subscription.fromRow(Map<String, dynamic> row) => Subscription(
-        id:                    row['id']                     as String,
-        companyId:             row['company_id']             as String,
-        plan:                  row['plan']                   as String,
-        status:                row['status']                 as String,
-        squareSubscriptionId:  row['square_subscription_id'] as String?,
-        currentPeriodStart:    row['current_period_start']   as DateTime?,
-        currentPeriodEnd:      row['current_period_end']     as DateTime?,
-        cancelledAt:           row['cancelled_at']           as DateTime?,
-        createdAt:             row['created_at']             as DateTime,
-        updatedAt:             row['updated_at']             as DateTime,
+        id:                   row['id'].toString(),
+        companyId:            row['company_id'].toString(),
+        plan:                 row['plan'].toString(),
+        status:               row['status'].toString(),
+        squareSubscriptionId: row['square_subscription_id']?.toString(),
+        currentPeriodStart:   row['current_period_start'] as DateTime?,
+        currentPeriodEnd:     row['current_period_end']   as DateTime?,
+        cancelledAt:          row['cancelled_at']         as DateTime?,
+        createdAt:            row['created_at']           as DateTime,
+        updatedAt:            row['updated_at']           as DateTime,
       );
 
   Map<String, dynamic> toJson() => {
@@ -85,6 +85,15 @@ class Subscription {
 // Repository
 // ---------------------------------------------------------------------------
 
+// Columns selected in every query — avoids RETURNING * / SELECT * so that
+// UUID and ENUM types are explicitly cast to text before Dart sees them.
+const _cols = '''
+  id::text, company_id::text, plan::text, status::text,
+  square_subscription_id,
+  current_period_start, current_period_end,
+  cancelled_at, created_at, updated_at
+''';
+
 class SubscriptionRepo {
   SubscriptionRepo(this._db);
   final Db _db;
@@ -96,7 +105,7 @@ class SubscriptionRepo {
       '''
       INSERT INTO subscriptions (company_id, plan, status)
       VALUES (@cid, 'free', 'active')
-      RETURNING *
+      RETURNING $_cols
       ''',
       parameters: {'cid': companyId},
     );
@@ -107,7 +116,7 @@ class SubscriptionRepo {
   /// A null result should be treated as free-tier for fee calculation purposes.
   Future<Subscription?> findByCompany(String companyId) async {
     final rows = await _db.query(
-      'SELECT * FROM subscriptions WHERE company_id = @cid',
+      'SELECT $_cols FROM subscriptions WHERE company_id = @cid',
       parameters: {'cid': companyId},
     );
     if (rows.isEmpty) return null;
@@ -133,7 +142,7 @@ class SubscriptionRepo {
           current_period_end     = @pend,
           cancelled_at           = NULL
       WHERE company_id = @cid
-      RETURNING *
+      RETURNING $_cols
       ''',
       parameters: {
         'cid':    companyId,

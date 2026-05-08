@@ -20,7 +20,13 @@ Future<Response> onRequest(RequestContext context, String id) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
-  final body = await context.request.json() as Map<String, dynamic>?;
+  // Body is optional — some callers send no payload when there's no note.
+  Map<String, dynamic>? body;
+  try {
+    body = await context.request.json() as Map<String, dynamic>?;
+  } catch (_) {
+    body = null;
+  }
   final notes = body?['notes'] as String?;
 
   final repo = MailingListRepo(context.read<Db>());

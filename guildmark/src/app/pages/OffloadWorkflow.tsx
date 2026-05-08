@@ -1,29 +1,7 @@
 import { useState } from "react";
 import { Truck, Package, ShieldCheck, CheckCircle2, FileText, Download } from "lucide-react";
 
-const mockOrders = [
-  {
-    id: "ORD-2026-042",
-    units: 12,
-    status: "payment_sent",
-    created: "2026-04-15",
-    value: "$10,200",
-  },
-  {
-    id: "ORD-2026-038",
-    units: 8,
-    status: "quality_check",
-    created: "2026-04-20",
-    value: "$6,800",
-  },
-  {
-    id: "ORD-2026-041",
-    units: 5,
-    status: "in_transit",
-    created: "2026-04-25",
-    value: "$4,250",
-  },
-];
+const mockOrders: { id: string; units: number; status: string; created: string; value: string }[] = [];
 
 export function OffloadWorkflow() {
   const [selectedUnits, setSelectedUnits] = useState(12);

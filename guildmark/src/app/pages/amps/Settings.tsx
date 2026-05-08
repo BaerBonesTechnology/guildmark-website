@@ -14,11 +14,7 @@ const tiers = [
   { name: "Enterprise", price: "Custom", devices: "Unlimited", users: "Unlimited" },
 ];
 
-const teamMembers = [
-  { name: "Sarah Chen", email: "sarah@company.com", role: "Admin" },
-  { name: "Mike Rodriguez", email: "mike@company.com", role: "Member" },
-  { name: "Emma Thompson", email: "emma@company.com", role: "Viewer" },
-];
+const teamMembers: { name: string; email: string; role: string }[] = [];
 
 export function Settings() {
   const { user } = useAuth();
