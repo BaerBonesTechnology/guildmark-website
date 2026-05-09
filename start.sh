@@ -111,8 +111,13 @@ fi
 # Strip \r so Windows-saved (CRLF) .env files don't break bash sourcing.
 _source_env() { set -a; source <(sed 's/\r$//' "$1"); set +a; }
 
+# If already running inside `doppler run --`, DOPPLER_PROJECT is set in the
+# environment — don't re-invoke doppler or build-time vars will be dropped.
 _USE_DOPPLER=false
-if command -v doppler >/dev/null 2>&1 && [[ -f doppler.yaml ]]; then
+if [[ -n "${DOPPLER_PROJECT:-}" ]]; then
+  _USE_DOPPLER=true
+  ok "Running inside Doppler environment — secrets already injected"
+elif command -v doppler >/dev/null 2>&1 && [[ -f doppler.yaml ]]; then
   if doppler whoami >/dev/null 2>&1; then
     _USE_DOPPLER=true
     ok "Doppler authenticated — secrets will be injected at runtime"
@@ -135,9 +140,15 @@ if [[ "$_USE_DOPPLER" == "false" ]]; then
 fi
 
 # Build the full compose invocation — with Doppler prefix when authenticated.
+# When Doppler is active, pass --env-file /dev/null so Docker Compose doesn't
+# read the .env file and override the Doppler-injected environment variables.
 DOPPLER_PREFIX=()
-[[ "$_USE_DOPPLER" == "true" ]] && DOPPLER_PREFIX=(doppler run --)
-DC=("${DOPPLER_PREFIX[@]}" "${COMPOSE[@]}")
+ENV_FILE_ARG=()
+if [[ "$_USE_DOPPLER" == "true" ]]; then
+  DOPPLER_PREFIX=(doppler run --)
+  ENV_FILE_ARG=(--env-file /dev/null)
+fi
+DC=("${DOPPLER_PREFIX[@]}" "${COMPOSE[@]}" "${ENV_FILE_ARG[@]}")
 
 # ── Cleanup trap ──────────────────────────────────────────────────────────────
 cleanup() {
