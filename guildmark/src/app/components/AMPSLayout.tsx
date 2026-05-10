@@ -6,9 +6,12 @@ import {
   FileText,
   Settings,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Lock,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { Button } from "./ui/button";
 
 const navigation = [
   { name: "Portfolio", href: "/amps", icon: LayoutDashboard },
@@ -18,9 +21,69 @@ const navigation = [
   { name: "Settings", href: "/amps/settings", icon: Settings },
 ];
 
+const PLAN_FEATURES: Record<string, string[]> = {
+  starter: ["Full asset inventory", "MDM integrations (Jamf + Intune)", "Market Pulse valuations", "Tax invoices"],
+  growth:  ["Everything in Starter", "Bulk quick-list to GuildMarket", "Portfolio trend analytics", "Priority support"],
+  pro:     ["Everything in Growth", "Dedicated account manager", "Custom reporting", "Lowest seller fees (3%)"],
+};
+
+function UpgradeWall({ plan }: { plan: string }) {
+  return (
+    <div className="min-h-screen bg-amps-surface flex items-center justify-center p-8">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-10">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amps-accent to-amps-highlight flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-2xl font-mono font-semibold mb-2">
+            GM Pro Required
+          </h1>
+          <p className="text-muted-foreground text-sm max-w-md mx-auto">
+            You're on the <span className="font-semibold capitalize">{plan}</span> plan.
+            Upgrade to unlock fleet intelligence, MDM integrations, and AI-powered valuations.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {(["starter", "growth", "pro"] as const).map((tier) => (
+            <div key={tier} className="bg-card border border-border rounded-xl p-5 space-y-3">
+              <p className="text-sm font-mono font-semibold capitalize">{tier}</p>
+              <ul className="space-y-1.5">
+                {PLAN_FEATURES[tier].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <CheckCircle className="w-3.5 h-3.5 text-amps-accent shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Button asChild className="bg-amps-accent hover:bg-amps-accent/90 text-white font-mono gap-2 px-8">
+            <Link to="/amps/pro-signup">
+              <Sparkles className="w-4 h-4" />
+              View Plans &amp; Upgrade
+            </Link>
+          </Button>
+          <p className="text-xs text-muted-foreground mt-3">
+            No contracts · Cancel anytime
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AMPSLayout() {
   const location = useLocation();
   const { user } = useAuth();
+
+  // Free-tier users see the upgrade wall — /amps/pro-signup is handled
+  // as a sibling route outside this layout so it bypasses this check.
+  const plan = user?.subscription_plan ?? "free";
+  if (plan === "free") return <UpgradeWall plan={plan} />;
 
   return (
     <div className="min-h-screen bg-amps-surface">

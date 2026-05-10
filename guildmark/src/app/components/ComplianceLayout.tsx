@@ -37,7 +37,7 @@ export function ComplianceLayout() {
           </div>
 
           <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
-            <Shield className="w-3.5 h-3.5 text-[#3B82F6]" />
+            <Shield className="w-3.5 h-3.5 text-primary" />
             Legal
           </div>
         </div>

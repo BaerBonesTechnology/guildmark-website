@@ -4,6 +4,7 @@ library;
 import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
+import '../models/json_helpers.dart';
 import '../models/offer.dart';
 
 /// Offers expire in 72 hours by default. The frontend can display a countdown.
@@ -57,11 +58,12 @@ class OfferRepo {
       );
       if (listingRows.isEmpty) throw StateError('Listing $listingId not found');
       final listing = listingRows.first.toColumnMap();
-      if (listing['status'] != 'active') {
+      final listingStatus = enumStr(listing['status']);
+      if (listingStatus != 'active') {
         throw StateError(
-            'Listing $listingId is not active (status: ${listing['status']})');
+            'Listing $listingId is not active (status: $listingStatus)');
       }
-      if (listing['company_id'] == buyerCompanyId) {
+      if (listing['company_id'].toString() == buyerCompanyId) {
         throw ArgumentError('Buyer cannot place an offer on their own listing');
       }
 

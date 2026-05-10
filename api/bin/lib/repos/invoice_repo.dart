@@ -10,6 +10,7 @@ import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
 import '../models/invoice.dart';
+import '../models/json_helpers.dart';
 
 const _invoiceCols = '''
   ti.id, ti.invoice_number, ti.invoice_type, ti.invoice_date,
@@ -78,9 +79,9 @@ class InvoiceRepo {
 
       final modelName = ar['model_name'] as String;
       final serialNumber = ar['serial_number'] as String?;
-      final originalCost = _toDouble(ar['original_purchase_price']);
+      final originalCost = numToDoubleOrNull(ar['original_purchase_price']);
       final marketValue =
-          _toDouble(ar['fair_market_value']) ?? originalCost ?? 0.0;
+          numToDoubleOrNull(ar['fair_market_value']) ?? originalCost ?? 0.0;
       final writeOff = originalCost == null
           ? 0.0
           : (originalCost - marketValue).clamp(0, double.infinity).toDouble();
@@ -100,7 +101,7 @@ class InvoiceRepo {
         ),
         parameters: {'d': invoiceDate},
       );
-      final seq = (seqRow.first.toColumnMap()['seq'] as int?) ?? 1;
+      final seq = numToIntOrNull(seqRow.first.toColumnMap()['seq']) ?? 1;
       final invoiceNum = 'INV-$datePart-${seq.toString().padLeft(4, '0')}';
 
       final result = await tx.execute(
@@ -142,6 +143,4 @@ class InvoiceRepo {
     });
   }
 
-  static double? _toDouble(Object? v) =>
-      v == null ? null : (v as num).toDouble();
 }

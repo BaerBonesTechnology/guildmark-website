@@ -43,11 +43,15 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
 
   final square = SquareService(
     accessToken: cfg.squareAccessToken,
-    locationId: cfg.squareLocationId,
+    locationId:  cfg.squareLocationId,
     environment: cfg.squareEnvironment,
+    apiUrl:      cfg.squareApiUrl,
   );
 
-  final email = EmailService(apiKey: cfg.resendApiKey ?? '');
+  final email = EmailService(
+    apiKey: cfg.resendApiKey ?? '',
+    apiUrl: cfg.resendApiUrl,
+  );
   if (cfg.resendApiKey == null) {
     stdout.writeln('[boot] RESEND_API_KEY not set — emails will be skipped.');
   }
@@ -56,18 +60,20 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     apiKey:       cfg.escrowApiKey ?? '',
     accountEmail: cfg.escrowEmail  ?? '',
     sandbox:      cfg.escrowSandbox,
+    apiUrl:       cfg.escrowApiUrl,
   );
   if (!escrow.isConfigured) {
     stdout.writeln('[boot] ESCROW_API_KEY/ESCROW_EMAIL not set — escrow steps will be skipped.');
   }
 
   final fedex = FedexService(
-    clientId:     cfg.fedexClientId     ?? '',
-    clientSecret: cfg.fedexClientSecret ?? '',
+    clientId:     cfg.fedexApiKey    ?? '',
+    clientSecret: cfg.fedexSecretKey ?? '',
     sandbox:      cfg.fedexSandbox,
+    apiUrl:       cfg.fedexApiUrl,
   );
   if (!fedex.isConfigured) {
-    stdout.writeln('[boot] FEDEX_CLIENT_ID/FEDEX_CLIENT_SECRET not set — tracking lookups disabled.');
+    stdout.writeln('[boot] FEDEX_API_KEY/FEDEX_SECRET_KEY not set — tracking lookups disabled.');
   }
 
   // Inject singletons. Routes read via `context.read<T>()`.
@@ -76,7 +82,7 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
       .use(provider<Db>((_) => db))
       .use(provider<MlClient?>((_) => ml))
       .use(provider<JwtService>((_) => jwt))
-      .use(provider<SquareService>((_) => square))
+      .use(provider<SquareService?>((_) => square))
       .use(provider<EmailService>((_) => email))
       .use(provider<EscrowService>((_) => escrow))
       .use(provider<FedexService>((_) => fedex));

@@ -134,8 +134,8 @@ export function PartnerLetterOfIntent() {
   if (status === "success") {
     return (
       <div className="flex flex-col items-center text-center py-16 space-y-6">
-        <div className="w-14 h-14 rounded-full bg-[#3B82F6]/10 flex items-center justify-center">
-          <Check className="w-7 h-7 text-[#3B82F6]" />
+        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+          <Check className="w-7 h-7 text-primary" />
         </div>
         <div className="space-y-2">
           <h1 className="text-2xl font-bold font-mono">Letter of Intent Signed</h1>
@@ -169,7 +169,7 @@ export function PartnerLetterOfIntent() {
 
       {/* ── Document header ─────────────────────────────────────────────── */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-xs font-mono text-[#3B82F6] uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest">
           <FileText className="w-3.5 h-3.5" />
           Non-Binding Letter of Intent
         </div>
@@ -332,7 +332,7 @@ export function PartnerLetterOfIntent() {
       {/* ── Signing section ─────────────────────────────────────────────── */}
       <div className="border-t border-border pt-10 space-y-6">
         <div className="flex items-center gap-2">
-          <PenLine className="w-5 h-5 text-[#3B82F6]" />
+          <PenLine className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-bold font-mono">Sign this Letter of Intent</h2>
         </div>
         <p className="text-sm text-muted-foreground font-mono">
@@ -374,7 +374,7 @@ export function PartnerLetterOfIntent() {
               onChange={e => setTitle(e.target.value)}
               required
               disabled={status === "loading"}
-              className="w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-[#2b2b2b] placeholder:text-muted-foreground focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30 transition-colors disabled:opacity-50"
+              className="w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
             />
           </div>
 
@@ -392,8 +392,8 @@ export function PartnerLetterOfIntent() {
                 onClick={() => setAgreed(!agreed)}
                 className={`w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer ${
                   agreed
-                    ? "bg-[#3B82F6] border-[#3B82F6]"
-                    : "border-border bg-input-background hover:border-[#3B82F6]"
+                    ? "bg-primary border-primary"
+                    : "border-border bg-input-background hover:border-primary"
                 }`}
               >
                 {agreed && <Check className="w-2.5 h-2.5 text-white" />}
@@ -421,8 +421,8 @@ export function PartnerLetterOfIntent() {
                 signed && !signatureMatch
                   ? "border-red-400 text-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-400/30"
                   : signed && signatureMatch
-                  ? "border-emerald-500 text-[#2b2b2b] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
-                  : "border-border text-[#2b2b2b] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30"
+                  ? "border-emerald-500 text-foreground focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
+                  : "border-border text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30"
               }`}
             />
             {signed && !signatureMatch && (
@@ -449,7 +449,7 @@ export function PartnerLetterOfIntent() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full py-3 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-mono rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-mono rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             {status === "loading" ? (
               <>

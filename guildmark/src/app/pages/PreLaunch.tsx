@@ -44,7 +44,7 @@ async function submitWaitlist(email: string): Promise<void> {
 function FeatureItem({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2 text-sm text-muted-foreground">
-      <CheckCircle2 className="w-4 h-4 text-[#3B82F6] mt-0.5 shrink-0" />
+      <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
       <span>{children}</span>
     </li>
   );
@@ -53,7 +53,7 @@ function FeatureItem({ children }: { children: React.ReactNode }) {
 function TrustBadge({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
   return (
     <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 border rounded-full px-3 py-1.5">
-      <Icon className="w-3.5 h-3.5 text-[#3B82F6]" />
+      <Icon className="w-3.5 h-3.5 text-primary" />
       {text}
     </div>
   );
@@ -87,9 +87,9 @@ function WaitlistForm() {
 
   if (status === "success") {
     return (
-      <div className="flex items-center gap-3 bg-[#3B82F6]/10 border border-[#3B82F6]/30 rounded-xl px-5 py-4">
-        <div className="w-8 h-8 rounded-full bg-[#3B82F6]/20 flex items-center justify-center shrink-0">
-          <Check className="w-4 h-4 text-[#3B82F6]" />
+      <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-xl px-5 py-4">
+        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+          <Check className="w-4 h-4 text-primary" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground font-mono">{t("prelaunch.successTitle")}</p>
@@ -111,13 +111,13 @@ function WaitlistForm() {
             placeholder={t("prelaunch.emailPlaceholder")}
             required
             disabled={status === "loading"}
-            className="w-full bg-input-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm font-mono text-[#2b2b2b] placeholder:text-muted-foreground focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30 transition-colors disabled:opacity-50"
+            className="w-full bg-input-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
           />
         </div>
         <button
           type="submit"
           disabled={status === "loading"}
-          className="px-4 py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] disabled:opacity-60 text-white text-sm font-mono rounded-lg transition-colors flex items-center gap-2 shrink-0"
+          className="px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-mono rounded-lg transition-colors flex items-center gap-2 shrink-0"
         >
           {status === "loading" ? (
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -169,7 +169,7 @@ function PartnerForm() {
   }
 
   const inputClass =
-    "w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-[#2b2b2b] placeholder:text-muted-foreground focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/30 transition-colors disabled:opacity-50";
+    "w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -198,7 +198,7 @@ function PartnerForm() {
         onChange={set("partnerType")}
         required
         disabled={status === "loading"}
-        className={`${inputClass} text-${fields.partnerType ? "[#2b2b2b]" : "muted-foreground"}`}
+        className={`${inputClass} text-${fields.partnerType ? "foreground" : "muted-foreground"}`}
       >
         <option value="" disabled>What best describes your business?</option>
         {PARTNER_TYPES.map(pt => (
@@ -227,7 +227,7 @@ function PartnerForm() {
       </div>
       <button
         type="submit"
-        className="w-full py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm font-mono rounded-lg transition-colors flex items-center justify-center gap-2"
+        className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-mono rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         Review LOI
         <ArrowRight className="w-3.5 h-3.5" />
@@ -254,8 +254,8 @@ export function PreLaunch() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2 mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
-          <span className="text-xs font-mono uppercase tracking-widest text-[#3B82F6]">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="text-xs font-mono uppercase tracking-widest text-primary">
             {t("prelaunch.badge")}
           </span>
         </div>
@@ -263,7 +263,7 @@ export function PreLaunch() {
         <h1 className="text-4xl md:text-5xl font-bold text-foreground text-center max-w-3xl leading-tight mb-5">
           <Trans
             i18nKey="prelaunch.headline"
-            components={{ accent: <span className="text-[#3B82F6]" /> }}
+            components={{ accent: <span className="text-primary" /> }}
           />
         </h1>
 
@@ -277,8 +277,8 @@ export function PreLaunch() {
           {/* Waitlist card */}
           <div className="border rounded-xl p-6 space-y-4 text-left bg-background">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 text-[#3B82F6]" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold font-mono">For IT Teams</h3>
@@ -291,8 +291,8 @@ export function PreLaunch() {
           {/* Partner card */}
           <div className="border rounded-xl p-6 space-y-4 text-left bg-background">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                <Handshake className="w-5 h-5 text-[#3B82F6]" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Handshake className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold font-mono">Become a Partner</h3>
@@ -326,8 +326,8 @@ export function PreLaunch() {
           {/* AMPS */}
           <div className="border rounded-xl p-6 space-y-4 bg-background">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                <Layers className="w-5 h-5 text-[#3B82F6]" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Layers className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold font-mono">AMPS</h3>
@@ -356,8 +356,8 @@ export function PreLaunch() {
           {/* Marketplace */}
           <div className="border rounded-xl p-6 space-y-4 bg-background">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                <Store className="w-5 h-5 text-[#3B82F6]" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Store className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold font-mono">B2B Marketplace</h3>
@@ -407,7 +407,7 @@ export function PreLaunch() {
             },
           ].map(({ n, title, body }) => (
             <div key={n} className="flex gap-4">
-              <div className="w-7 h-7 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
                 {n}
               </div>
               <div>
@@ -420,9 +420,9 @@ export function PreLaunch() {
       </div>
 
       {/* ── Pricing ──────────────────────────────────────────────────────── */}
-      <div className="border border-[#3B82F6]/20 bg-[#3B82F6]/5 rounded-xl p-8 space-y-4">
+      <div className="border border-primary/20 bg-primary/5 rounded-xl p-8 space-y-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold font-mono text-[#3B82F6]">$0</span>
+          <span className="text-3xl font-bold font-mono text-primary">$0</span>
           <span className="text-sm text-muted-foreground font-mono">to get started — no subscription, ever</span>
         </div>
         <div className="grid grid-cols-3 gap-4 pt-2">
@@ -433,8 +433,8 @@ export function PreLaunch() {
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="text-center space-y-1">
               <div className="flex justify-center">
-                <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-[#3B82F6]" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-primary" />
                 </div>
               </div>
               <p className="text-sm font-semibold font-mono">{value}</p>
@@ -462,7 +462,7 @@ export function PreLaunch() {
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Platform</p>
             <button
               onClick={openInsights}
-              className="block text-sm font-mono text-muted-foreground hover:text-[#3B82F6] transition-colors text-left"
+              className="block text-sm font-mono text-muted-foreground hover:text-primary transition-colors text-left"
             >
               {t("prelaunch.readResearch")}
             </button>

@@ -110,7 +110,7 @@ export function MarketCalculator() {
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="apple">Apple</option>
@@ -126,7 +126,7 @@ export function MarketCalculator() {
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="macbook-pro">MacBook Pro 14"</option>
@@ -141,7 +141,7 @@ export function MarketCalculator() {
               <select
                 value={cpu}
                 onChange={(e) => setCpu(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="m2">Apple M2</option>
@@ -158,7 +158,7 @@ export function MarketCalculator() {
               <select
                 value={ram}
                 onChange={(e) => setRam(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="8gb">8 GB</option>
@@ -173,7 +173,7 @@ export function MarketCalculator() {
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="excellent">Excellent (Grade A)</option>
@@ -190,7 +190,7 @@ export function MarketCalculator() {
                 max="240"
                 value={ageMonths}
                 onChange={(e) => setAgeMonths(parseInt(e.target.value) || 0)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               />
             </div>
 
@@ -201,13 +201,13 @@ export function MarketCalculator() {
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-[#3B82F6]"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               />
             </div>
           </div>
         </div>
 
-        <button className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white px-4 py-3 rounded-lg font-mono text-sm transition-colors flex items-center justify-center gap-2">
+        <button className="w-full bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-lg font-mono text-sm transition-colors flex items-center justify-center gap-2">
           <Upload className="w-4 h-4" />
           Bulk Upload (CSV/Excel)
         </button>
@@ -221,7 +221,7 @@ export function MarketCalculator() {
           </div>
         ) : valuation.isPending ? (
           <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-6 h-6 text-[#3B82F6] animate-spin" />
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
             <p className="text-slate-500 dark:text-slate-400 font-mono text-sm">Estimating market value...</p>
           </div>
         ) : valuation.isError ? (
@@ -236,17 +236,17 @@ export function MarketCalculator() {
           </div>
         ) : (
           <>
-            <div className="bg-gradient-to-br from-[#3B82F6]/10 to-white dark:to-slate-800/50 border border-[#3B82F6]/30 rounded-lg p-8">
+            <div className="bg-gradient-to-br from-primary/10 to-white dark:to-slate-800/50 border border-primary/30 rounded-lg p-8">
               <div className="flex items-start justify-between mb-8">
                 <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wide">Estimated Net Recovery</p>
-                  <p className="text-5xl font-mono text-[#3B82F6] mt-2">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className="text-5xl font-mono text-primary mt-2">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-2">
                     Model confidence: {(confidence * 100).toFixed(0)}%
                     {valuation.data?.model_version && ` · ${valuation.data.model_version}`}
                   </p>
                 </div>
-                <DollarSign className="w-8 h-8 text-[#3B82F6]" />
+                <DollarSign className="w-8 h-8 text-primary" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -267,15 +267,15 @@ export function MarketCalculator() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                      <DollarSign className="w-5 h-5 text-[#3B82F6]" />
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm font-mono text-slate-800 dark:text-slate-200">Fair Market Value</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">${fmvPerUnit.toFixed(2)} × {quantity} unit{quantity === 1 ? "" : "s"}</p>
                     </div>
                   </div>
-                  <p className="text-lg font-mono text-[#3B82F6]">+${estimatedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className="text-lg font-mono text-primary">+${estimatedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
 
                 <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700/50">
@@ -306,7 +306,7 @@ export function MarketCalculator() {
                           type="checkbox"
                           checked={includeDataWipe}
                           onChange={(e) => setIncludeDataWipe(e.target.checked)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#3B82F6] focus:ring-[#3B82F6]"
+                          className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
                         />
                       </label>
                     </div>
@@ -331,7 +331,7 @@ export function MarketCalculator() {
 
                 <div className="flex items-center justify-between pt-2">
                   <p className="font-mono text-slate-900 dark:text-slate-100">Net Payment</p>
-                  <p className="text-2xl font-mono text-[#3B82F6]">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className="text-2xl font-mono text-primary">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
             </div>

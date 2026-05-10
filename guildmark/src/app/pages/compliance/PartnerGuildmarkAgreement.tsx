@@ -25,7 +25,7 @@ export function PartnerGuildmarkAgreement() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-[#3B82F6] uppercase tracking-widest">Binding Agreement · Template</p>
+        <p className="text-xs font-mono text-primary uppercase tracking-widest">Binding Agreement · Template</p>
         <h1 className="text-3xl font-bold font-mono">GuildMark Partner Agreement</h1>
         <p className="text-sm font-mono text-muted-foreground">Template Version: May 2025 · Executed copies are individually dated</p>
         <p className="text-sm text-foreground/80 leading-relaxed">
@@ -131,7 +131,7 @@ export function PartnerGuildmarkAgreement() {
         </Section>
 
         <Section n={12} title="Contact">
-          <p>Partner program inquiries: <a href="mailto:partners@guildmark.co" className="text-[#3B82F6] hover:underline">partners@guildmark.co</a></p>
+          <p>Partner program inquiries: <a href="mailto:partners@guildmark.co" className="text-primary hover:underline">partners@guildmark.co</a></p>
         </Section>
 
       </div>

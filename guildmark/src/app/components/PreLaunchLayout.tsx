@@ -41,7 +41,7 @@ function InsightsDrawer() {
           {/* Drag handle */}
           <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-border shrink-0">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-[#3B82F6]" />
+              <BookOpen className="w-4 h-4 text-primary" />
               <span className="text-sm font-mono text-foreground">{t("insights.title")}</span>
             </div>
             <button
@@ -117,7 +117,7 @@ export function PreLaunchLayout() {
           </p>
           <button
             onClick={openInsights}
-            className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-[#3B82F6] transition-colors"
+            className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-primary transition-colors"
           >
             <BookOpen className="w-3 h-3" />
             {t("footer.marketResearch")}

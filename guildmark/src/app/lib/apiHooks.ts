@@ -26,6 +26,7 @@ import type { PortfolioSummary } from "../models/portfolio";
 import type { PaginatedResponse } from "../models/pagination";
 import type { ValuationEstimateRequest, ValuationEstimateResponse } from "../models/valuation";
 import type { AssetValuationsResponse } from "../models/asset_valuation";
+import type { Order, OrdersResponse } from "../models/order";
 
 // ---------------------------------------------------------------------------
 // Query key factory — centralizes cache key naming
@@ -53,6 +54,11 @@ export const queryKeys = {
 
   // Valuation history
   assetValuations:   (id: string)        => ["asset-valuations", id] as const,
+
+  // Orders
+  orders:            ()                  => ["orders"] as const,
+  order:             (id: string)        => ["order", id] as const,
+  orderTracking:     (id: string)        => ["order-tracking", id] as const,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -132,6 +138,30 @@ export function useWithdrawListing() {
       api.patch<Listing>(`/seller/listings/${listingId}/withdraw`, {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.myListings() });
+    },
+  });
+}
+
+export function usePublishListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (listingId: string) =>
+      api.patch<Listing>(`/seller/listings/${listingId}/publish`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.myListings() });
+      qc.invalidateQueries({ queryKey: queryKeys.marketplace() });
+    },
+  });
+}
+
+export function useUpdateListingPrice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ listingId, listed_price }: { listingId: string; listed_price: number }) =>
+      api.patch<Listing>(`/seller/listings/${listingId}`, { listed_price }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.myListings() });
+      qc.invalidateQueries({ queryKey: queryKeys.marketplace() });
     },
   });
 }
@@ -315,11 +345,23 @@ export function useGenerateInvoice() {
 // ---------------------------------------------------------------------------
 
 export interface DashboardData {
-  total_fleet_value:     number;
-  projected_loss_6mo:    number;
-  recovery_opportunity:  number;
-  idle_units:            number;
-  fleet_efficiency_pct:  number;
+  // Fleet KPIs
+  total_fleet_value:     number;  // in_market + staged + amps_portfolio
+  in_market_value:       number;  // active listings only
+  staged_value:          number;  // draft / expired / withdrawn listings
+  amps_portfolio_value:  number;  // latest valuation_snapshots row (0 if no AMPS)
+  total_listed_value:    number;  // SUM(listed_price) across all non-sold listings
+  total_market_value:    number;  // SUM(fair_market_value) across all non-sold listings
+  projected_loss_6mo:    number;  // 0 until ML depreciation endpoint is built
+  recovery_opportunity:  number;  // count of non-overpriced active listings
+  idle_units:            number;  // total quantity across active listings
+  fleet_efficiency_pct:  number;  // % of active listings that are not overpriced
+  // Listing counts
+  active_listings:       number;
+  pending_offers:        number;
+  total_recovered:       number;
+  overpriced_count:      number;
+  // Detail table
   high_demand_assets:    Array<{
     asset_id:     string;
     model_name:   string;
@@ -328,6 +370,7 @@ export interface DashboardData {
     peak_date:    string;
     status:       "ready" | "hold";
   }>;
+  // Chart — empty array until ML tier
   value_trend: Array<{
     month:   string;
     current: number;
@@ -382,5 +425,176 @@ export function useAssetValuations(assetId: string | null) {
       api.get<AssetValuationsResponse>(`/assets/${assetId}/valuations?limit=100`),
     enabled:   !!assetId,
     staleTime: 30 * 1000,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Subscription hooks
+// ---------------------------------------------------------------------------
+
+export interface SubscriptionInvoice {
+  id:           string;
+  plan:         string;
+  amount_cents: number;
+  currency:     string;
+  status:       string;
+  receipt_url:  string | null;
+  period_start: string;
+  period_end:   string;
+  created_at:   string;
+}
+
+export interface SubscriptionData {
+  plan:                 string;
+  status:               string;
+  currentPeriodStart:   string | null;
+  currentPeriodEnd:     string | null;
+  invoices:             SubscriptionInvoice[];
+}
+
+export function useSubscription() {
+  return useQuery({
+    queryKey: ["subscription"] as const,
+    queryFn:  () => api.get<SubscriptionData>("/subscriptions/current"),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSubscriptionCheckout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      plan:            string;
+      source_id:       string;
+      save_card?:      boolean;
+      cardholder_name?: string;
+      billing_address?: {
+        business_name?:  string;
+        address_line_1:  string;
+        address_line_2?: string;
+        city:            string;
+        state:           string;
+        postal_code:     string;
+      };
+    }) =>
+      api.post<{ plan: string; status: string; invoice: SubscriptionInvoice }>(
+        "/subscriptions/checkout",
+        data,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["subscription"] });
+      // Refresh the auth user so subscription_plan reflects the new tier
+      qc.invalidateQueries({ queryKey: ["auth-user"] });
+    },
+  });
+}
+
+export function useCancelSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<{ cancelled: boolean }>("/subscriptions/cancel", {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["subscription"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Platform fee config
+// ---------------------------------------------------------------------------
+
+export interface PlatformFees {
+  seller_fee_free:     number;
+  seller_fee_starter:  number;
+  seller_fee_growth:   number;
+  seller_fee_pro:      number;
+  buyer_fee:           number;
+  deferral_fee:        number;
+  data_wipe_price:     number;
+  updated_at:          string;
+  updated_by:          string | null;
+}
+
+/**
+ * Returns the current platform fee rates. Cached for 10 minutes — rates
+ * change infrequently and don't need to be real-time.
+ */
+export function usePlatformFees() {
+  return useQuery({
+    queryKey: ["platform-fees"] as const,
+    queryFn:  () => api.get<PlatformFees>("/config/fees"),
+    staleTime: 60 * 1000,   // 1 minute — admin changes should be visible quickly
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+/** Fetch all orders (sales + purchases) for the authenticated company. */
+export function useOrders() {
+  return useQuery({
+    queryKey: queryKeys.orders(),
+    queryFn:  () => api.get<OrdersResponse>("/orders"),
+    staleTime: 60 * 1000,   // 1 minute
+  });
+}
+
+/** Fetch a single order by ID. */
+export function useOrder(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.order(id ?? ""),
+    queryFn:  () => api.get<Order>(`/orders/${id}`),
+    enabled:  !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// FedEx live tracking
+// ---------------------------------------------------------------------------
+
+export interface TrackEvent {
+  event_type:        string;
+  event_description: string;
+  timestamp:         string;
+  city?:             string;
+  state?:            string;
+  country?:          string;
+}
+
+export interface TrackingData {
+  tracking_number:     string;
+  carrier:             string;
+  status_code:         string;
+  status:              string;
+  estimated_delivery:  string | null;
+  actual_delivery:     string | null;
+  events:              TrackEvent[];
+}
+
+/**
+ * Live FedEx tracking for an order. Only fires when the order has been shipped.
+ * Refreshes every 3 minutes — FedEx scan events update infrequently.
+ *
+ * Returns null data (not an error) when FedEx is unconfigured (502) or the
+ * order has no tracking number yet (409) — the UI should degrade gracefully.
+ */
+export function useOrderTracking(orderId: string | null, enabled = true) {
+  return useQuery({
+    queryKey:  queryKeys.orderTracking(orderId ?? ""),
+    queryFn:   async () => {
+      try {
+        return await api.get<TrackingData>(`/orders/${orderId}/track`);
+      } catch (err: unknown) {
+        // 409 = no tracking number yet, 502 = FedEx down — not a hard error
+        const status = (err as { status?: number })?.status;
+        if (status === 409 || status === 502) return null;
+        throw err;
+      }
+    },
+    enabled:   !!orderId && enabled,
+    staleTime: 3 * 60 * 1000,   // 3 minutes
+    retry:     1,
   });
 }

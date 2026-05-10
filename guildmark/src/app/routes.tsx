@@ -33,6 +33,7 @@ import { SellerPlatformAgreement } from "./pages/compliance/SellerPlatformAgreem
 import { SellerLetterOfIntent } from "./pages/compliance/SellerLetterOfIntent";
 import { PartnerLetterOfIntent } from "./pages/compliance/PartnerLetterOfIntent";
 import { PartnerGuildmarkAgreement } from "./pages/compliance/PartnerGuildmarkAgreement";
+import { ProSignup } from "./pages/amps/ProSignup";
 
 // ── Shared compliance children ─────────────────────────────────────────────
 const complianceChildren = [
@@ -119,6 +120,8 @@ export const router = createBrowserRouter([
     path: "/amps",
     element: <ProtectedRoute />,
     children: [
+      // Pro signup — no sidebar, shown to free-tier users upgrading
+      { path: "pro-signup", Component: ProSignup },
       {
         path: "/amps",
         Component: AMPSLayout,

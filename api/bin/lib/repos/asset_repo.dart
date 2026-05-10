@@ -3,6 +3,7 @@ library;
 
 import '../db/pool.dart';
 import '../models/asset.dart';
+import '../models/json_helpers.dart';
 import '../models/paginated.dart';
 
 class AmpsAssetFilters {
@@ -80,15 +81,16 @@ class AssetRepo {
       ''');
     }
 
-    final offset = (filters.page - 1) * filters.pageSize;
-    params['limit']  = filters.pageSize;
-    params['offset'] = offset;
-
+    // Count before adding pagination params — Sql.named() rejects superfluous vars.
     final countResult = await _db.query(
       'SELECT COUNT(*) AS n FROM assets a $where',
       parameters: params,
     );
-    final total = (countResult.first.toColumnMap()['n'] as int?) ?? 0;
+    final total = numToIntOrNull(countResult.first.toColumnMap()['n']) ?? 0;
+
+    final offset = (filters.page - 1) * filters.pageSize;
+    params['limit']  = filters.pageSize;
+    params['offset'] = offset;
 
     final rows = await _db.query(
       'SELECT a.$_cols FROM assets a $where ORDER BY a.created_at DESC LIMIT @limit OFFSET @offset',
@@ -101,6 +103,50 @@ class AssetRepo {
       page:     filters.page,
       pageSize: filters.pageSize,
     );
+  }
+
+  /// Create a new manual asset record and return the persisted row.
+  Future<Asset> create({
+    required String companyId,
+    required String modelName,
+    required String assetType,
+    required String conditionGrade,
+    required int    quantity,
+    String? reasonForOffload,
+    double? ramGb,
+    double? storageGb,
+    int?    cpuScore,
+    String? serialNumber,
+    String? department,
+  }) async {
+    final result = await _db.query(
+      '''
+      INSERT INTO assets (
+        company_id, mdm_source, model_name, asset_type,
+        condition_grade, quantity, reason_for_offload,
+        ram_gb, storage_gb, cpu_score, serial_number, department
+      ) VALUES (
+        @companyId, 'manual'::mdm_source, @modelName, @assetType::asset_type,
+        @condGrade::condition_grade, @quantity, @reason,
+        @ramGb, @storageGb, @cpuScore, @serial, @dept
+      )
+      RETURNING $_cols
+      ''',
+      parameters: {
+        'companyId': companyId,
+        'modelName': modelName,
+        'assetType': assetType,
+        'condGrade': conditionGrade,
+        'quantity':  quantity,
+        'reason':    reasonForOffload,
+        'ramGb':     ramGb,
+        'storageGb': storageGb,
+        'cpuScore':  cpuScore,
+        'serial':    serialNumber,
+        'dept':      department,
+      },
+    );
+    return Asset.fromRow(result.first.toColumnMap());
   }
 
   /// Single asset detail (validates company ownership).

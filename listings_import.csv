@@ -1,0 +1,44 @@
+model_name,asset_type,condition,quantity,listed_price,ram_gb,storage_gb,cpu_score,serial_number,reason
+"MacBook Pro 14"" M3 Pro",laptop,A,1,821.16,18,512,9200,SN3342331444,Remote workforce reduction
+"MacBook Pro 14"" M3 Pro",laptop,B,1,1021.37,18,512,9200,SN3585650756,Remote workforce reduction
+"MacBook Pro 14"" M3 Pro",laptop,A,12,309.0,18,512,9200,SN2801823908,MDM migration — fleet standardization
+"MacBook Pro 16"" M3 Max",laptop,B,1,1886.02,48,1024,9800,SN6756332150,Upgrading to newer model
+"MacBook Pro 16"" M3 Max",laptop,A,6,1875.82,48,1024,9800,SN5710360983,
+"MacBook Pro 16"" M3 Max",laptop,B,10,1584.77,48,1024,9800,SN8429141456,Remote workforce reduction
+"MacBook Air 13"" M2",laptop,B,2,137.28,8,256,7800,SN1298737106,Merging duplicate device pools
+"MacBook Air 15"" M2",laptop,B,2,744.41,16,512,7900,SN6927597015,MDM migration — fleet standardization
+Dell Latitude 5540,laptop,B,3,384.74,16,512,6200,SN8173347748,Merging duplicate device pools
+Dell Latitude 5540,laptop,C,11,623.93,16,512,6200,SN4131575764,Upgrading to newer model
+Dell Latitude 5540,laptop,B,7,644.52,16,512,6200,SN3392080953,Merging duplicate device pools
+Dell Latitude 7440,laptop,A,4,1467.85,32,512,7100,SN7017956955,Hardware refresh cycle
+Dell Latitude 7440,laptop,A,10,660.16,32,512,7100,SN7439149233,Merging duplicate device pools
+Lenovo ThinkPad X1 Carbon,laptop,A,5,894.08,16,512,6800,SN7805745017,Remote workforce reduction
+Lenovo ThinkPad X1 Carbon,laptop,B,6,882.14,16,512,6800,SN3119634399,
+Lenovo ThinkPad T14s,laptop,A,3,152.5,16,256,6100,SN8217611860,Remote workforce reduction
+HP EliteBook 840 G10,laptop,B,7,204.85,16,512,6500,SN7567496105,Remote workforce reduction
+Dell XPS 15,laptop,C,12,975.32,32,1024,8100,SN8047877267,Hardware refresh cycle
+Dell OptiPlex 7090,desktop,B,3,197.29,16,512,5800,SN8385972235,Remote workforce reduction
+Dell OptiPlex 7090,desktop,A,9,816.69,16,512,5800,SN3615507143,Upgrading to newer model
+HP EliteDesk 800 G9,desktop,A,9,281.43,32,512,6400,SN7867414708,MDM migration — fleet standardization
+HP EliteDesk 800 G9,desktop,A,2,550.07,32,512,6400,SN2320763135,Hardware refresh cycle
+Apple Mac Mini M2 Pro,desktop,C,2,616.31,16,512,9100,SN4504793184,
+Apple Mac Studio M2 Ultra,desktop,A,3,563.93,64,1024,9900,SN3361388464,Surplus from office downsizing
+Apple Mac Studio M2 Ultra,desktop,C,10,933.22,64,1024,9900,SN3962958940,Merging duplicate device pools
+Apple Mac Studio M2 Ultra,desktop,B,7,514.94,64,1024,9900,SN7517938612,Hardware refresh cycle
+"iPad Pro 12.9"" M2",tablet,A,2,312.75,8,256,7200,SN3379074819,Remote workforce reduction
+iPad Air 5th Gen,tablet,A,2,112.62,8,256,6300,SN1983297492,Hardware refresh cycle
+iPhone 15 Pro,phone,A,9,543.94,8,256,8500,SN3084839399,Remote workforce reduction
+iPhone 15 Pro,phone,A,12,176.34,8,256,8500,SN2748309234,Hardware refresh cycle
+iPhone 14,phone,C,7,188.35,6,128,7200,SN4131356954,Merging duplicate device pools
+Samsung Galaxy S23,phone,C,2,387.74,8,256,7600,SN4700855390,Upgrading to newer model
+Samsung Galaxy S23,phone,A,4,156.43,8,256,7600,SN2811967841,Surplus from office downsizing
+Samsung Galaxy S23,phone,B,4,504.26,8,256,7600,SN3363629219,Hardware refresh cycle
+"Dell UltraSharp 27"" U2723D",monitor,C,1,351.86,,,,SN4645120421,Upgrading to newer model
+"Dell UltraSharp 27"" U2723D",monitor,B,8,124.11,,,,SN1251837136,MDM migration — fleet standardization
+"Dell UltraSharp 27"" U2723D",monitor,A,7,388.17,,,,SN8667072205,Surplus from office downsizing
+"LG 27"" 4K UHD 27UK850",monitor,C,12,54.31,,,,SN3090237817,Upgrading to newer model
+"LG 27"" 4K UHD 27UK850",monitor,B,4,304.42,,,,SN3328710672,Merging duplicate device pools
+Cisco Catalyst 9200L,networking,A,1,451.54,,,,SN3281169403,Hardware refresh cycle
+Cisco Catalyst 9200L,networking,C,2,947.75,,,,SN9881824272,
+Ubiquiti UniFi 48-Port,networking,B,2,162.16,,,,SN3553440342,Remote workforce reduction
+Apple Mac Pro M2 Ultra,server,B,11,871.03,192,8192,9950,SN2119980130,Merging duplicate device pools

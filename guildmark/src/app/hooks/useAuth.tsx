@@ -9,13 +9,15 @@ import {
 import { api, setAccessToken, clearAccessToken, ApiError } from "../lib/api";
 import type { LoginResponse, SignupRequest } from "../models/auth";
 
-interface AuthUser {
-  id:         string;
-  email:      string;
-  full_name:  string;
-  role:       "admin" | "member" | "viewer";
-  company_id: string;
-  company:    string;
+export interface AuthUser {
+  id:                  string;
+  email:               string;
+  full_name:           string;
+  role:                "admin" | "member" | "viewer";
+  company_id:          string;
+  company:             string;
+  subscription_plan:   "free" | "starter" | "growth" | "pro";
+  subscription_status: "active" | "cancelled" | "past_due";
 }
 
 interface AuthContextType {

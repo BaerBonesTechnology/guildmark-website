@@ -56,7 +56,7 @@ export function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Password</Label>
-                <Link to="/forgot-password" className="text-xs text-[#3B82F6] hover:underline font-mono">
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline font-mono">
                   Forgot password?
                 </Link>
               </div>
@@ -72,7 +72,7 @@ export function Login() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-mono"
               disabled={submitting}
             >
               {submitting ? "Signing in..." : "Sign In"}
@@ -80,7 +80,7 @@ export function Login() {
             <div className="text-center text-sm text-muted-foreground space-y-2">
               <p className="font-mono">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-[#3B82F6] hover:underline">
+                <Link to="/signup" className="text-primary hover:underline">
                   Sign up free
                 </Link>
               </p>

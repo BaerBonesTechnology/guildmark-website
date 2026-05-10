@@ -1,10 +1,23 @@
+/// POST /admin/auth
+///
+/// Authenticates a GuildMark employee for DevDash access.
+///
+/// Lookup order:
+///   1. guildmark_employees table — email + bcrypt password.
+///   2. ADMIN_AUTH_USER / ADMIN_AUTH_PASS env vars — emergency fallback when
+///      no employee rows exist yet (bootstrap scenario).
+///
+/// Returns: { access_token, employee }
+///   employee: { id, email, full_name, role }
 library;
 
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/auth/jwt.dart';
+import '../../lib/auth/password.dart';
 import '../../lib/config.dart';
 import '../../lib/crypto_utils.dart';
+import '../../lib/db/pool.dart';
 import '../../lib/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -12,29 +25,80 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
-  final cfg = context.read<AppConfig>();
-  if (cfg.adminAuthUser == null || cfg.adminAuthPass == null) {
-    return jsonError(503, 'ADMIN_AUTH_NOT_CONFIGURED', 'Admin credentials are not configured');
-  }
-
   final body = await context.request.json() as Map<String, dynamic>?;
-  final username = (body?['username'] as String?)?.trim();
+  final email    = (body?['email'] as String?)?.trim().toLowerCase()
+                ?? (body?['username'] as String?)?.trim().toLowerCase();
   final password = body?['password'] as String?;
 
-  if (username == null || username.isEmpty || password == null || password.isEmpty) {
-    return badRequest('username and password are required');
+  if (email == null || email.isEmpty || password == null || password.isEmpty) {
+    return badRequest('email and password are required');
   }
 
-  // Use constant-time comparison to prevent timing-based credential inference.
-  final userMatch = constantTimeEquals(username, cfg.adminAuthUser!);
-  final passMatch = constantTimeEquals(password, cfg.adminAuthPass!);
-  if (!userMatch || !passMatch) {
-    return unauthorized('Invalid credentials');
-  }
+  final cfg = context.read<AppConfig>();
+  final jwt = context.read<JwtService>();
+  final db  = context.read<Db>();
 
-  final token = context.read<JwtService>().issueAccessToken(
-    AccessClaims(userId: 'admin', companyId: 'admin', role: 'admin'),
+  // ── 1. Employee table lookup ─────────────────────────────────────────────
+  final rows = await db.query(
+    '''
+    SELECT id::text, email::text, password_hash, full_name, role::text
+    FROM guildmark_employees
+    WHERE email = @email AND is_active = true
+    LIMIT 1
+    ''',
+    parameters: {'email': email},
   );
 
-  return Response.json(body: {'access_token': token});
+  if (rows.isNotEmpty) {
+    final row  = rows.first.toColumnMap();
+    final hash = row['password_hash'].toString();
+
+    if (!verifyPassword(password, hash)) return unauthorized('Invalid credentials');
+
+    final id       = row['id'].toString();
+    final role     = row['role'].toString();
+    final fullName = row['full_name'].toString();
+
+    // Update last_login_at
+    await db.query(
+      'UPDATE guildmark_employees SET last_login_at = now() WHERE id = @id',
+      parameters: {'id': id},
+    );
+
+    final token = jwt.issueAccessToken(
+      AccessClaims(userId: id, companyId: 'devdash', role: 'admin'),
+    );
+
+    return Response.json(body: {
+      'access_token': token,
+      'employee': {
+        'id':        id,
+        'email':     email,
+        'full_name': fullName,
+        'role':      role,
+      },
+    });
+  }
+
+  // ── 2. Env-var fallback (bootstrap / emergency access) ───────────────────
+  if (cfg.adminAuthUser != null && cfg.adminAuthPass != null) {
+    final userMatch = constantTimeEquals(email,    cfg.adminAuthUser!);
+    final passMatch = constantTimeEquals(password, cfg.adminAuthPass!);
+    if (userMatch && passMatch) {
+      final token = jwt.issueAccessToken(
+        AccessClaims(userId: 'admin', companyId: 'devdash', role: 'admin'),
+      );
+      return Response.json(body: {
+        'access_token': token,
+        'employee': {
+          'id':        'admin',
+          'email':     cfg.adminAuthUser!,
+          'full_name': 'Admin',
+          'role':      'superadmin',
+        },
+      });
+    }
+  }
+
+  return unauthorized('Invalid credentials');
 }

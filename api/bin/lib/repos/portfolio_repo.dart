@@ -7,6 +7,7 @@
 library;
 
 import '../db/pool.dart';
+import '../models/json_helpers.dart';
 import '../models/portfolio.dart';
 
 class PortfolioRepo {
@@ -59,46 +60,43 @@ class PortfolioRepo {
     );
     final snap = snapRows.isEmpty ? <String, Object?>{} : snapRows.first.toColumnMap();
 
-    final totalPortfolioValue = _toDouble(snap['total_portfolio_value']) ?? 0.0;
-    final totalBookValue      = _toDouble(snap['total_book_value'])      ?? 0.0;
-    final totalDepreciation   = _toDouble(snap['total_depreciation'])    ?? 0.0;
-    final totalDevices        = (hero['total_devices'] as int?)          ?? 0;
-    final avgAgeMonths        = _toDouble(hero['avg_age_months'])        ?? 0.0;
-    final assetsAtRisk        = (hero['assets_at_risk'] as int?)         ?? 0;
+    final totalPortfolioValue = numToDoubleOrNull(snap['total_portfolio_value']) ?? 0.0;
+    final totalBookValue      = numToDoubleOrNull(snap['total_book_value'])      ?? 0.0;
+    final totalDepreciation   = numToDoubleOrNull(snap['total_depreciation'])    ?? 0.0;
+    final totalDevices        = numToIntOrNull(hero['total_devices'])            ?? 0;
+    final avgAgeMonths        = numToDoubleOrNull(hero['avg_age_months'])        ?? 0.0;
+    final assetsAtRisk        = numToIntOrNull(hero['assets_at_risk'])           ?? 0;
     final depreciationPct     = totalBookValue > 0
         ? totalDepreciation / totalBookValue
         : 0.0;
 
     // -- Bucket breakdowns ---------------------------------------------------
-    final typeRows = await _db.query(
+    // Single query using UNION ALL — one round-trip for both breakdowns.
+    // TODO: Populate bucket `value` field once per-asset fair_market_value is
+    // stored on the assets table (currently only on listings). For now value
+    // is set to 0.0 as a placeholder.
+    final bucketRows = await _db.query(
       '''
-      SELECT asset_type::TEXT AS key, COUNT(*) AS cnt
-      FROM assets
-      WHERE company_id = @cid
-      GROUP BY asset_type
-      ''',
-      parameters: {'cid': companyId},
-    );
-    final condRows = await _db.query(
-      '''
-      SELECT condition_grade::TEXT AS key, COUNT(*) AS cnt
-      FROM assets
-      WHERE company_id = @cid
-      GROUP BY condition_grade
+      SELECT 'type'      AS bucket, asset_type::TEXT      AS key, COUNT(*) AS cnt
+      FROM assets WHERE company_id = @cid GROUP BY asset_type
+      UNION ALL
+      SELECT 'condition' AS bucket, condition_grade::TEXT AS key, COUNT(*) AS cnt
+      FROM assets WHERE company_id = @cid GROUP BY condition_grade
       ''',
       parameters: {'cid': companyId},
     );
 
-    // TODO: Populate bucket `value` field once per-asset fair_market_value is
-    // stored on the assets table (currently only on listings). For now value
-    // is set to 0.0 as a placeholder.
-    Map<String, PortfolioBucket> toBuckets(List rows) => {
-          for (final r in rows)
-            r.toColumnMap()['key'] as String: PortfolioBucket(
-              count: (r.toColumnMap()['cnt'] as int?) ?? 0,
-              value: 0.0,
-            ),
-        };
+    final Map<String, PortfolioBucket> byType      = {};
+    final Map<String, PortfolioBucket> byCondition = {};
+    for (final r in bucketRows) {
+      final row    = r.toColumnMap();
+      final bucket = PortfolioBucket(count: numToIntOrNull(row['cnt']) ?? 0, value: 0.0);
+      if (row['bucket'] == 'type') {
+        byType[row['key'] as String] = bucket;
+      } else {
+        byCondition[row['key'] as String] = bucket;
+      }
+    }
 
     // -- Trend series --------------------------------------------------------
     final trendRows = await _db.query(
@@ -124,8 +122,8 @@ class PortfolioRepo {
       depreciationPct:     depreciationPct,
       avgAssetAgeMonths:   avgAgeMonths,
       assetsAtRisk:        assetsAtRisk,
-      byType:              toBuckets(typeRows),
-      byCondition:         toBuckets(condRows),
+      byType:              byType,
+      byCondition:         byCondition,
       trend:               trend,
     );
   }
@@ -159,6 +157,4 @@ class PortfolioRepo {
     // the nightly job is implemented.
   }
 
-  static double? _toDouble(Object? v) =>
-      v == null ? null : (v as num).toDouble();
 }

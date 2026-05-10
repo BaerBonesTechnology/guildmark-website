@@ -46,8 +46,8 @@ mixin _$Asset {
   @NullableIsoDateTimeConverter()
   DateTime? get lastMdmSync => throw _privateConstructorUsedError;
   double? get cpuScore => throw _privateConstructorUsedError;
-  int? get ramGb => throw _privateConstructorUsedError;
-  int? get storageGb => throw _privateConstructorUsedError;
+  double? get ramGb => throw _privateConstructorUsedError;
+  double? get storageGb => throw _privateConstructorUsedError;
 
   /// Serializes this Asset to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -86,8 +86,8 @@ abstract class $AssetCopyWith<$Res> {
       String? costCenter,
       @NullableIsoDateTimeConverter() DateTime? lastMdmSync,
       double? cpuScore,
-      int? ramGb,
-      int? storageGb});
+      double? ramGb,
+      double? storageGb});
 }
 
 /// @nodoc
@@ -222,11 +222,11 @@ class _$AssetCopyWithImpl<$Res, $Val extends Asset>
       ramGb: freezed == ramGb
           ? _value.ramGb
           : ramGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
       storageGb: freezed == storageGb
           ? _value.storageGb
           : storageGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
     ) as $Val);
   }
 }
@@ -261,8 +261,8 @@ abstract class _$$AssetImplCopyWith<$Res> implements $AssetCopyWith<$Res> {
       String? costCenter,
       @NullableIsoDateTimeConverter() DateTime? lastMdmSync,
       double? cpuScore,
-      int? ramGb,
-      int? storageGb});
+      double? ramGb,
+      double? storageGb});
 }
 
 /// @nodoc
@@ -395,11 +395,11 @@ class __$$AssetImplCopyWithImpl<$Res>
       ramGb: freezed == ramGb
           ? _value.ramGb
           : ramGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
       storageGb: freezed == storageGb
           ? _value.storageGb
           : storageGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
     ));
   }
 }
@@ -486,9 +486,9 @@ class _$AssetImpl extends _Asset {
   @override
   final double? cpuScore;
   @override
-  final int? ramGb;
+  final double? ramGb;
   @override
-  final int? storageGb;
+  final double? storageGb;
 
   @override
   String toString() {
@@ -618,8 +618,8 @@ abstract class _Asset extends Asset {
       final String? costCenter,
       @NullableIsoDateTimeConverter() final DateTime? lastMdmSync,
       final double? cpuScore,
-      final int? ramGb,
-      final int? storageGb}) = _$AssetImpl;
+      final double? ramGb,
+      final double? storageGb}) = _$AssetImpl;
   const _Asset._() : super._();
 
   factory _Asset.fromJson(Map<String, dynamic> json) = _$AssetImpl.fromJson;
@@ -673,9 +673,9 @@ abstract class _Asset extends Asset {
   @override
   double? get cpuScore;
   @override
-  int? get ramGb;
+  double? get ramGb;
   @override
-  int? get storageGb;
+  double? get storageGb;
 
   /// Create a copy of Asset
   /// with the given fields replaced by the non-null parameter values.

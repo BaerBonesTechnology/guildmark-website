@@ -33,8 +33,8 @@ _$ListingImpl _$$ListingImplFromJson(Map<String, dynamic> json) =>
       conditionGrade: json['condition_grade'] as String?,
       quantity: (json['quantity'] as num?)?.toInt(),
       cpuScore: (json['cpu_score'] as num?)?.toDouble(),
-      ramGb: (json['ram_gb'] as num?)?.toInt(),
-      storageGb: (json['storage_gb'] as num?)?.toInt(),
+      ramGb: (json['ram_gb'] as num?)?.toDouble(),
+      storageGb: (json['storage_gb'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$$ListingImplToJson(_$ListingImpl instance) =>
@@ -99,8 +99,9 @@ _$MarketplaceListingImpl _$$MarketplaceListingImplFromJson(
       conditionGrade: json['condition_grade'] as String?,
       quantity: (json['quantity'] as num?)?.toInt(),
       cpuScore: (json['cpu_score'] as num?)?.toDouble(),
-      ramGb: (json['ram_gb'] as num?)?.toInt(),
-      storageGb: (json['storage_gb'] as num?)?.toInt(),
+      ramGb: (json['ram_gb'] as num?)?.toDouble(),
+      storageGb: (json['storage_gb'] as num?)?.toDouble(),
+      sellerName:     json['seller_name']     as String?,
       sellerIndustry: json['seller_industry'] as String?,
       sellerSizeBand: json['seller_size_band'] as String?,
     );
@@ -138,6 +139,7 @@ Map<String, dynamic> _$$MarketplaceListingImplToJson(
       if (instance.cpuScore case final value?) 'cpu_score': value,
       if (instance.ramGb case final value?) 'ram_gb': value,
       if (instance.storageGb case final value?) 'storage_gb': value,
+      if (instance.sellerName     case final value?) 'seller_name':     value,
       if (instance.sellerIndustry case final value?) 'seller_industry': value,
       if (instance.sellerSizeBand case final value?) 'seller_size_band': value,
     };

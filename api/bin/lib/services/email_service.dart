@@ -11,14 +11,19 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class EmailService {
-  EmailService({required this.apiKey, this.from = 'GuildMark <noreply@guildmark.co>'});
+  EmailService({
+    required this.apiKey,
+    this.from = 'GuildMark <noreply@guildmark.co>',
+    String? apiUrl,
+  }) : _endpoint = apiUrl ?? 'https://api.resend.com/emails';
 
   final String apiKey;
 
   /// The RFC 5322 "From" address used for every outbound email.
   final String from;
 
-  static const _endpoint = 'https://api.resend.com/emails';
+  /// Resend emails endpoint — injected from RESEND_API_URL.
+  final String _endpoint;
 
   // ---------------------------------------------------------------------------
   // Public send methods
@@ -76,6 +81,29 @@ class EmailService {
         to: toEmail,
         subject: 'Reset your GuildMark password',
         html: _passwordResetHtml(email: toEmail, resetLink: resetLink),
+      );
+
+  /// Notifies operations@guildmark.co that a new subscriber has joined.
+  ///
+  /// [source]  — 'waitlist' | 'partner' | 'contact'
+  /// [notes]   — raw notes string stored in the DB (may contain partner fields)
+  /// [message] — contact message, only set for source='contact'
+  Future<bool> sendNewSubscriberNotification({
+    required String subscriberEmail,
+    required String source,
+    String? notes,
+    String? message,
+    DateTime? signedUpAt,
+  }) => _send(
+        to: 'operations@guildmark.co',
+        subject: '[GuildMark] New $source signup: $subscriberEmail',
+        html: _newSubscriberHtml(
+          subscriberEmail: subscriberEmail,
+          source: source,
+          notes: notes,
+          message: message,
+          signedUpAt: signedUpAt ?? DateTime.now().toUtc(),
+        ),
       );
 
   /// Notifies a seller that they received a new offer on their listing.
@@ -392,6 +420,100 @@ You're receiving this because $email signed up at guildmark.co
     <div class="footer"><p>Sent to $email via guildmark.co</p></div>
   </div>
 </body></html>
+''';
+  }
+
+  String _newSubscriberHtml({
+    required String subscriberEmail,
+    required String source,
+    String? notes,
+    String? message,
+    required DateTime signedUpAt,
+  }) {
+    final ts = signedUpAt.toString().substring(0, 19) + ' UTC';
+
+    // Parse structured partner fields out of the notes string.
+    // Format: "Name: X | Company: Y | Type: Z | Phone: X | LOI: accepted YYYY-MM-DD"
+    final fields = <String, String>{};
+    if (notes != null && notes.isNotEmpty) {
+      for (final part in notes.split(' | ')) {
+        final idx = part.indexOf(': ');
+        if (idx != -1) {
+          fields[part.substring(0, idx).trim()] = part.substring(idx + 2).trim();
+        }
+      }
+    }
+
+    final sourceLabel = source == 'partner'
+        ? '🤝 Partner'
+        : source == 'contact'
+            ? '✉️ Contact'
+            : '📋 Waitlist';
+
+    final sourceColor = source == 'partner'
+        ? '#7c3aed'
+        : source == 'contact'
+            ? '#0369a1'
+            : '#4f46e5';
+
+    String rows = '';
+    void row(String label, String? value) {
+      if (value == null || value.isEmpty) return;
+      rows += '''
+        <tr>
+          <td style="padding:8px 12px;font-size:13px;color:#6b7280;font-weight:600;white-space:nowrap;vertical-align:top;">$label</td>
+          <td style="padding:8px 12px;font-size:13px;color:#111827;word-break:break-all;">$value</td>
+        </tr>''';
+    }
+
+    row('Email', subscriberEmail);
+    row('Source', source);
+    row('Signed up', ts);
+    if (fields.isNotEmpty) {
+      row('Name', fields['Name']);
+      row('Company', fields['Company']);
+      row('Type', fields['Type']);
+      row('Phone', fields['Phone']);
+      row('LOI', fields['LOI']);
+    }
+    if (message != null && message.isNotEmpty) {
+      row('Message', message);
+    }
+
+    return '''
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/>
+<style>
+  body{margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrapper{max-width:560px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .header{background:#0f172a;padding:24px 32px;display:flex;align-items:center;gap:12px}
+  .badge{background:$sourceColor;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;letter-spacing:.4px;text-transform:uppercase}
+  .header h1{margin:0;color:#fff;font-size:18px;font-weight:700}
+  .header span{color:#6366f1}
+  .body{padding:28px 32px}
+  .body p{margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6}
+  table{width:100%;border-collapse:collapse;margin-top:4px}
+  tr:nth-child(odd) td{background:#f9fafb}
+  td{border:1px solid #e5e7eb}
+  .footer{background:#f9fafb;padding:16px 32px;text-align:center}
+  .footer p{margin:0;color:#9ca3af;font-size:11px}
+</style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>Guild<span>Mark</span></h1>
+      <span class="badge">$sourceLabel</span>
+    </div>
+    <div class="body">
+      <p>A new <strong>$source</strong> signup just came in:</p>
+      <table>$rows</table>
+    </div>
+    <div class="footer"><p>GuildMark internal notification — do not reply to this email</p></div>
+  </div>
+</body>
+</html>
 ''';
   }
 

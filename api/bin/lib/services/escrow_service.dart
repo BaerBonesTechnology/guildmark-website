@@ -66,10 +66,12 @@ class EscrowService {
     required this.apiKey,
     required this.accountEmail,
     bool sandbox = true,
+    String? apiUrl,
   })  : _sandbox = sandbox,
-        _baseUrl = sandbox
-            ? 'https://api.escrow-sandbox.com/2017-09-01'
-            : 'https://api.escrow.com/2017-09-01';
+        _baseUrl = apiUrl ??
+            (sandbox
+                ? 'https://api.escrow-sandbox.com/2017-09-01'
+                : 'https://api.escrow.com/2017-09-01');
 
   final String apiKey;
   final String accountEmail;

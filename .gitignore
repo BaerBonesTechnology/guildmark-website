@@ -31,3 +31,4 @@
 *.pem
 
 CLAUDE.md
+**/*.docx

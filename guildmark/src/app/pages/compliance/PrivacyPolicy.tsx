@@ -18,7 +18,7 @@ function Section({ n, title, children }: { n?: string | number; title: string; c
 function Bullet({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex gap-3 pl-2">
-      <span className="text-[#3B82F6] shrink-0 mt-1">–</span>
+      <span className="text-primary shrink-0 mt-1">–</span>
       <p>{children}</p>
     </div>
   );
@@ -28,7 +28,7 @@ export function PrivacyPolicy() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-[#3B82F6] uppercase tracking-widest">Legal</p>
+        <p className="text-xs font-mono text-primary uppercase tracking-widest">Legal</p>
         <h1 className="text-3xl font-bold font-mono">Privacy Policy</h1>
         <p className="text-sm font-mono text-muted-foreground">
           Effective Date: January 1, 2025 · Last Updated: May 1, 2025
@@ -93,7 +93,7 @@ export function PrivacyPolicy() {
 
         <Section n={5} title="Your Rights">
           <p>You may have the right to access, correct, delete, or export your personal information. To exercise these rights, contact us at{" "}
-            <a href="mailto:privacy@guildmark.co" className="text-[#3B82F6] hover:underline">privacy@guildmark.co</a>.
+            <a href="mailto:privacy@guildmark.co" className="text-primary hover:underline">privacy@guildmark.co</a>.
             We will respond within 30 days.
           </p>
         </Section>
@@ -110,7 +110,7 @@ export function PrivacyPolicy() {
         <Section n={7} title="Contact">
           <p>
             Privacy questions should be directed to{" "}
-            <a href="mailto:privacy@guildmark.co" className="text-[#3B82F6] hover:underline">privacy@guildmark.co</a>
+            <a href="mailto:privacy@guildmark.co" className="text-primary hover:underline">privacy@guildmark.co</a>
             {" "}or to Baerhous Media Group, LLC, Attention: Privacy, Orlando, Florida, USA.
           </p>
         </Section>
