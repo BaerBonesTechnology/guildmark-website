@@ -321,10 +321,10 @@ export function PreLaunch() {
                 <strong>MDM sync</strong> — pull your fleet from Jamf Pro, Jamf School, or Microsoft Intune
               </FeatureItem>
               <FeatureItem>
-                <strong>Portfolio overview</strong> — total fleet value, condition breakdown, per-asset valuations
+                <strong>Portfolio overview</strong> — total fleet value, per-asset valuations, judged against MSRP, devaluation, and marketplace activity.
               </FeatureItem>
               <FeatureItem>
-                <strong>CSV bulk import</strong> — upload hundreds of assets at once; market value calculated automatically
+                <strong>Discounted platform fees</strong> - Sales from Growth* and Pro* accounts have discounted platform fees.
               </FeatureItem>
               <FeatureItem>
                 <strong>Invoice generation</strong> — tax invoices for every sale, directly from the platform
@@ -345,16 +345,19 @@ export function PreLaunch() {
             </div>
             <ul className="space-y-2">
               <FeatureItem>
-                <strong>List instantly</strong> — push assets from AMPS to the marketplace with AI-priced listings
+                <strong>List instantly</strong> — push assets directly to the marketplace with fair market prices, thanks to our AI-powered valuation engine
               </FeatureItem>
               <FeatureItem>
                 <strong>Offer management</strong> — receive, counter, and accept offers with a full negotiation inbox
               </FeatureItem>
-              <FeatureItem>
-                <strong>Escrow payments</strong> — every transaction secured through Escrow.com; funds held until delivery confirmed
+               <FeatureItem>
+                <strong>CSV bulk import</strong> — upload hundreds of assets at once; market value calculated automatically
               </FeatureItem>
               <FeatureItem>
-                <strong>Optional data wipe</strong> — ship to our Orlando facility, get paid on arrival; NIST 800-88 certified
+                <strong>The payment option you need</strong> — We are business tailored and offer a multitude of payment options: Escrow, Credit Card, ACH, and Net 30/60
+              </FeatureItem>
+              <FeatureItem>
+                <strong>Optional data wipe</strong> — ship to our Orlando facility, get paid on arrival; Certified to your needs such as NIST 800-88, R2v3, HIPAA, and DOD
               </FeatureItem>
               <FeatureItem>
                 <strong>Prepaid shipping</strong> — labels for 1–5 units or pallet pickup for 6+; or ship direct
@@ -382,7 +385,7 @@ export function PreLaunch() {
             {
               n: 3,
               title: "Get paid, securely",
-              body: "With data wipe: ship to Orlando, paid on arrival. Without: ship direct to buyer, payment on delivery confirmation.",
+              body:"We offer multiple secure payment options through our trusted Payment Partners: Escrow, Credit Card, ACH, and Net 30/60",
             },
           ].map(({ n, title, body }) => (
             <div key={n} className="flex gap-4">
@@ -398,7 +401,6 @@ export function PreLaunch() {
         </div>
       </div>
 
-      {/* ── Pricing ──────────────────────────────────────────────────────── */}
       <div className="border border-primary/20 bg-primary/5 rounded-xl p-8 space-y-4">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold font-sans text-primary">$0</span>
@@ -423,10 +425,8 @@ export function PreLaunch() {
         </div>
       </div>
 
-      {/* ── Footer index ─────────────────────────────────────────────────── */}
       <div className="border-t border-border pt-10 pb-6 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-10">
 
-        {/* Logo column */}
         <div className="flex flex-col gap-2">
           <img src="/img/logo-long.svg" className="w-36 " alt="GuildMark" />
           <p className="text-xs text-muted-foreground font-sans max-w-[180px] leading-relaxed">
@@ -434,7 +434,6 @@ export function PreLaunch() {
           </p>
         </div>
 
-        {/* Link columns */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:justify-end">
 
           <div className="space-y-2">
