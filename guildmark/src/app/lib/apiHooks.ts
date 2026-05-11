@@ -59,6 +59,9 @@ export const queryKeys = {
   orders:            ()                  => ["orders"] as const,
   order:             (id: string)        => ["order", id] as const,
   orderTracking:     (id: string)        => ["order-tracking", id] as const,
+
+  // AMPS background valuation job
+  valuationStatus:   ()                  => ["amps", "valuation-status"] as const,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -439,8 +442,8 @@ export interface SubscriptionInvoice {
   currency:     string;
   status:       string;
   receipt_url:  string | null;
-  period_start: string;
-  period_end:   string;
+  period_start: string | null;
+  period_end:   string | null;
   created_at:   string;
 }
 
@@ -596,5 +599,56 @@ export function useOrderTracking(orderId: string | null, enabled = true) {
     enabled:   !!orderId && enabled,
     staleTime: 3 * 60 * 1000,   // 3 minutes
     retry:     1,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// AMPS background valuation job
+// ---------------------------------------------------------------------------
+
+export interface ValuationStatus {
+  /** idle | running | complete | failed */
+  status:      "idle" | "running" | "complete" | "failed";
+  /** Number of assets in the most recent (or current) job. */
+  asset_count: number;
+  /** ISO-8601 timestamp when the job started, or null if never run. */
+  started_at:  string | null;
+}
+
+/**
+ * Polls GET /amps/valuation-status.
+ *
+ * Refetches every 3 seconds while status is "running" so the UI can show a
+ * live loading indicator. Stops polling automatically once the job completes
+ * or fails.
+ */
+export function useValuationStatus() {
+  return useQuery({
+    queryKey: queryKeys.valuationStatus(),
+    queryFn:  () => api.get<ValuationStatus>("/amps/valuation-status"),
+    // Poll aggressively while the job is in-flight; back off otherwise.
+    refetchInterval: (query) =>
+      query.state.data?.status === "running" ? 3000 : false,
+    staleTime: 0,   // always re-fetch on mount so the banner appears immediately
+    retry: false,   // 403 from the AMPS middleware on free tier — don't retry
+  });
+}
+
+/**
+ * Triggers POST /amps/valuate — starts the background valuation job.
+ *
+ * Returns { status: "started", asset_count: N } if the job kicked off,
+ * or { status: "no_listings" } if there are no listings to re-value yet.
+ */
+export function useTriggerValuation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ status: string; asset_count: number }>("/amps/valuate", {}),
+    onSuccess: () => {
+      // Immediately refresh the status so the banner appears without waiting
+      // for the next scheduled poll interval.
+      qc.invalidateQueries({ queryKey: queryKeys.valuationStatus() });
+    },
   });
 }

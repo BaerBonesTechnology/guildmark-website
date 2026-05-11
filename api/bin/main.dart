@@ -41,12 +41,21 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     accessTtl: cfg.accessTokenTtl,
   );
 
+  final partnerJwt = PartnerJwtService(
+    accessSecret: cfg.jwtAccessSecret,
+    accessTtl: cfg.accessTokenTtl,
+  );
+
   final square = SquareService(
     accessToken: cfg.squareAccessToken,
     locationId:  cfg.squareLocationId,
     environment: cfg.squareEnvironment,
     apiUrl:      cfg.squareApiUrl,
   );
+  stdout.writeln('[boot] Square env=${cfg.squareEnvironment} '
+      'appId=${cfg.squareApplicationId} '
+      'locationId=${cfg.squareLocationId} '
+      'apiUrl=${cfg.squareApiUrl}');
 
   final email = EmailService(
     apiKey: cfg.resendApiKey ?? '',
@@ -82,6 +91,7 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
       .use(provider<Db>((_) => db))
       .use(provider<MlClient?>((_) => ml))
       .use(provider<JwtService>((_) => jwt))
+      .use(provider<PartnerJwtService>((_) => partnerJwt))
       .use(provider<SquareService?>((_) => square))
       .use(provider<EmailService>((_) => email))
       .use(provider<EscrowService>((_) => escrow))

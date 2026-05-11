@@ -9,14 +9,15 @@
  * raw card data never touches our servers. Billing fields are plain HTML inputs
  * sent alongside the Square payment nonce.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, CheckCircle2, AlertCircle, CreditCard, Sparkles } from "lucide-react";
-import { useSubscriptionCheckout } from "../lib/apiHooks";
+import { useSubscriptionCheckout, useTriggerValuation } from "../lib/apiHooks";
 import { squareApplicationId, squareLocationId, squareEnvironment } from "../config";
+import { useAuth } from "../hooks/useAuth";
 
 // ---------------------------------------------------------------------------
 // Lazy-load Square SDK
@@ -94,7 +95,7 @@ declare global {
 
 const inputCls =
   "w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm font-mono " +
-  "placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring " +
+  "placeholder:text-black focus:outline-none focus:ring-1 focus:ring-ring " +
   "disabled:opacity-50";
 
 // ---------------------------------------------------------------------------
@@ -108,11 +109,15 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   plan:         PaidPlan;
   currentPlan:  string;
+  /** Called after a successful payment, just before the dialog closes. */
+  onSuccess?:   () => void;
 }
 
-export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPlan }: Props) {
-  const meta     = PLAN_META[plan];
-  const checkout = useSubscriptionCheckout();
+export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPlan, onSuccess }: Props) {
+  const meta           = PLAN_META[plan];
+  const checkout          = useSubscriptionCheckout();
+  const triggerValuation  = useTriggerValuation();
+  const { refreshUser }   = useAuth();
 
   const [step,      setStep]      = useState<Step>("confirm");
   const [cardError, setCardError] = useState<string>("");
@@ -132,8 +137,10 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
   // Square card form ref (combined — handles card number, expiry, and CVV)
   const cardRef = useRef<SquareCardForm | null>(null);
+  // Incrementing this forces the card form to fully re-mount (new nonce on retry).
+  const [cardInitKey, setCardInitKey] = useState(0);
 
-  // Mount Square card form when we reach the card step
+  // Mount Square card form when we reach the card step (or when cardInitKey bumps).
   useEffect(() => {
     if (step !== "card" || !open) return;
     let cancelled = false;
@@ -144,6 +151,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
         await loadSquareSdk();
         if (!window.Square) throw new Error("Square SDK not available");
 
+        console.log('[Square] init appId=%s locationId=%s env=%s', squareApplicationId, squareLocationId, squareEnvironment);
         const payments = await window.Square.payments(squareApplicationId, squareLocationId);
         const card = await payments.card();
 
@@ -168,7 +176,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
       cardRef.current?.destroy().catch(() => {});
       cardRef.current = null;
     };
-  }, [step, open]);
+  }, [step, open, cardInitKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset when dialog closes
   useEffect(() => {
@@ -176,6 +184,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
       setStep("confirm");
       setCardError("");
       setIsLoading(false);
+      setCardInitKey(0);
       setCardholderName("");
       setBizName(""); setAddr1(""); setAddr2("");
       setCity(""); setStateAb(""); setZip("");
@@ -184,6 +193,37 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handlePay() {
+    // ── Sandbox shortcut ────────────────────────────────────────────────────
+    // In sandbox mode (VITE_SQUARE_ENVIRONMENT=sandbox) we bypass the SDK card
+    // form and use Square's static test nonce so we can verify backend config
+    // without needing a matching application ID on the frontend.
+    // Detect sandbox by env string OR by the sandbox- prefix on the application ID
+    const isSandbox = squareEnvironment === "sandbox" || squareApplicationId.startsWith("sandbox-");
+    if (isSandbox) {
+      setIsLoading(true);
+      setCardError("");
+      try {
+        await checkout.mutateAsync({
+          plan,
+          source_id:       "cnon:card-nonce-ok",
+          save_card:       saveCard,
+          cardholder_name: cardholderName.trim() || "Sandbox Test",
+          billing_address: {
+            address_line_1: addr1.trim() || "123 Test St",
+            city:           city.trim()  || "New York",
+            state:          stateAb.trim().toUpperCase() || "NY",
+            postal_code:    zip.trim()   || "10001",
+          },
+        });
+        setStep("success");
+      } catch (err) {
+        setCardError(err instanceof Error ? err.message : "Payment failed.");
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+    // ── Production flow (real SDK tokenization) ─────────────────────────────
     if (!cardRef.current) {
       setCardError("Payment form not ready — please wait.");
       return;
@@ -227,7 +267,12 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
       setStep("success");
     } catch (err) {
-      setCardError(err instanceof Error ? err.message : "Payment failed. Please try again.");
+      const msg = err instanceof Error ? err.message : "Payment failed. Please try again.";
+      setCardError(msg);
+      // The nonce returned by tokenize() is single-use. After any server-side
+      // payment failure the card form must be re-initialized so the next
+      // attempt generates a fresh nonce rather than reusing the consumed one.
+      setCardInitKey(k => k + 1);
     } finally {
       setIsLoading(false);
     }
@@ -318,7 +363,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
               </p>
 
               {/* Cardholder Name */}
-              <div className="space-y-1">
+              <div className="space-y-1 text-black ">
                 <label className="text-xs font-mono text-foreground/70">Cardholder Name *</label>
                 <input
                   className={inputCls}
@@ -494,7 +539,20 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
             </div>
             <Button
               className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-white font-mono"
-              onClick={() => onOpenChange(false)}
+              onClick={async () => {
+                // Refresh the access token so the in-memory user picks up the
+                // new subscription_plan before TierGate checks it.
+                await refreshUser();
+                // Fire-and-forget: kick off background ML re-valuation for any
+                // existing listings so the user sees current values immediately
+                // rather than waiting for the next scheduled run.
+                // Only triggers if the company already has listings; otherwise
+                // the backend returns { status: "no_listings" } and the banner
+                // never appears.
+                triggerValuation.mutate();
+                onOpenChange(false);
+                onSuccess?.();
+              }}
             >
               Done
             </Button>

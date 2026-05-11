@@ -65,7 +65,7 @@ async function submitPartnerLOI(data: PartnerLOIState & { title: string }): Prom
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold font-mono">
+      <h2 className="text-base font-semibold font-sans">
         {n}. {title}
       </h2>
       <div className="space-y-2 text-sm text-foreground/80 leading-relaxed">
@@ -82,7 +82,7 @@ function Para({ children }: { children: React.ReactNode }) {
 function Clause({ letter, children }: { letter: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3 pl-4">
-      <span className="font-mono text-muted-foreground shrink-0">({letter})</span>
+      <span className="font-sans text-muted-foreground shrink-0">({letter})</span>
       <p>{children}</p>
     </div>
   );
@@ -138,14 +138,14 @@ export function PartnerLetterOfIntent() {
           <Check className="w-7 h-7 text-primary" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold font-mono">Letter of Intent Signed</h1>
-          <p className="text-sm text-muted-foreground font-mono max-w-md">
+          <h1 className="text-2xl font-bold font-sans">Letter of Intent Signed</h1>
+          <p className="text-sm text-muted-foreground font-sans max-w-md">
             Thank you, {state.name.split(" ")[0]}. We've received your signed Letter of Intent
             and will be in touch within <strong>2 business days</strong> to discuss next steps
             and finalize your partnership agreement.
           </p>
         </div>
-        <div className="bg-muted/50 border rounded-xl px-6 py-4 text-sm font-mono text-left max-w-md w-full space-y-1">
+        <div className="bg-muted/50 border rounded-xl px-6 py-4 text-sm font-sans text-left max-w-md w-full space-y-1">
           <p className="text-muted-foreground text-xs uppercase tracking-wide mb-2">Submission summary</p>
           <p><span className="text-muted-foreground">Name:</span> {state.name}</p>
           <p><span className="text-muted-foreground">Company:</span> {state.company}</p>
@@ -155,7 +155,7 @@ export function PartnerLetterOfIntent() {
         </div>
         <button
           onClick={() => navigate("/")}
-          className="text-sm font-mono text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+          className="text-sm font-sans text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
         >
           Return to home
         </button>
@@ -169,19 +169,19 @@ export function PartnerLetterOfIntent() {
 
       {/* ── Document header ─────────────────────────────────────────────── */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-xs font-sans text-primary uppercase tracking-widest">
           <FileText className="w-3.5 h-3.5" />
           Non-Binding Letter of Intent
         </div>
-        <h1 className="text-3xl font-bold font-mono leading-tight">
+        <h1 className="text-3xl font-bold font-sans leading-tight">
           GuildMark Partner<br />Letter of Intent
         </h1>
-        <div className="text-sm font-mono text-muted-foreground space-y-0.5">
+        <div className="text-sm font-sans text-muted-foreground space-y-0.5">
           <p>Date: {today}</p>
           <p>Reference: LOI-PARTNER-{state.email.split("@")[0].toUpperCase().replace(/[^A-Z0-9]/g, "")}-{new Date().getFullYear()}</p>
         </div>
 
-        <div className="border rounded-xl p-5 bg-muted/30 grid grid-cols-2 gap-6 text-sm font-mono">
+        <div className="border rounded-xl p-5 bg-muted/30 grid grid-cols-2 gap-6 text-sm font-sans">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Party A — Platform Operator</p>
             <p className="font-semibold">Baerhous Media Group, LLC</p>
@@ -333,9 +333,9 @@ export function PartnerLetterOfIntent() {
       <div className="border-t border-border pt-10 space-y-6">
         <div className="flex items-center gap-2">
           <PenLine className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold font-mono">Sign this Letter of Intent</h2>
+          <h2 className="text-lg font-bold font-sans">Sign this Letter of Intent</h2>
         </div>
-        <p className="text-sm text-muted-foreground font-mono">
+        <p className="text-sm text-muted-foreground font-sans">
           By signing below, you confirm that you have read and understood this Letter of Intent and
           have authority to execute it on behalf of {state.company}.
         </p>
@@ -345,26 +345,26 @@ export function PartnerLetterOfIntent() {
           {/* Pre-filled fields (read-only) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-mono text-muted-foreground uppercase tracking-wide">Company</label>
+              <label className="text-xs font-sans text-muted-foreground uppercase tracking-wide">Company</label>
               <input
                 readOnly
                 value={state.company}
-                className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-foreground cursor-default"
+                className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-foreground cursor-default"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-mono text-muted-foreground uppercase tracking-wide">Email</label>
+              <label className="text-xs font-sans text-muted-foreground uppercase tracking-wide">Email</label>
               <input
                 readOnly
                 value={state.email}
-                className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-foreground cursor-default"
+                className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-foreground cursor-default"
               />
             </div>
           </div>
 
           {/* Title — required, not pre-filled */}
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-muted-foreground uppercase tracking-wide">
+            <label className="text-xs font-sans text-muted-foreground uppercase tracking-wide">
               Your Title / Role <span className="text-red-400">*</span>
             </label>
             <input
@@ -374,7 +374,7 @@ export function PartnerLetterOfIntent() {
               onChange={e => setTitle(e.target.value)}
               required
               disabled={status === "loading"}
-              className="w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
+              className="w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
             />
           </div>
 
@@ -399,7 +399,7 @@ export function PartnerLetterOfIntent() {
                 {agreed && <Check className="w-2.5 h-2.5 text-white" />}
               </div>
             </div>
-            <span className="text-sm font-mono text-foreground/80 leading-relaxed">
+            <span className="text-sm font-sans text-foreground/80 leading-relaxed">
               I have read and understood this Letter of Intent and I am authorized to execute
               it on behalf of <strong>{state.company}</strong>.
             </span>
@@ -407,7 +407,7 @@ export function PartnerLetterOfIntent() {
 
           {/* Signature field */}
           <div className="space-y-1.5">
-            <label className="text-xs font-mono text-muted-foreground uppercase tracking-wide">
+            <label className="text-xs font-sans text-muted-foreground uppercase tracking-wide">
               Type your full name to sign <span className="text-red-400">*</span>
             </label>
             <input
@@ -417,7 +417,7 @@ export function PartnerLetterOfIntent() {
               onChange={e => setSigned(e.target.value)}
               required
               disabled={status === "loading"}
-              className={`w-full bg-input-background border rounded-lg px-3 py-2.5 text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none transition-colors disabled:opacity-50 ${
+              className={`w-full bg-input-background border rounded-lg px-3 py-2.5 text-sm font-sans placeholder:text-muted-foreground/40 focus:outline-none transition-colors disabled:opacity-50 ${
                 signed && !signatureMatch
                   ? "border-red-400 text-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-400/30"
                   : signed && signatureMatch
@@ -426,13 +426,13 @@ export function PartnerLetterOfIntent() {
               }`}
             />
             {signed && !signatureMatch && (
-              <p className="text-xs font-mono text-red-400 flex items-center gap-1.5">
+              <p className="text-xs font-sans text-red-400 flex items-center gap-1.5">
                 <AlertCircle className="w-3 h-3" />
                 Must match the name you provided: {state.name}
               </p>
             )}
             {signed && signatureMatch && (
-              <p className="text-xs font-mono text-emerald-500 flex items-center gap-1.5">
+              <p className="text-xs font-sans text-emerald-500 flex items-center gap-1.5">
                 <Check className="w-3 h-3" />
                 Signature matches
               </p>
@@ -440,7 +440,7 @@ export function PartnerLetterOfIntent() {
           </div>
 
           {status === "error" && (
-            <p className="flex items-center gap-1.5 text-red-400 text-sm font-mono bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+            <p className="flex items-center gap-1.5 text-red-400 text-sm font-sans bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {errorMsg}
             </p>
@@ -449,7 +449,7 @@ export function PartnerLetterOfIntent() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-mono rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-sans rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             {status === "loading" ? (
               <>
@@ -464,7 +464,7 @@ export function PartnerLetterOfIntent() {
             )}
           </button>
 
-          <p className="text-xs text-muted-foreground font-mono text-center">
+          <p className="text-xs text-muted-foreground font-sans text-center">
             By submitting, you agree that your typed name constitutes your electronic signature
             under applicable e-signature laws.
           </p>

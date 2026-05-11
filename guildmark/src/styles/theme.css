@@ -14,9 +14,9 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
   /* Surface */
-  --background:          #F8FAFC;
+  --background:          #e6e6e6;
   --foreground:          #0F172A;
-  --card:                #FFFFFF;
+  --card:                #ffffff;
   --card-foreground:     #0F172A;
   --popover:             #FFFFFF;
   --popover-foreground:  #0F172A;
@@ -35,15 +35,15 @@
   --destructive:         #DC2626;
   --destructive-foreground: #FFFFFF;
   --border:              #CBD5E1;
-  --input:               #CBD5E1;
-  --input-background:    #F1F5F9;
+  --input:               #a7a7a7;
+  --input-background:    #e4e4e4;
   --switch-background:   #CBD5E1;
   --ring:                #3B82F6;
   --radius:              0.625rem;
 
   /* Font weights */
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
+  --font-weight-medium: 400;
+  --font-weight-normal: 200;
 
   /* Brand */
   --brand-primary:            #3B82F6;
@@ -266,7 +266,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/50 ;
   }
 
   body {

@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import {
   LayoutDashboard,
@@ -9,9 +10,13 @@ import {
   Sparkles,
   Lock,
   CheckCircle,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
 import { Button } from "./ui/button";
+import { useValuationStatus, queryKeys } from "../lib/apiHooks";
 
 const navigation = [
   { name: "Portfolio", href: "/amps", icon: LayoutDashboard },
@@ -75,6 +80,80 @@ function UpgradeWall({ plan }: { plan: string }) {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Valuation banner — shown while the background valuation job is running and
+// briefly after it completes. Auto-dismisses 5 seconds after completion.
+// ---------------------------------------------------------------------------
+
+function ValuationBanner() {
+  const { data }   = useValuationStatus();
+  const qc         = useQueryClient();
+  const prevStatus = useRef<string | undefined>(undefined);
+
+  // visible tracks whether we should render the banner at all.
+  // We show it:  (a) immediately if the page loads while a job is running,
+  //              (b) when the job transitions to running,
+  //              (c) briefly (5 s) after the job transitions to complete.
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const curr = data?.status;
+    const prev = prevStatus.current;
+
+    if (curr === "running") {
+      setVisible(true);
+    }
+
+    if (prev === "running" && curr === "complete") {
+      // Refresh portfolio data so updated FMVs appear immediately.
+      qc.invalidateQueries({ queryKey: queryKeys.portfolio() });
+      // Auto-dismiss the success state after 5 s.
+      const timer = setTimeout(() => setVisible(false), 5000);
+      return () => clearTimeout(timer);
+    }
+
+    prevStatus.current = curr;
+  }, [data?.status, qc]);
+
+  if (!visible || !data) return null;
+
+  if (data.status === "running") {
+    return (
+      <div className="mb-6 flex items-center gap-3 rounded-lg border border-amps-accent/30 bg-amps-accent/5 px-4 py-3">
+        <Loader2 className="h-4 w-4 animate-spin text-amps-accent shrink-0" />
+        <div>
+          <p className="text-sm font-mono font-medium text-amps-accent">
+            Valuation in progress
+          </p>
+          <p className="text-xs font-mono text-muted-foreground">
+            Running AI valuations across{" "}
+            {data.asset_count} asset{data.asset_count !== 1 ? "s" : ""} —
+            this usually takes less than a minute. You can navigate freely while
+            this runs.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.status === "complete") {
+    return (
+      <div className="mb-6 flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3">
+        <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+        <p className="text-sm font-mono font-medium text-success">
+          Portfolio valuations updated — your asset values are now current.
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
 
 export function AMPSLayout() {
   const location = useLocation();
@@ -151,6 +230,7 @@ export function AMPSLayout() {
       {/* Main content */}
       <div className="pl-64">
         <main className="min-h-screen p-8">
+          <ValuationBanner />
           <Outlet />
         </main>
       </div>

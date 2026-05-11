@@ -57,10 +57,14 @@ class AppConfig {
     this.adminAuthUser,
     this.adminAuthPass,
     this.adminCorsOrigin,
+    this.partnerCorsOrigin,
     this.dopplerWebhookSecret,
     this.dopplerBearerToken,
     this.ebayVerificationToken,
     this.ebayDeletionEndpoint,
+    // WebAuthn / Passkey 2FA for DevDash employees
+    this.webauthnRpId,
+    this.webauthnRpName,
   });
 
   factory AppConfig.fromEnv() {
@@ -174,10 +178,13 @@ class AppConfig {
       adminAuthUser: optional('ADMIN_AUTH_USER'),
       adminAuthPass: optional('ADMIN_AUTH_PASS'),
       adminCorsOrigin: optional('ADMIN_CORS_ORIGIN'),
+      partnerCorsOrigin: optional('PARTNER_CORS_ORIGIN'),
       dopplerWebhookSecret: optional('DOPPLER_SECRET'),
       dopplerBearerToken: optional('DOPPLER_BEARER_TOKEN'),
       ebayVerificationToken: optional('EBAY_VERIFICATION_TOKEN'),
       ebayDeletionEndpoint: optional('EBAY_DELETION_ENDPOINT'),
+      webauthnRpId:   optional('WEBAUTHN_RP_ID'),
+      webauthnRpName: optional('WEBAUTHN_RP_NAME'),
     );
   }
 
@@ -276,6 +283,7 @@ class AppConfig {
   final String? adminAuthUser;
   final String? adminAuthPass;
   final String? adminCorsOrigin;
+  final String? partnerCorsOrigin;
 
   // ── Doppler webhook ─────────────────────────────────────────────────────────
   /// Shared signing secret from Doppler (DOPPLER_SECRET env var).
@@ -286,6 +294,14 @@ class AppConfig {
   /// (DOPPLER_BEARER_TOKEN env var). Passed as --token so the container does
   /// not need a pre-existing `doppler login` session.
   final String? dopplerBearerToken;
+
+  // ── WebAuthn / Passkey 2FA ───────────────────────────────────────────────────
+  /// Relying Party ID — typically the bare hostname (e.g. "devdash.guildmark.co").
+  /// When null, passkey 2FA is disabled and auth falls through to the full JWT.
+  final String? webauthnRpId;
+
+  /// Human-readable RP name shown in the authenticator UI (e.g. "GuildMark DevDash").
+  final String? webauthnRpName;
 
   // ── eBay Marketplace Account Deletion ───────────────────────────────────────
   /// Verification token set in the eBay Developer Portal.

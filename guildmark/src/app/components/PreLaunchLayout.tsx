@@ -6,10 +6,6 @@ import { useTheme } from "../hooks/useTheme";
 import { InsightPage } from "../pages/Insights";
 import logoLong from "../../logo-long.svg";
 
-// ---------------------------------------------------------------------------
-// Insights bottom sheet
-// ---------------------------------------------------------------------------
-
 function InsightsDrawer() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -63,15 +59,7 @@ function InsightsDrawer() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Layout
-// ---------------------------------------------------------------------------
 
-/**
- * Minimal layout used when didLaunch === false.
- * Shows only the brand wordmark, theme toggle, and a footer link that opens
- * the market research as a bottom sheet.
- */
 export function PreLaunchLayout() {
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
@@ -87,12 +75,11 @@ export function PreLaunchLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Minimal header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 px-6 py-4">
+      <header className="border-b border-border bg-primary/50 backdrop-blur-sm sticky top-0 z-40 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
               <img src={logoLong} className="w-50"/>
-            <p className="text-xs text-muted-foreground mt-0.5 mx-2 font-mono">{t("brand.tagline")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 mx-2 font-sans">{t("brand.tagline")}</p>
           </div>
           <button
             onClick={toggleTheme}
@@ -104,15 +91,13 @@ export function PreLaunchLayout() {
         </div>
       </header>
 
-      {/* Page content — pb-16 clears the fixed footer */}
       <main className="pb-16">
         <Outlet context={{ openInsights }} />
       </main>
 
-      {/* Fixed footer */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-sm border-t border-border px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-xs text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-sans">
             {t("footer.copyright", { year: new Date().getFullYear() })} {t("footer.trademark")}
           </p>
           <button
@@ -125,7 +110,6 @@ export function PreLaunchLayout() {
         </div>
       </footer>
 
-      {/* Bottom sheet — rendered at layout level so it overlays everything */}
       <InsightsDrawer />
     </div>
   );

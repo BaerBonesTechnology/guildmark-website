@@ -8,6 +8,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -20,11 +21,20 @@ class SquareService {
     required this.locationId,
     required String environment,
     String? apiUrl,
-  }) : _baseUrl = apiUrl ??
-            (environment == 'production'
-                ? 'https://connect.squareup.com/v2'
-                : 'https://connect.squareupsandbox.com/v2'),
+  }) : _baseUrl = _normalizeUrl(
+            apiUrl,
+            environment == 'production'
+                ? 'https://connect.squareup.com/'
+                : 'https://connect.squareupsandbox.com/',
+          ),
        _client = http.Client();
+
+  /// Strips trailing slashes from [url] so that `$_baseUrl/payments` never
+  /// produces a double slash (which Square's CDN silently 404s with no body).
+  static String _normalizeUrl(String? url, String fallback) {
+    final base = (url != null && url.isNotEmpty) ? url : fallback;
+    return base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+  }
 
   final String accessToken;
   final String locationId;
@@ -34,7 +44,7 @@ class SquareService {
   Map<String, String> get _headers => {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
-        'Square-Version': '2024-01-18',
+        'Square-Version': '2025-04-16',
       };
 
   /// Create a payment from a Square Web Payments SDK nonce.
@@ -78,21 +88,38 @@ class SquareService {
         'billing_address': billingAddress.toJson(),
     };
 
+    print(_headers);
+    print(jsonEncode(body));
+
     final resp = await _client.post(
-      Uri.parse('$_baseUrl/payments'),
+      Uri.parse('$_baseUrl/v2/payments'),
       headers: _headers,
       body: jsonEncode(body),
     );
 
-    final json = jsonDecode(resp.body) as Map<String, dynamic>;
-
     if (resp.statusCode != 200) {
+      stderr.writeln('[Square] POST $_baseUrl/v2/payments → ${resp.statusCode}  body: ${resp.body}');
+      if (resp.body.isEmpty) {
+        // Empty body usually means the URL was wrong (double slash, wrong host)
+        // or the nonce was already consumed by a previous attempt.
+        throw SquareException(
+          resp.statusCode,
+          resp.statusCode == 404
+              ? 'Square API endpoint not found — check SQUARE_API_URL env var '
+                '(current base: $_baseUrl).'
+              : 'Payment nonce was already used or has expired. '
+                'Please re-enter your card details and try again.',
+        );
+      }
+      final json   = jsonDecode(resp.body) as Map<String, dynamic>;
       final errors = json['errors'] as List? ?? [];
       final detail = errors.isNotEmpty
           ? (errors.first as Map)['detail'] as String? ?? 'Unknown error'
-          : 'Square API error ${resp.statusCode}';
+          : 'Square payment error ${resp.statusCode}';
       throw SquareException(resp.statusCode, detail);
     }
+
+    final json = jsonDecode(resp.body) as Map<String, dynamic>;
 
     final payment = json['payment'] as Map<String, dynamic>;
     return SquarePaymentResult(
@@ -173,14 +200,27 @@ class SquareService {
       body: jsonEncode(body),
     );
 
-    final json = jsonDecode(resp.body) as Map<String, dynamic>;
     if (resp.statusCode != 200) {
+      stderr.writeln('[Square] POST $_baseUrl/cards → ${resp.statusCode}  body: ${resp.body}');
+      if (resp.body.isEmpty) {
+        throw SquareException(
+          resp.statusCode,
+          resp.statusCode == 404
+              ? 'Square API endpoint not found — check SQUARE_API_URL env var '
+                '(current base: $_baseUrl).'
+              : 'Card could not be saved — the payment nonce may have already been used. '
+                'Please re-enter your card details.',
+        );
+      }
+      final json   = jsonDecode(resp.body) as Map<String, dynamic>;
       final errors = json['errors'] as List? ?? [];
       final detail = errors.isNotEmpty
           ? (errors.first as Map)['detail'] as String? ?? 'Unknown error'
-          : 'Square API error ${resp.statusCode}';
+          : 'Square card error ${resp.statusCode}';
       throw SquareException(resp.statusCode, detail);
     }
+
+    final json = jsonDecode(resp.body) as Map<String, dynamic>;
 
     return (json['card'] as Map<String, dynamic>)['id'] as String;
   }

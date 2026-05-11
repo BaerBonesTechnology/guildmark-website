@@ -20,10 +20,6 @@ interface PreLaunchContext {
   openInsights: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// API helpers
-// ---------------------------------------------------------------------------
-
 async function submitWaitlist(email: string): Promise<void> {
   const res = await fetch(`${apiUrl}/waitlist`, {
     method: "POST",
@@ -35,9 +31,6 @@ async function submitWaitlist(email: string): Promise<void> {
     throw new Error(data?.error ?? "Something went wrong. Please try again.");
   }
 }
-
-
-// ---------------------------------------------------------------------------
 // Small shared components
 // ---------------------------------------------------------------------------
 
@@ -52,16 +45,12 @@ function FeatureItem({ children }: { children: React.ReactNode }) {
 
 function TrustBadge({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 border rounded-full px-3 py-1.5">
-      <Icon className="w-3.5 h-3.5 text-primary" />
+    <div className="flex items-center gap-1.5 text-xs font-mono text-white bg-primary border rounded-full px-3 py-2">
+      <Icon className="w-3.5 h-3.5 text-primary fill-white" />
       {text}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Waitlist form
-// ---------------------------------------------------------------------------
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -92,8 +81,8 @@ function WaitlistForm() {
           <Check className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-foreground font-mono">{t("prelaunch.successTitle")}</p>
-          <p className="text-xs text-muted-foreground font-mono mt-0.5">{t("prelaunch.successBody")}</p>
+          <p className="text-sm font-semibold text-foreground font-sans">{t("prelaunch.successTitle")}</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">{t("prelaunch.successBody")}</p>
         </div>
       </div>
     );
@@ -111,13 +100,13 @@ function WaitlistForm() {
             placeholder={t("prelaunch.emailPlaceholder")}
             required
             disabled={status === "loading"}
-            className="w-full bg-input-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
+            className="w-full bg-input-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
           />
         </div>
         <button
           type="submit"
           disabled={status === "loading"}
-          className="px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-mono rounded-lg transition-colors flex items-center gap-2 shrink-0"
+          className="px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-sans rounded-lg transition-colors flex items-center gap-2 shrink-0"
         >
           {status === "loading" ? (
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -130,19 +119,15 @@ function WaitlistForm() {
         </button>
       </div>
       {status === "error" && (
-        <p className="flex items-center gap-1.5 text-red-400 text-xs font-mono ml-1">
+        <p className="flex items-center gap-1.5 text-red-400 text-xs font-sans ml-1">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           {errorMsg}
         </p>
       )}
-      <p className="text-xs text-muted-foreground font-mono ml-1">{t("prelaunch.noSpam")}</p>
+      <p className="text-xs text-muted-foreground font-sans ml-1">{t("prelaunch.noSpam")}</p>
     </form>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Partner sign-up form
-// ---------------------------------------------------------------------------
 
 const PARTNER_TYPES = [
   { value: "reseller",   label: "Reseller / VAR" },
@@ -169,7 +154,7 @@ function PartnerForm() {
   }
 
   const inputClass =
-    "w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50";
+    "w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-black placeholder:text-black-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -198,7 +183,7 @@ function PartnerForm() {
         onChange={set("partnerType")}
         required
         disabled={status === "loading"}
-        className={`${inputClass} text-${fields.partnerType ? "foreground" : "muted-foreground"}`}
+        className={`${inputClass} text-${fields.partnerType ? "black" : "black-400"}`}
       >
         <option value="" disabled>What best describes your business?</option>
         {PARTNER_TYPES.map(pt => (
@@ -227,21 +212,17 @@ function PartnerForm() {
       </div>
       <button
         type="submit"
-        className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-mono rounded-lg transition-colors flex items-center justify-center gap-2"
+        className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-sans rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         Review LOI
         <ArrowRight className="w-3.5 h-3.5" />
       </button>
-      <p className="text-xs text-muted-foreground font-mono ml-1">
+      <p className="text-xs text-muted-foreground font-sans ml-1">
         You'll review and sign a Letter of Intent before we follow up.
       </p>
     </form>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
 
 export function PreLaunch() {
   const { t }            = useTranslation();
@@ -250,8 +231,6 @@ export function PreLaunch() {
 
   return (
     <div className="px-6 py-16 space-y-20 max-w-5xl mx-auto">
-
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2 mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -267,7 +246,7 @@ export function PreLaunch() {
           />
         </h1>
 
-        <p className="text-lg text-muted-foreground text-center max-w-2xl leading-relaxed mb-12 font-mono">
+        <p className="text-lg text-muted-foreground text-center max-w-2xl leading-relaxed mb-12 font-sans">
           {t("prelaunch.description")}
         </p>
 
@@ -275,28 +254,28 @@ export function PreLaunch() {
         <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {/* Waitlist card */}
-          <div className="border rounded-xl p-6 space-y-4 text-left bg-background">
+          <div className="border border-primary rounded-xl p-6 space-y-4 text-left bg-background">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold font-mono">For IT Teams</h3>
-                <p className="text-xs text-muted-foreground font-mono">Manage and sell retired hardware</p>
+                <h3 className="text-sm font-semibold font-sans">For IT Teams</h3>
+                <p className="text-xs text-muted-foreground font-sans">Manage and sell retired hardware</p>
               </div>
             </div>
             <WaitlistForm />
           </div>
 
           {/* Partner card */}
-          <div className="border rounded-xl p-6 space-y-4 text-left bg-background">
+          <div className="border border-primary rounded-xl p-6 space-y-4 text-left bg-background">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Handshake className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold font-mono">Become a Partner</h3>
-                <p className="text-xs text-muted-foreground font-mono">Resellers, MSPs &amp; refurbishers</p>
+                <h3 className="text-sm font-semibold font-sans">Become a Partner</h3>
+                <p className="text-xs text-muted-foreground font-sans">Resellers, MSPs &amp; refurbishers</p>
               </div>
             </div>
             <PartnerForm />
@@ -314,8 +293,8 @@ export function PreLaunch() {
       {/* ── Platform overview ─────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div className="text-center space-y-1 mb-8">
-          <h2 className="text-2xl font-bold font-mono">One platform. Two powerful tools.</h2>
-          <p className="text-sm text-muted-foreground font-mono">
+          <h2 className="text-2xl font-bold font-sans">One platform. Two powerful tools.</h2>
+          <p className="text-sm text-muted-foreground font-sans">
             GuildMark combines fleet management with a B2B hardware marketplace — so you can
             track what you own, know what it's worth, and sell it when you're ready.
           </p>
@@ -330,8 +309,8 @@ export function PreLaunch() {
                 <Layers className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold font-mono">AMPS</h3>
-                <p className="text-xs text-muted-foreground font-mono">Asset Management &amp; Portfolio System</p>
+                <h3 className="font-semibold font-sans">Guildmark PRO</h3>
+                <p className="text-xs text-muted-foreground font-sans">Asset Management &amp; Portfolio Valuation System</p>
               </div>
             </div>
             <ul className="space-y-2">
@@ -360,8 +339,8 @@ export function PreLaunch() {
                 <Store className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold font-mono">B2B Marketplace</h3>
-                <p className="text-xs text-muted-foreground font-mono">Hardware trading between verified businesses</p>
+                <h3 className="font-semibold font-sans">B2B Marketplace</h3>
+                <p className="text-xs text-muted-foreground font-sans">Hardware trading between verified businesses</p>
               </div>
             </div>
             <ul className="space-y-2">
@@ -387,7 +366,7 @@ export function PreLaunch() {
 
       {/* ── How it works ─────────────────────────────────────────────────── */}
       <div className="border rounded-xl p-8 bg-background space-y-6">
-        <h2 className="text-sm font-mono uppercase tracking-wide text-muted-foreground">How it works</h2>
+        <h2 className="text-sm font-sans uppercase tracking-wide text-muted-foreground">How it works</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
@@ -407,12 +386,12 @@ export function PreLaunch() {
             },
           ].map(({ n, title, body }) => (
             <div key={n} className="flex gap-4">
-              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-sans font-bold shrink-0 mt-0.5">
                 {n}
               </div>
               <div>
-                <p className="text-sm font-semibold font-mono">{title}</p>
-                <p className="text-xs text-muted-foreground font-mono mt-1 leading-relaxed">{body}</p>
+                <p className="text-sm font-semibold font-sans">{title}</p>
+                <p className="text-xs text-muted-foreground font-sans mt-1 leading-relaxed">{body}</p>
               </div>
             </div>
           ))}
@@ -422,8 +401,8 @@ export function PreLaunch() {
       {/* ── Pricing ──────────────────────────────────────────────────────── */}
       <div className="border border-primary/20 bg-primary/5 rounded-xl p-8 space-y-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold font-mono text-primary">$0</span>
-          <span className="text-sm text-muted-foreground font-mono">to get started — no subscription, ever</span>
+          <span className="text-3xl font-bold font-sans text-primary">$0</span>
+          <span className="text-sm text-muted-foreground font-sans">to get started, only subscribe if you need <b>GuildMark Pro</b></span>
         </div>
         <div className="grid grid-cols-3 gap-4 pt-2">
           {[
@@ -437,8 +416,8 @@ export function PreLaunch() {
                   <Icon className="w-4 h-4 text-primary" />
                 </div>
               </div>
-              <p className="text-sm font-semibold font-mono">{value}</p>
-              <p className="text-xs text-muted-foreground font-mono">{label}</p>
+              <p className="text-sm font-semibold font-sans">{value}</p>
+              <p className="text-xs text-muted-foreground font-sans">{label}</p>
             </div>
           ))}
         </div>
@@ -449,8 +428,8 @@ export function PreLaunch() {
 
         {/* Logo column */}
         <div className="flex flex-col gap-2">
-          <img src="/img/logo-long.svg" className="w-36" alt="GuildMark" />
-          <p className="text-xs text-muted-foreground font-mono max-w-[180px] leading-relaxed">
+          <img src="/img/logo-long.svg" className="w-36 " alt="GuildMark" />
+          <p className="text-xs text-muted-foreground font-sans max-w-[180px] leading-relaxed">
             B2B hardware asset management &amp; marketplace.
           </p>
         </div>
@@ -459,32 +438,32 @@ export function PreLaunch() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:justify-end">
 
           <div className="space-y-2">
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Platform</p>
+            <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground/60 mb-3">Platform</p>
             <button
               onClick={openInsights}
-              className="block text-sm font-mono text-muted-foreground hover:text-primary transition-colors text-left"
+              className="block text-sm font-sans text-muted-foreground hover:text-primary transition-colors text-left"
             >
               {t("prelaunch.readResearch")}
             </button>
             <button
               onClick={() => navigate("/contact")}
-              className="block text-sm font-mono text-muted-foreground hover:text-foreground transition-colors text-left"
+              className="block text-sm font-sans text-muted-foreground hover:text-foreground transition-colors text-left"
             >
               {t("prelaunch.getInTouch")}
             </button>
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Legal</p>
+            <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground/60 mb-3">Legal</p>
             <a
               href="/compliance/privacy-policy"
-              className="block text-sm font-mono text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-sm font-sans text-muted-foreground hover:text-foreground transition-colors"
             >
               Privacy Policy
             </a>
             <a
               href="/compliance/terms"
-              className="block text-sm font-mono text-muted-foreground hover:text-foreground transition-colors"
+              className="block text-sm font-sans text-muted-foreground hover:text-foreground transition-colors"
             >
               Terms of Service
             </a>

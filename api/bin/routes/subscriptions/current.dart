@@ -50,8 +50,8 @@ Future<Response> onRequest(RequestContext context) async {
       'currency':    row['currency'].toString(),
       'status':      row['status'].toString(),
       'receipt_url': row['receipt_url']?.toString(),
-      'period_start': (row['period_start'] as DateTime).toIso8601String(),
-      'period_end':   (row['period_end']   as DateTime).toIso8601String(),
+      'period_start': (row['period_start'] as DateTime?)?.toIso8601String(),
+      'period_end':   (row['period_end']   as DateTime?)?.toIso8601String(),
       'created_at':   (row['created_at']   as DateTime).toIso8601String(),
     };
   }).toList();

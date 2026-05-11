@@ -21,6 +21,15 @@ import '../routes/seller/listings/[id]/withdraw.dart' as seller_listings_$id_wit
 import '../routes/seller/listings/[id]/publish.dart' as seller_listings_$id_publish;
 import '../routes/seller/listings/[id]/index.dart' as seller_listings_$id_index;
 import '../routes/payments/index.dart' as payments_index;
+import '../routes/partner/workboard/index.dart' as partner_workboard_index;
+import '../routes/partner/workboard/[id]/claim.dart' as partner_workboard_$id_claim;
+import '../routes/partner/services/index.dart' as partner_services_index;
+import '../routes/partner/services/[id]/index.dart' as partner_services_$id_index;
+import '../routes/partner/auth/refresh.dart' as partner_auth_refresh;
+import '../routes/partner/auth/logout.dart' as partner_auth_logout;
+import '../routes/partner/auth/login.dart' as partner_auth_login;
+import '../routes/partner/account/withdraw.dart' as partner_account_withdraw;
+import '../routes/partner/account/index.dart' as partner_account_index;
 import '../routes/orders/index.dart' as orders_index;
 import '../routes/orders/[id]/track.dart' as orders_$id_track;
 import '../routes/orders/[id]/ship.dart' as orders_$id_ship;
@@ -43,6 +52,8 @@ import '../routes/auth/login.dart' as auth_login;
 import '../routes/auth/forgot_password.dart' as auth_forgot_password;
 import '../routes/assets/index.dart' as assets_index;
 import '../routes/assets/[id]/valuations.dart' as assets_$id_valuations;
+import '../routes/amps/valuation_status.dart' as amps_valuation_status;
+import '../routes/amps/valuate.dart' as amps_valuate;
 import '../routes/amps/portfolio.dart' as amps_portfolio;
 import '../routes/amps/mdm/connect.dart' as amps_mdm_connect;
 import '../routes/amps/mdm/connections/index.dart' as amps_mdm_connections_index;
@@ -59,6 +70,9 @@ import '../routes/admin/waitlist/[id]/index.dart' as admin_waitlist_$id_index;
 import '../routes/admin/waitlist/[id]/contact.dart' as admin_waitlist_$id_contact;
 import '../routes/admin/users/index.dart' as admin_users_index;
 import '../routes/admin/users/[id]/index.dart' as admin_users_$id_index;
+import '../routes/admin/passkey/register/complete.dart' as admin_passkey_register_complete;
+import '../routes/admin/passkey/register/begin.dart' as admin_passkey_register_begin;
+import '../routes/admin/passkey/auth/complete.dart' as admin_passkey_auth_complete;
 import '../routes/admin/orders/expire_inspections.dart' as admin_orders_expire_inspections;
 import '../routes/admin/employees/index.dart' as admin_employees_index;
 import '../routes/admin/employees/[id]/index.dart' as admin_employees_$id_index;
@@ -66,6 +80,7 @@ import '../routes/admin/config/index.dart' as admin_config_index;
 import '../routes/admin/analytics/index.dart' as admin_analytics_index;
 
 import '../routes/_middleware.dart' as middleware;
+import '../routes/partner/_middleware.dart' as partner_middleware;
 import '../routes/amps/_middleware.dart' as amps_middleware;
 
 void main() async {
@@ -93,6 +108,12 @@ Handler buildRootHandler() {
     ..mount('/seller/listings', (context) => buildSellerListingsHandler()(context))
     ..mount('/seller/listings/<id>', (context,id,) => buildSellerListings$idHandler(id,)(context))
     ..mount('/payments', (context) => buildPaymentsHandler()(context))
+    ..mount('/partner/workboard', (context) => buildPartnerWorkboardHandler()(context))
+    ..mount('/partner/workboard/<id>', (context,id,) => buildPartnerWorkboard$idHandler(id,)(context))
+    ..mount('/partner/services', (context) => buildPartnerServicesHandler()(context))
+    ..mount('/partner/services/<id>', (context,id,) => buildPartnerServices$idHandler(id,)(context))
+    ..mount('/partner/auth', (context) => buildPartnerAuthHandler()(context))
+    ..mount('/partner/account', (context) => buildPartnerAccountHandler()(context))
     ..mount('/orders', (context) => buildOrdersHandler()(context))
     ..mount('/orders/<id>', (context,id,) => buildOrders$idHandler(id,)(context))
     ..mount('/marketplace', (context) => buildMarketplaceHandler()(context))
@@ -117,6 +138,8 @@ Handler buildRootHandler() {
     ..mount('/admin/waitlist/<id>', (context,id,) => buildAdminWaitlist$idHandler(id,)(context))
     ..mount('/admin/users', (context) => buildAdminUsersHandler()(context))
     ..mount('/admin/users/<id>', (context,id,) => buildAdminUsers$idHandler(id,)(context))
+    ..mount('/admin/passkey/register', (context) => buildAdminPasskeyRegisterHandler()(context))
+    ..mount('/admin/passkey/auth', (context) => buildAdminPasskeyAuthHandler()(context))
     ..mount('/admin/orders', (context) => buildAdminOrdersHandler()(context))
     ..mount('/admin/employees', (context) => buildAdminEmployeesHandler()(context))
     ..mount('/admin/employees/<id>', (context,id,) => buildAdminEmployees$idHandler(id,)(context))
@@ -199,6 +222,48 @@ Handler buildPaymentsHandler() {
   final pipeline = const Pipeline();
   final router = Router()
     ..all('/', (context) => payments_index.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildPartnerWorkboardHandler() {
+  final pipeline = const Pipeline().addMiddleware(partner_middleware.middleware);
+  final router = Router()
+    ..all('/', (context) => partner_workboard_index.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildPartnerWorkboard$idHandler(String id,) {
+  final pipeline = const Pipeline().addMiddleware(partner_middleware.middleware);
+  final router = Router()
+    ..all('/claim', (context) => partner_workboard_$id_claim.onRequest(context,id,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildPartnerServicesHandler() {
+  final pipeline = const Pipeline().addMiddleware(partner_middleware.middleware);
+  final router = Router()
+    ..all('/', (context) => partner_services_index.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildPartnerServices$idHandler(String id,) {
+  final pipeline = const Pipeline().addMiddleware(partner_middleware.middleware);
+  final router = Router()
+    ..all('/', (context) => partner_services_$id_index.onRequest(context,id,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildPartnerAuthHandler() {
+  final pipeline = const Pipeline().addMiddleware(partner_middleware.middleware);
+  final router = Router()
+    ..all('/login', (context) => partner_auth_login.onRequest(context,))..all('/logout', (context) => partner_auth_logout.onRequest(context,))..all('/refresh', (context) => partner_auth_refresh.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildPartnerAccountHandler() {
+  final pipeline = const Pipeline().addMiddleware(partner_middleware.middleware);
+  final router = Router()
+    ..all('/withdraw', (context) => partner_account_withdraw.onRequest(context,))..all('/', (context) => partner_account_index.onRequest(context,));
   return pipeline.addHandler(router);
 }
 
@@ -289,7 +354,7 @@ Handler buildAssets$idHandler(String id,) {
 Handler buildAmpsHandler() {
   final pipeline = const Pipeline().addMiddleware(amps_middleware.middleware);
   final router = Router()
-    ..all('/portfolio', (context) => amps_portfolio.onRequest(context,));
+    ..all('/portfolio', (context) => amps_portfolio.onRequest(context,))..all('/valuate', (context) => amps_valuate.onRequest(context,))..all('/valuation_status', (context) => amps_valuation_status.onRequest(context,));
   return pipeline.addHandler(router);
 }
 
@@ -367,6 +432,20 @@ Handler buildAdminUsers$idHandler(String id,) {
   final pipeline = const Pipeline();
   final router = Router()
     ..all('/', (context) => admin_users_$id_index.onRequest(context,id,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildAdminPasskeyRegisterHandler() {
+  final pipeline = const Pipeline();
+  final router = Router()
+    ..all('/begin', (context) => admin_passkey_register_begin.onRequest(context,))..all('/complete', (context) => admin_passkey_register_complete.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildAdminPasskeyAuthHandler() {
+  final pipeline = const Pipeline();
+  final router = Router()
+    ..all('/complete', (context) => admin_passkey_auth_complete.onRequest(context,));
   return pipeline.addHandler(router);
 }
 

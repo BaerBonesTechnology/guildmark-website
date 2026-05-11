@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   Sparkles, Check, ArrowLeft, Zap, Shield, TrendingUp,
   BarChart2, Cpu, Package,
@@ -123,6 +123,7 @@ const VALUE_PROPS = [
 
 export function ProSignup() {
   const { user } = useAuth();
+  const navigate  = useNavigate();
   const currentPlan = user?.subscription_plan ?? "free";
   const { data: fees } = usePlatformFees();
 
@@ -270,6 +271,7 @@ export function ProSignup() {
           onOpenChange={(open) => { if (!open) setCheckoutPlan(null); }}
           plan={checkoutPlan}
           currentPlan={currentPlan}
+          onSuccess={() => navigate("/amps")}
         />
       )}
     </div>

@@ -121,7 +121,9 @@ function InvoiceRow({ inv }: { inv: SubscriptionInvoice }) {
         )}
       </td>
       <td className="px-4 py-3 font-mono text-sm">
-        {fmtDate(inv.period_start)} – {fmtDate(inv.period_end)}
+        {inv.period_start && inv.period_end
+          ? `${fmtDate(inv.period_start)} – ${fmtDate(inv.period_end)}`
+          : "—"}
       </td>
       <td className="px-4 py-3 font-mono text-sm font-medium">
         {fmtAmount(inv.amount_cents)}
@@ -157,8 +159,10 @@ function InvoiceRow({ inv }: { inv: SubscriptionInvoice }) {
 
 export function Settings() {
   const { user }          = useAuth();
-  const currentPlan       = (user?.subscription_plan ?? "free") as PlanKey;
   const { data: subData, isLoading: subLoading } = useSubscription();
+  // Prefer live API plan over the JWT claim — the JWT is stale until next refresh,
+  // whereas subData is invalidated and refetched immediately after checkout/cancel.
+  const currentPlan = ((subData?.plan ?? user?.subscription_plan) ?? "free") as PlanKey;
   const { data: fees }    = usePlatformFees();
   const cancelSub         = useCancelSubscription();
 

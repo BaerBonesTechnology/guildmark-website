@@ -78,9 +78,14 @@ Future<Response> onRequest(RequestContext context) async {
       : null;
 
   final db     = context.read<Db>();
-  final square = context.read<SquareService?>()!;
+  final square = context.read<SquareService?>();
   final cfg    = context.read<AppConfig>();
   final repo   = SubscriptionRepo(db);
+
+  if (square == null) {
+    return jsonError(503, 'SQUARE_NOT_CONFIGURED',
+        'Payment processing is not configured on this server.');
+  }
 
   // Fetch current subscription.
   final currentSub = await repo.findByCompany(auth.companyId);
@@ -97,6 +102,9 @@ Future<Response> onRequest(RequestContext context) async {
 
   final planLabel       = plan[0].toUpperCase() + plan.substring(1);
   final planVariationId = cfg.monthlyVariationId(plan);
+
+  stdout.writeln('[checkout] plan=$plan path=${planVariationId != null && squareCustomerId != null ? "A-subscriptions" : "B-direct"} '
+      'squareCustomerId=${squareCustomerId ?? "(none)"} planVariationId=${planVariationId ?? "(none)"}');
 
   // ── Path A: Square Subscriptions API (production / fully configured) ────────
   if (planVariationId != null && squareCustomerId != null) {
@@ -152,15 +160,19 @@ Future<Response> onRequest(RequestContext context) async {
     await db.query(
       '''
       INSERT INTO subscription_invoices
-        (company_id, plan, amount_cents, square_payment_id, status)
+        (company_id, subscription_id, plan, amount_cents, square_payment_id,
+         status, period_start, period_end)
       VALUES
-        (@cid, @plan, @amount, @sqid, 'paid')
+        (@cid, @sub_id::uuid, @plan, @amount, @sqid, 'paid', @pstart, @pend)
       ''',
       parameters: {
         'cid':    auth.companyId,
+        'sub_id': updated?.id,
         'plan':   plan,
         'amount': _fallbackPrices[plan],
         'sqid':   subscription.id,
+        'pstart': periodStart,
+        'pend':   periodEnd,
       },
     );
 
@@ -207,15 +219,19 @@ Future<Response> onRequest(RequestContext context) async {
     await db.query(
       '''
       INSERT INTO subscription_invoices
-        (company_id, plan, amount_cents, square_payment_id, status)
+        (company_id, subscription_id, plan, amount_cents, square_payment_id,
+         status, period_start, period_end)
       VALUES
-        (@cid, @plan, @amount, @sqid, 'paid')
+        (@cid, @sub_id::uuid, @plan, @amount, @sqid, 'paid', @pstart, @pend)
       ''',
       parameters: {
         'cid':    auth.companyId,
+        'sub_id': updated?.id,
         'plan':   plan,
         'amount': payment.amountCents,
         'sqid':   payment.id,
+        'pstart': periodStart,
+        'pend':   periodEnd,
       },
     );
 

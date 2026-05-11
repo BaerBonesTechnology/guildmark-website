@@ -1,9 +1,13 @@
 /// AMPS portfolio aggregates.
 ///
-/// The nightly snapshot job writes one row per company into
-/// `valuation_snapshots`. The `summarize` method reads from there for the
-/// trend series and computes hero stats from the live `assets` table so the
-/// dashboard always reflects the current inventory.
+/// Hero stats and bucket breakdowns are computed live by joining `assets` with
+/// the most recent non-sold listing per asset (which carries fair_market_value
+/// and est_book_value from the ML valuation pipeline).
+///
+/// The trend series is sourced from `valuation_snapshots`. To keep the trend
+/// populated without a separate nightly cron, `summarize` upserts today's
+/// computed values at the end of every call — the snapshot table then acts as
+/// a rolling daily history that the chart can plot.
 library;
 
 import '../db/pool.dart';
@@ -16,53 +20,57 @@ class PortfolioRepo {
 
   /// Hero stats + bucket breakdowns + N-month trend.
   ///
-  /// Hero stats are computed live from `assets`.
-  /// Trend data comes from the pre-aggregated `valuation_snapshots` table.
-  ///
-  /// `assets_at_risk` = assets whose purchase date implies > 36 months of age,
-  /// since they are past typical refresh cycles and depreciation accelerates.
+  /// Values are computed live from assets + their most recent active/draft
+  /// listing. Assets without a listing still count toward device totals but
+  /// contribute 0 to value aggregates.
   Future<PortfolioSummary> summarize({
     required String companyId,
     int trendMonths = 12,
   }) async {
-    // -- Hero stats ----------------------------------------------------------
+    // ── Live hero stats ──────────────────────────────────────────────────────
+    // CTE `ll` picks the most recently updated non-sold/withdrawn listing for
+    // each asset. Assets with no such listing appear with NULL FMV/book values.
     final heroRows = await _db.query(
       '''
+      WITH ll AS (
+        SELECT DISTINCT ON (asset_id)
+          asset_id,
+          fair_market_value,
+          est_book_value
+        FROM listings
+        WHERE company_id = @cid
+          AND status NOT IN (\'sold\', \'withdrawn\')
+        ORDER BY asset_id, updated_at DESC
+      )
       SELECT
-        COUNT(*)                                           AS total_devices,
-        SUM(cpu_score)                                     AS ignored,   -- placeholder
-        AVG(
-          EXTRACT(MONTH FROM age(now(),
-            COALESCE(purchase_date::TIMESTAMPTZ, created_at)))
-        )                                                  AS avg_age_months,
-        COUNT(*) FILTER (
-          WHERE purchase_date < now() - INTERVAL '36 months'
-          OR (purchase_date IS NULL AND created_at < now() - INTERVAL '36 months')
-        )                                                  AS assets_at_risk
-      FROM assets
-      WHERE company_id = @cid
+        COUNT(DISTINCT a.id)                                          AS total_devices,
+        COALESCE(SUM(ll.fair_market_value),                     0)   AS total_portfolio_value,
+        COALESCE(SUM(ll.est_book_value),                        0)   AS total_book_value,
+        COALESCE(SUM(GREATEST(
+          COALESCE(ll.est_book_value,    0)
+          - COALESCE(ll.fair_market_value, 0), 0
+        )),                                                     0)   AS total_depreciation,
+        COALESCE(AVG(
+          EXTRACT(EPOCH FROM age(now(),
+            COALESCE(a.purchase_date::TIMESTAMPTZ, a.created_at)
+          )) / 2592000.0
+        ),                                                      0)   AS avg_age_months,
+        COUNT(a.id) FILTER (
+          WHERE a.purchase_date < now() - INTERVAL \'36 months\'
+            OR (a.purchase_date IS NULL
+                AND a.created_at  < now() - INTERVAL \'36 months\')
+        )                                                             AS assets_at_risk
+      FROM assets a
+      LEFT JOIN ll ON ll.asset_id = a.id
+      WHERE a.company_id = @cid
       ''',
       parameters: {'cid': companyId},
     );
     final hero = heroRows.first.toColumnMap();
 
-    // -- Latest snapshot values (for total_portfolio_value, book_value, etc.) -
-    // Fall back to 0 if no snapshot exists yet (pre-first nightly run).
-    final snapRows = await _db.query(
-      '''
-      SELECT total_portfolio_value, total_book_value, total_depreciation, total_devices
-      FROM valuation_snapshots
-      WHERE company_id = @cid
-      ORDER BY snapshot_date DESC
-      LIMIT 1
-      ''',
-      parameters: {'cid': companyId},
-    );
-    final snap = snapRows.isEmpty ? <String, Object?>{} : snapRows.first.toColumnMap();
-
-    final totalPortfolioValue = numToDoubleOrNull(snap['total_portfolio_value']) ?? 0.0;
-    final totalBookValue      = numToDoubleOrNull(snap['total_book_value'])      ?? 0.0;
-    final totalDepreciation   = numToDoubleOrNull(snap['total_depreciation'])    ?? 0.0;
+    final totalPortfolioValue = numToDoubleOrNull(hero['total_portfolio_value']) ?? 0.0;
+    final totalBookValue      = numToDoubleOrNull(hero['total_book_value'])      ?? 0.0;
+    final totalDepreciation   = numToDoubleOrNull(hero['total_depreciation'])    ?? 0.0;
     final totalDevices        = numToIntOrNull(hero['total_devices'])            ?? 0;
     final avgAgeMonths        = numToDoubleOrNull(hero['avg_age_months'])        ?? 0.0;
     final assetsAtRisk        = numToIntOrNull(hero['assets_at_risk'])           ?? 0;
@@ -70,18 +78,35 @@ class PortfolioRepo {
         ? totalDepreciation / totalBookValue
         : 0.0;
 
-    // -- Bucket breakdowns ---------------------------------------------------
-    // Single query using UNION ALL — one round-trip for both breakdowns.
-    // TODO: Populate bucket `value` field once per-asset fair_market_value is
-    // stored on the assets table (currently only on listings). For now value
-    // is set to 0.0 as a placeholder.
+    // ── Bucket breakdowns (type + condition) with live FMV values ────────────
     final bucketRows = await _db.query(
       '''
-      SELECT 'type'      AS bucket, asset_type::TEXT      AS key, COUNT(*) AS cnt
-      FROM assets WHERE company_id = @cid GROUP BY asset_type
+      WITH ll AS (
+        SELECT DISTINCT ON (asset_id)
+          asset_id,
+          fair_market_value
+        FROM listings
+        WHERE company_id = @cid
+          AND status NOT IN (\'sold\', \'withdrawn\')
+        ORDER BY asset_id, updated_at DESC
+      )
+      SELECT \'type\'      AS bucket,
+             a.asset_type::TEXT      AS key,
+             COUNT(*)                AS cnt,
+             COALESCE(SUM(ll.fair_market_value), 0) AS value
+      FROM assets a
+      LEFT JOIN ll ON ll.asset_id = a.id
+      WHERE a.company_id = @cid
+      GROUP BY a.asset_type
       UNION ALL
-      SELECT 'condition' AS bucket, condition_grade::TEXT AS key, COUNT(*) AS cnt
-      FROM assets WHERE company_id = @cid GROUP BY condition_grade
+      SELECT \'condition\' AS bucket,
+             a.condition_grade::TEXT AS key,
+             COUNT(*)                AS cnt,
+             COALESCE(SUM(ll.fair_market_value), 0) AS value
+      FROM assets a
+      LEFT JOIN ll ON ll.asset_id = a.id
+      WHERE a.company_id = @cid
+      GROUP BY a.condition_grade
       ''',
       parameters: {'cid': companyId},
     );
@@ -90,7 +115,10 @@ class PortfolioRepo {
     final Map<String, PortfolioBucket> byCondition = {};
     for (final r in bucketRows) {
       final row    = r.toColumnMap();
-      final bucket = PortfolioBucket(count: numToIntOrNull(row['cnt']) ?? 0, value: 0.0);
+      final bucket = PortfolioBucket(
+        count: numToIntOrNull(row['cnt'])    ?? 0,
+        value: numToDoubleOrNull(row['value']) ?? 0.0,
+      );
       if (row['bucket'] == 'type') {
         byType[row['key'] as String] = bucket;
       } else {
@@ -98,14 +126,43 @@ class PortfolioRepo {
       }
     }
 
-    // -- Trend series --------------------------------------------------------
+    // ── Trend series (historical snapshots) ──────────────────────────────────
+    // Upsert today's live-computed values so the chart accumulates daily
+    // history automatically without a separate cron job.
+    final today = DateTime.now().toUtc();
+    final todayStr =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    await _db.query(
+      '''
+      INSERT INTO valuation_snapshots
+        (company_id, snapshot_date, total_portfolio_value, total_book_value,
+         total_depreciation, total_devices)
+      VALUES
+        (@cid, @date, @portVal, @bookVal, @dep, @devs)
+      ON CONFLICT (company_id, snapshot_date) DO UPDATE SET
+        total_portfolio_value = EXCLUDED.total_portfolio_value,
+        total_book_value      = EXCLUDED.total_book_value,
+        total_depreciation    = EXCLUDED.total_depreciation,
+        total_devices         = EXCLUDED.total_devices
+      ''',
+      parameters: {
+        'cid':     companyId,
+        'date':    todayStr,
+        'portVal': totalPortfolioValue,
+        'bookVal': totalBookValue,
+        'dep':     totalDepreciation,
+        'devs':    totalDevices,
+      },
+    );
+
     final trendRows = await _db.query(
       '''
       SELECT snapshot_date, total_portfolio_value, total_book_value,
              total_depreciation, total_devices
       FROM valuation_snapshots
       WHERE company_id = @cid
-        AND snapshot_date >= now() - (@months || ' months')::INTERVAL
+        AND snapshot_date >= now() - (@months || \' months\')::INTERVAL
       ORDER BY snapshot_date ASC
       ''',
       parameters: {'cid': companyId, 'months': trendMonths},
@@ -127,34 +184,4 @@ class PortfolioRepo {
       trend:               trend,
     );
   }
-
-  /// Upsert one valuation snapshot row (called by the nightly job).
-  Future<void> writeSnapshot(ValuationSnapshot snapshot) async {
-    await _db.query(
-      '''
-      INSERT INTO valuation_snapshots
-        (company_id, snapshot_date, total_portfolio_value, total_book_value,
-         total_depreciation, total_devices)
-      VALUES
-        (@cid, @date, @portVal, @bookVal, @dep, @devs)
-      ON CONFLICT (company_id, snapshot_date) DO UPDATE SET
-        total_portfolio_value = EXCLUDED.total_portfolio_value,
-        total_book_value      = EXCLUDED.total_book_value,
-        total_depreciation    = EXCLUDED.total_depreciation,
-        total_devices         = EXCLUDED.total_devices
-      ''',
-      parameters: {
-        'cid':     snapshot.snapshotDate, // placeholder — route handler must pass companyId separately
-        'date':    snapshot.snapshotDate,
-        'portVal': snapshot.totalPortfolioValue,
-        'bookVal': snapshot.totalBookValue,
-        'dep':     snapshot.totalDepreciation,
-        'devs':    snapshot.totalDevices,
-      },
-    );
-    // TODO: writeSnapshot should accept companyId as a separate param; the
-    // ValuationSnapshot model doesn't currently carry it. Refactor when
-    // the nightly job is implemented.
-  }
-
 }

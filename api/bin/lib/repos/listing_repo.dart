@@ -266,6 +266,50 @@ class ListingRepo {
     return Listing.fromRow(result.first.toColumnMap());
   }
 
+  /// Update the fair_market_value on a specific listing and recompute its
+  /// valuation flag. Used by the background valuation job that runs after
+  /// a company signs up for AMPS.
+  ///
+  /// No-ops silently if the listing has been removed or moved to a terminal
+  /// status between the time the job started and this call.
+  Future<void> updateFmvByListingId({
+    required String listingId,
+    required String companyId,
+    required double fmv,
+  }) async {
+    // Re-fetch the current listed_price so the valuation flag stays accurate.
+    final existing = await _db.query(
+      '''
+      SELECT listed_price FROM listings
+      WHERE id = @id AND company_id = @cid
+        AND status NOT IN ('sold', 'withdrawn')
+      LIMIT 1
+      ''',
+      parameters: {'id': listingId, 'cid': companyId},
+    );
+    if (existing.isEmpty) return; // removed or terminal before job reached it
+
+    final listedPrice =
+        numToDoubleOrNull(existing.first.toColumnMap()['listed_price']) ?? 0.0;
+    final flag = _valuationFlag(listedPrice, fmv);
+
+    await _db.query(
+      '''
+      UPDATE listings
+      SET fair_market_value = @fmv,
+          valuation_flag    = @flag::valuation_flag,
+          last_valued_at    = now()
+      WHERE id = @id AND company_id = @cid
+      ''',
+      parameters: {
+        'id':   listingId,
+        'cid':  companyId,
+        'fmv':  fmv,
+        'flag': flag,
+      },
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------

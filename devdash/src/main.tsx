@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider, createBrowserRouter, Navigate } from "react-router";
 import "./index.css";
 import { Login } from "./pages/Login";
+import { RegisterPasskey } from "./pages/RegisterPasskey";
 import { Dashboard } from "./pages/Dashboard";
 import { Analytics } from "./pages/Analytics";
 import { Users } from "./pages/Users";
@@ -18,7 +19,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 const router = createBrowserRouter([
-  { path: "/login", element: <Login /> },
+  { path: "/login",            element: <Login /> },
+  { path: "/register-passkey", element: <RegisterPasskey /> },
   {
     path: "/",
     element: <ProtectedRoute><Dashboard /></ProtectedRoute>,
