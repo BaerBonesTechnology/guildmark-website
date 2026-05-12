@@ -6,6 +6,7 @@
  *   import type { Asset } from "../models/asset";
  */
 export type * from "../models/auth";
+export type * from "../models/company";
 export type * from "../models/asset";
 export type * from "../models/listing";
 export type * from "../models/marketplace";

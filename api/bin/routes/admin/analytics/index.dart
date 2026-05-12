@@ -11,6 +11,7 @@ import 'package:dart_frog/dart_frog.dart';
 import '../../../lib/context.dart';
 import '../../../lib/db/pool.dart';
 import '../../../lib/http_helpers.dart';
+import '../../../lib/models/json_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
@@ -36,20 +37,26 @@ Future<Response> onRequest(RequestContext context) async {
   final dateParams  = allTime ? <String, dynamic>{} : <String, dynamic>{'from': from};
 
   // ── Summary counts ────────────────────────────────────────────────────────
+  // One query per table — FILTER handles the windowed "new" count so we avoid
+  // two round-trips per table.
 
-  final totalUsersRow = await db.query(
-    'SELECT COUNT(*)::int AS n FROM users',
-  );
-  final newUsersRow = await db.query(
-    'SELECT COUNT(*)::int AS n FROM users WHERE true $dateFilter',
+  final usersRow = await db.query(
+    '''
+    SELECT
+      COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE true $dateFilter) AS new_count
+    FROM users
+    ''',
     parameters: dateParams,
   );
 
-  final totalSubsRow = await db.query(
-    'SELECT COUNT(*)::int AS n FROM mailing_list',
-  );
-  final newSubsRow = await db.query(
-    'SELECT COUNT(*)::int AS n FROM mailing_list WHERE true $dateFilter',
+  final subsRow = await db.query(
+    '''
+    SELECT
+      COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE true $dateFilter) AS new_count
+    FROM mailing_list
+    ''',
     parameters: dateParams,
   );
 
@@ -67,6 +74,8 @@ Future<Response> onRequest(RequestContext context) async {
     parameters: dateParams,
   );
 
+  final userMap    = usersRow.first.toColumnMap();
+  final subMap     = subsRow.first.toColumnMap();
   final listingMap = listingsRow.first.toColumnMap();
   final orderMap   = ordersRow.first.toColumnMap();
 
@@ -132,37 +141,37 @@ Future<Response> onRequest(RequestContext context) async {
       'from': from?.toIso8601String(),
     },
     'summary': {
-      'total_users':       totalUsersRow.first.toColumnMap()['n'] as int? ?? 0,
-      'new_users':         newUsersRow.first.toColumnMap()['n']   as int? ?? 0,
-      'total_subscribers': totalSubsRow.first.toColumnMap()['n']  as int? ?? 0,
-      'new_subscribers':   newSubsRow.first.toColumnMap()['n']    as int? ?? 0,
-      'total_listings':    listingMap['total']                    as int? ?? 0,
-      'active_listings':   listingMap['active']                   as int? ?? 0,
-      'total_orders':      orderMap['total']                      as int? ?? 0,
-      'completed_orders':  orderMap['completed']                  as int? ?? 0,
-      'gmv':               double.tryParse(orderMap['gmv'].toString()) ?? 0.0,
+      'total_users':       numToIntOrNull(userMap['total'])        ?? 0,
+      'new_users':         numToIntOrNull(userMap['new_count'])    ?? 0,
+      'total_subscribers': numToIntOrNull(subMap['total'])         ?? 0,
+      'new_subscribers':   numToIntOrNull(subMap['new_count'])     ?? 0,
+      'total_listings':    numToIntOrNull(listingMap['total'])     ?? 0,
+      'active_listings':   numToIntOrNull(listingMap['active'])    ?? 0,
+      'total_orders':      numToIntOrNull(orderMap['total'])       ?? 0,
+      'completed_orders':  numToIntOrNull(orderMap['completed'])   ?? 0,
+      'gmv':               numToDoubleOrNull(orderMap['gmv'])      ?? 0.0,
     },
     'subscription_breakdown': planRows.map((r) {
       final row = r.toColumnMap();
       return {
         'plan':  row['plan'].toString(),
-        'count': row['count'] as int? ?? 0,
+        'count': numToIntOrNull(row['count']) ?? 0,
       };
     }).toList(),
     'user_growth': userGrowthRows.map((r) {
       final row = r.toColumnMap();
-      return {'date': row['date'].toString(), 'count': row['count'] as int? ?? 0};
+      return {'date': row['date'].toString(), 'count': numToIntOrNull(row['count']) ?? 0};
     }).toList(),
     'mailing_list_growth': mailingGrowthRows.map((r) {
       final row = r.toColumnMap();
-      return {'date': row['date'].toString(), 'count': row['count'] as int? ?? 0};
+      return {'date': row['date'].toString(), 'count': numToIntOrNull(row['count']) ?? 0};
     }).toList(),
     'order_activity': orderActivityRows.map((r) {
       final row = r.toColumnMap();
       return {
         'date':   row['date'].toString(),
-        'count':  row['count'] as int? ?? 0,
-        'amount': double.tryParse(row['amount'].toString()) ?? 0.0,
+        'count':  numToIntOrNull(row['count'])       ?? 0,
+        'amount': numToDoubleOrNull(row['amount'])   ?? 0.0,
       };
     }).toList(),
   });

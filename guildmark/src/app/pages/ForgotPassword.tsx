@@ -32,7 +32,7 @@ export function ForgotPassword() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-xl font-mono font-semibold text-foreground">
-            Guild<span className="text-[#3B82F6]">Mark</span>
+            Guild<span className="text-primary">Mark</span>
           </h1>
           <p className="text-sm text-muted-foreground font-mono mt-1">
             Reset your password
@@ -78,7 +78,7 @@ export function ForgotPassword() {
 
             <Button
               type="submit"
-              className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-mono"
               disabled={isLoading}
             >
               {isLoading ? "Sending…" : "Send Reset Link"}

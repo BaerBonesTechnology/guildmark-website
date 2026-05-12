@@ -34,8 +34,8 @@ _$AssetImpl _$$AssetImplFromJson(Map<String, dynamic> json) => _$AssetImpl(
       lastMdmSync: const NullableIsoDateTimeConverter()
           .fromJson(json['last_mdm_sync'] as String?),
       cpuScore: (json['cpu_score'] as num?)?.toDouble(),
-      ramGb: (json['ram_gb'] as num?)?.toInt(),
-      storageGb: (json['storage_gb'] as num?)?.toInt(),
+      ramGb: (json['ram_gb'] as num?)?.toDouble(),
+      storageGb: (json['storage_gb'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$$AssetImplToJson(_$AssetImpl instance) =>

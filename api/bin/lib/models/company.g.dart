@@ -33,6 +33,14 @@ _$CompanyImpl _$$CompanyImplFromJson(Map<String, dynamic> json) =>
       offers: (json['offers'] as List<dynamic>?)
           ?.map((e) => BuyerOffer.fromJson(e as Map<String, dynamic>))
           .toList(),
+      jamfInstanceUrl: json['jamf_instance_url'] as String?,
+      jamfClientId: json['jamf_client_id'] as String?,
+      jamfClientSecret: json['jamf_client_secret'] as String?,
+      jamfSchoolUrl: json['jamf_school_url'] as String?,
+      jamfSchoolApiKey: json['jamf_school_api_key'] as String?,
+      azureTenantId: json['azure_tenant_id'] as String?,
+      azureClientId: json['azure_client_id'] as String?,
+      azureClientSecret: json['azure_client_secret'] as String?,
     );
 
 Map<String, dynamic> _$$CompanyImplToJson(_$CompanyImpl instance) =>
@@ -52,4 +60,16 @@ Map<String, dynamic> _$$CompanyImplToJson(_$CompanyImpl instance) =>
         'listings': value,
       if (instance.offers?.map((e) => e.toJson()).toList() case final value?)
         'offers': value,
+      if (instance.jamfInstanceUrl case final value?)
+        'jamf_instance_url': value,
+      if (instance.jamfClientId case final value?) 'jamf_client_id': value,
+      if (instance.jamfClientSecret case final value?)
+        'jamf_client_secret': value,
+      if (instance.jamfSchoolUrl case final value?) 'jamf_school_url': value,
+      if (instance.jamfSchoolApiKey case final value?)
+        'jamf_school_api_key': value,
+      if (instance.azureTenantId case final value?) 'azure_tenant_id': value,
+      if (instance.azureClientId case final value?) 'azure_client_id': value,
+      if (instance.azureClientSecret case final value?)
+        'azure_client_secret': value,
     };

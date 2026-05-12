@@ -43,7 +43,7 @@ function NotifRow({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 rounded border-border accent-[#3B82F6]"
+        className="mt-0.5 rounded border-border accent-primary"
       />
       <div>
         <p className="font-mono font-semibold text-sm text-foreground">
@@ -127,8 +127,8 @@ export function AccountSettings() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <User className="h-5 w-5 text-[#3B82F6]" />
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="font-mono">Profile Information</CardTitle>
@@ -187,7 +187,7 @@ export function AccountSettings() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-mono">
                   Save Profile
                 </Button>
               </div>
@@ -198,8 +198,8 @@ export function AccountSettings() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-[#3B82F6]" />
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="font-mono">Company Information</CardTitle>
@@ -257,7 +257,7 @@ export function AccountSettings() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-mono">
                   Save Company Info
                 </Button>
               </div>
@@ -268,8 +268,8 @@ export function AccountSettings() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <Lock className="h-5 w-5 text-[#3B82F6]" />
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Lock className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="font-mono">Security</CardTitle>
@@ -386,8 +386,8 @@ export function AccountSettings() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                  <Bell className="h-5 w-5 text-[#3B82F6]" />
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="font-mono">
@@ -431,7 +431,7 @@ export function AccountSettings() {
                 onChange={setNotif("marketDigest")}
               />
               <div className="pt-2">
-                <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-mono">
                   Save Preferences
                 </Button>
               </div>
@@ -446,7 +446,7 @@ export function AccountSettings() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#3B82F6]" />
+                <ShieldCheck className="h-4 w-4 text-primary" />
                 <CardTitle className="font-mono text-base">
                   Account Status
                 </CardTitle>
@@ -457,7 +457,7 @@ export function AccountSettings() {
                 <span className="text-sm text-muted-foreground font-mono">
                   Plan
                 </span>
-                <Badge className="bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30 font-mono">
+                <Badge className="bg-primary/10 text-primary border-primary/30 font-mono">
                   {user ? "Active" : "—"}
                 </Badge>
               </div>
@@ -484,7 +484,7 @@ export function AccountSettings() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[#3B82F6]" />
+                <Activity className="h-4 w-4 text-primary" />
                 <CardTitle className="font-mono text-base">
                   Activity Summary
                 </CardTitle>

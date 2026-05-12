@@ -21,6 +21,17 @@ class Company with _$Company {
     List<TaxInvoice>? invoices, // Optional list of recent invoices
     List<Listing>? listings, // Optional list of recent listings
     List<BuyerOffer>? offers, // Optional map of listings to buyer offers
+    // ── Per-company Jamf Pro credentials (stored in DB, not env) ───
+    String? jamfInstanceUrl,
+    String? jamfClientId,
+    String? jamfClientSecret, // write-only; API returns null after save
+    // ── Per-company Jamf School credentials ────────────────────────
+    String? jamfSchoolUrl,
+    String? jamfSchoolApiKey, // write-only; API returns null after save
+    // ── Per-company Intune / Azure AD credentials ───────────────────
+    String? azureTenantId,
+    String? azureClientId,
+    String? azureClientSecret, // write-only; API returns null after save
   }) = _Company;
 
   factory Company.fromJson(Map<String, dynamic> json) =>

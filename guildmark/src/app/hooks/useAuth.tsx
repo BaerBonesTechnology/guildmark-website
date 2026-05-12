@@ -9,13 +9,15 @@ import {
 import { api, setAccessToken, clearAccessToken, ApiError } from "../lib/api";
 import type { LoginResponse, SignupRequest } from "../models/auth";
 
-interface AuthUser {
-  id:         string;
-  email:      string;
-  full_name:  string;
-  role:       "admin" | "member" | "viewer";
-  company_id: string;
-  company:    string;
+export interface AuthUser {
+  id:                  string;
+  email:               string;
+  full_name:           string;
+  role:                "admin" | "member" | "viewer";
+  company_id:          string;
+  company:             string;
+  subscription_plan:   "free" | "starter" | "growth" | "pro";
+  subscription_status: "active" | "cancelled" | "past_due";
 }
 
 interface AuthContextType {
@@ -27,6 +29,8 @@ interface AuthContextType {
   signup:          (data: SignupRequest) => Promise<void>;
   logout:          () => Promise<void>;
   clearError:      () => void;
+  /** Re-fetch the access token and update the in-memory user (e.g. after plan change). */
+  refreshUser:     () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,8 +97,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const data = await api.post<LoginResponse>("/auth/refresh", {}, { skipAuth: true });
+      setAccessToken(data.access_token);
+      setUser(data.user);
+    } catch { /* silently ignore — user stays as-is */ }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, error, login, signup, logout, clearError }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, error, login, signup, logout, clearError, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

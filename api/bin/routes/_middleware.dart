@@ -44,7 +44,8 @@ Middleware _corsMiddleware() {
       final cfg = context.read<AppConfig>();
       final allowed = [
         cfg.corsOrigin,
-        if (cfg.adminCorsOrigin != null) cfg.adminCorsOrigin!,
+        if (cfg.adminCorsOrigin  != null) cfg.adminCorsOrigin!,
+        if (cfg.partnerCorsOrigin != null) cfg.partnerCorsOrigin!,
       ].join(',');
       final origin = _resolveOrigin(
         context.request.headers['origin'] ?? '',

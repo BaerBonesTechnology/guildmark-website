@@ -45,8 +45,8 @@ mixin _$Listing {
   String? get conditionGrade => throw _privateConstructorUsedError;
   int? get quantity => throw _privateConstructorUsedError;
   double? get cpuScore => throw _privateConstructorUsedError;
-  int? get ramGb => throw _privateConstructorUsedError;
-  int? get storageGb => throw _privateConstructorUsedError;
+  double? get ramGb => throw _privateConstructorUsedError;
+  double? get storageGb => throw _privateConstructorUsedError;
 
   /// Serializes this Listing to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -85,8 +85,8 @@ abstract class $ListingCopyWith<$Res> {
       String? conditionGrade,
       int? quantity,
       double? cpuScore,
-      int? ramGb,
-      int? storageGb});
+      double? ramGb,
+      double? storageGb});
 }
 
 /// @nodoc
@@ -221,11 +221,11 @@ class _$ListingCopyWithImpl<$Res, $Val extends Listing>
       ramGb: freezed == ramGb
           ? _value.ramGb
           : ramGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
       storageGb: freezed == storageGb
           ? _value.storageGb
           : storageGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
     ) as $Val);
   }
 }
@@ -260,8 +260,8 @@ abstract class _$$ListingImplCopyWith<$Res> implements $ListingCopyWith<$Res> {
       String? conditionGrade,
       int? quantity,
       double? cpuScore,
-      int? ramGb,
-      int? storageGb});
+      double? ramGb,
+      double? storageGb});
 }
 
 /// @nodoc
@@ -394,11 +394,11 @@ class __$$ListingImplCopyWithImpl<$Res>
       ramGb: freezed == ramGb
           ? _value.ramGb
           : ramGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
       storageGb: freezed == storageGb
           ? _value.storageGb
           : storageGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
     ));
   }
 }
@@ -484,9 +484,9 @@ class _$ListingImpl extends _Listing {
   @override
   final double? cpuScore;
   @override
-  final int? ramGb;
+  final double? ramGb;
   @override
-  final int? storageGb;
+  final double? storageGb;
 
   @override
   String toString() {
@@ -614,8 +614,8 @@ abstract class _Listing extends Listing {
       final String? conditionGrade,
       final int? quantity,
       final double? cpuScore,
-      final int? ramGb,
-      final int? storageGb}) = _$ListingImpl;
+      final double? ramGb,
+      final double? storageGb}) = _$ListingImpl;
   const _Listing._() : super._();
 
   factory _Listing.fromJson(Map<String, dynamic> json) = _$ListingImpl.fromJson;
@@ -668,9 +668,9 @@ abstract class _Listing extends Listing {
   @override
   double? get cpuScore;
   @override
-  int? get ramGb;
+  double? get ramGb;
   @override
-  int? get storageGb;
+  double? get storageGb;
 
   /// Create a copy of Listing
   /// with the given fields replaced by the non-null parameter values.
@@ -710,8 +710,9 @@ mixin _$MarketplaceListing {
   String? get conditionGrade => throw _privateConstructorUsedError;
   int? get quantity => throw _privateConstructorUsedError;
   double? get cpuScore => throw _privateConstructorUsedError;
-  int? get ramGb => throw _privateConstructorUsedError;
-  int? get storageGb => throw _privateConstructorUsedError;
+  double? get ramGb => throw _privateConstructorUsedError;
+  double? get storageGb => throw _privateConstructorUsedError;
+  String? get sellerName => throw _privateConstructorUsedError;
   String? get sellerIndustry => throw _privateConstructorUsedError;
   String? get sellerSizeBand => throw _privateConstructorUsedError;
 
@@ -754,8 +755,9 @@ abstract class $MarketplaceListingCopyWith<$Res> {
       String? conditionGrade,
       int? quantity,
       double? cpuScore,
-      int? ramGb,
-      int? storageGb,
+      double? ramGb,
+      double? storageGb,
+      String? sellerName,
       String? sellerIndustry,
       String? sellerSizeBand});
 }
@@ -799,6 +801,7 @@ class _$MarketplaceListingCopyWithImpl<$Res, $Val extends MarketplaceListing>
     Object? cpuScore = freezed,
     Object? ramGb = freezed,
     Object? storageGb = freezed,
+    Object? sellerName = freezed,
     Object? sellerIndustry = freezed,
     Object? sellerSizeBand = freezed,
   }) {
@@ -894,11 +897,15 @@ class _$MarketplaceListingCopyWithImpl<$Res, $Val extends MarketplaceListing>
       ramGb: freezed == ramGb
           ? _value.ramGb
           : ramGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
       storageGb: freezed == storageGb
           ? _value.storageGb
           : storageGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
+      sellerName: freezed == sellerName
+          ? _value.sellerName
+          : sellerName // ignore: cast_nullable_to_non_nullable
+              as String?,
       sellerIndustry: freezed == sellerIndustry
           ? _value.sellerIndustry
           : sellerIndustry // ignore: cast_nullable_to_non_nullable
@@ -942,8 +949,9 @@ abstract class _$$MarketplaceListingImplCopyWith<$Res>
       String? conditionGrade,
       int? quantity,
       double? cpuScore,
-      int? ramGb,
-      int? storageGb,
+      double? ramGb,
+      double? storageGb,
+      String? sellerName,
       String? sellerIndustry,
       String? sellerSizeBand});
 }
@@ -985,6 +993,7 @@ class __$$MarketplaceListingImplCopyWithImpl<$Res>
     Object? cpuScore = freezed,
     Object? ramGb = freezed,
     Object? storageGb = freezed,
+    Object? sellerName = freezed,
     Object? sellerIndustry = freezed,
     Object? sellerSizeBand = freezed,
   }) {
@@ -1080,11 +1089,15 @@ class __$$MarketplaceListingImplCopyWithImpl<$Res>
       ramGb: freezed == ramGb
           ? _value.ramGb
           : ramGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
       storageGb: freezed == storageGb
           ? _value.storageGb
           : storageGb // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as double?,
+      sellerName: freezed == sellerName
+          ? _value.sellerName
+          : sellerName // ignore: cast_nullable_to_non_nullable
+              as String?,
       sellerIndustry: freezed == sellerIndustry
           ? _value.sellerIndustry
           : sellerIndustry // ignore: cast_nullable_to_non_nullable
@@ -1125,6 +1138,7 @@ class _$MarketplaceListingImpl extends _MarketplaceListing {
       this.cpuScore,
       this.ramGb,
       this.storageGb,
+      this.sellerName,
       this.sellerIndustry,
       this.sellerSizeBand})
       : super._();
@@ -1179,9 +1193,11 @@ class _$MarketplaceListingImpl extends _MarketplaceListing {
   @override
   final double? cpuScore;
   @override
-  final int? ramGb;
+  final double? ramGb;
   @override
-  final int? storageGb;
+  final double? storageGb;
+  @override
+  final String? sellerName;
   @override
   final String? sellerIndustry;
   @override
@@ -1189,7 +1205,7 @@ class _$MarketplaceListingImpl extends _MarketplaceListing {
 
   @override
   String toString() {
-    return 'MarketplaceListing(id: $id, assetId: $assetId, companyId: $companyId, valuationFlag: $valuationFlag, status: $status, createdAt: $createdAt, listedPrice: $listedPrice, sellerOfferPrice: $sellerOfferPrice, buyerAskPrice: $buyerAskPrice, grossMargin: $grossMargin, consumerMarketAnchor: $consumerMarketAnchor, fairMarketValue: $fairMarketValue, estBookValue: $estBookValue, sellerRecoveryRatio: $sellerRecoveryRatio, depreciationPct: $depreciationPct, ageMonths: $ageMonths, lastValuedAt: $lastValuedAt, modelName: $modelName, assetType: $assetType, conditionGrade: $conditionGrade, quantity: $quantity, cpuScore: $cpuScore, ramGb: $ramGb, storageGb: $storageGb, sellerIndustry: $sellerIndustry, sellerSizeBand: $sellerSizeBand)';
+    return 'MarketplaceListing(id: $id, assetId: $assetId, companyId: $companyId, valuationFlag: $valuationFlag, status: $status, createdAt: $createdAt, listedPrice: $listedPrice, sellerOfferPrice: $sellerOfferPrice, buyerAskPrice: $buyerAskPrice, grossMargin: $grossMargin, consumerMarketAnchor: $consumerMarketAnchor, fairMarketValue: $fairMarketValue, estBookValue: $estBookValue, sellerRecoveryRatio: $sellerRecoveryRatio, depreciationPct: $depreciationPct, ageMonths: $ageMonths, lastValuedAt: $lastValuedAt, modelName: $modelName, assetType: $assetType, conditionGrade: $conditionGrade, quantity: $quantity, cpuScore: $cpuScore, ramGb: $ramGb, storageGb: $storageGb, sellerName: $sellerName, sellerIndustry: $sellerIndustry, sellerSizeBand: $sellerSizeBand)';
   }
 
   @override
@@ -1241,6 +1257,8 @@ class _$MarketplaceListingImpl extends _MarketplaceListing {
             (identical(other.ramGb, ramGb) || other.ramGb == ramGb) &&
             (identical(other.storageGb, storageGb) ||
                 other.storageGb == storageGb) &&
+            (identical(other.sellerName, sellerName) ||
+                other.sellerName == sellerName) &&
             (identical(other.sellerIndustry, sellerIndustry) ||
                 other.sellerIndustry == sellerIndustry) &&
             (identical(other.sellerSizeBand, sellerSizeBand) ||
@@ -1275,6 +1293,7 @@ class _$MarketplaceListingImpl extends _MarketplaceListing {
         cpuScore,
         ramGb,
         storageGb,
+        sellerName,
         sellerIndustry,
         sellerSizeBand
       ]);
@@ -1320,8 +1339,9 @@ abstract class _MarketplaceListing extends MarketplaceListing {
       final String? conditionGrade,
       final int? quantity,
       final double? cpuScore,
-      final int? ramGb,
-      final int? storageGb,
+      final double? ramGb,
+      final double? storageGb,
+      final String? sellerName,
       final String? sellerIndustry,
       final String? sellerSizeBand}) = _$MarketplaceListingImpl;
   const _MarketplaceListing._() : super._();
@@ -1376,9 +1396,11 @@ abstract class _MarketplaceListing extends MarketplaceListing {
   @override
   double? get cpuScore;
   @override
-  int? get ramGb;
+  double? get ramGb;
   @override
-  int? get storageGb;
+  double? get storageGb;
+  @override
+  String? get sellerName;
   @override
   String? get sellerIndustry;
   @override

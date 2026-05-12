@@ -29,11 +29,11 @@ class MdmConnection with _$MdmConnection {
   factory MdmConnection.fromRow(Map<String, dynamic> row) => MdmConnection(
         id:             row['id']                       as String,
         companyId:      row['company_id']               as String,
-        mdmType:        row['mdm_type']                 as String,
+        mdmType:        enumStr(row['mdm_type']),
         syncEnabled:    row['sync_enabled']             as bool,
         createdAt:      row['created_at']               as DateTime,
         lastSyncAt:     row['last_sync_at']             as DateTime?,
-        lastSyncStatus: row['last_sync_status']         as String?,
+        lastSyncStatus: enumStrOrNull(row['last_sync_status']),
         deviceCount:    numToIntOrNull(row['device_count']),
       );
 }

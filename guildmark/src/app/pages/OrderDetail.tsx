@@ -110,7 +110,7 @@ function OrderTimeline({ order }: { order: Order }) {
                       ? "border-border bg-muted"
                       : done
                       ? active
-                        ? "border-[#3B82F6] bg-[#3B82F6]"
+                        ? "border-primary bg-primary"
                         : "border-emerald-500 bg-emerald-500"
                       : "border-border bg-background"
                   }`}
@@ -123,7 +123,7 @@ function OrderTimeline({ order }: { order: Order }) {
                 </div>
                 <p
                   className={`text-[10px] font-mono mt-1 text-center w-16 leading-tight ${
-                    active ? "text-[#3B82F6] font-semibold" : "text-muted-foreground"
+                    active ? "text-primary font-semibold" : "text-muted-foreground"
                   }`}
                 >
                   {lifecycleLabel(step)}
@@ -352,7 +352,7 @@ export function OrderDetail() {
                   href={order.escrowPaymentUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-mono text-[#3B82F6] hover:underline mt-1"
+                  className="inline-flex items-center gap-1.5 text-xs font-mono text-primary hover:underline mt-1"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Fund Escrow

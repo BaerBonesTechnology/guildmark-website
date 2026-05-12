@@ -36,7 +36,7 @@ class TaxInvoice with _$TaxInvoice {
   factory TaxInvoice.fromRow(Map<String, dynamic> row) => TaxInvoice(
         id:                    row['id']                         as String,
         invoiceNumber:         row['invoice_number']             as String,
-        invoiceType:           row['invoice_type']               as String,
+        invoiceType:           enumStr(row['invoice_type']),
         invoiceDate:           row['invoice_date']               as DateTime,
         assetDescription:      row['asset_description']          as String,
         marketValueAtDisposal: numToDoubleOrNull(row['market_value_at_disposal']) ?? 0.0,

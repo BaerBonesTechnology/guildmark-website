@@ -124,7 +124,7 @@ export function OfferInbox() {
             onClick={() => setActiveTab(key)}
             className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 -mb-px ${
               activeTab === key
-                ? "border-[#3B82F6] text-[#3B82F6]"
+                ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -221,7 +221,7 @@ export function OfferInbox() {
                       {offer.status === "accepted" && (
                         <Button
                           size="sm"
-                          className="font-mono text-xs bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+                          className="font-mono text-xs bg-primary hover:bg-primary/90 text-white"
                         >
                           <Package className="h-3.5 w-3.5 mr-1" />
                           Place Order

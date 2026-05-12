@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Partner portal design tokens — dark industrial theme */
+:root {
+  --prt-bg:           #0d1117;
+  --prt-surface:      #161b22;
+  --prt-card:         #1c2128;
+  --prt-border:       #30363d;
+  --prt-accent:       #2563eb;   /* blue-600 */
+  --prt-accent-light: #3b82f6;   /* blue-500 */
+  --prt-success:      #22c55e;   /* green-500 */
+  --prt-warning:      #f59e0b;   /* amber-500 */
+  --prt-danger:       #ef4444;   /* red-500 */
+  --prt-text:         #e6edf3;
+  --prt-muted:        #8b949e;
+  --prt-font-mono:    'ui-monospace', 'SFMono-Regular', 'Menlo', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--prt-bg);
+  color: var(--prt-text);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}

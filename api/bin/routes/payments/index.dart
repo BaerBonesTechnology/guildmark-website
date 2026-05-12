@@ -42,7 +42,7 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   try {
-    final result = await context.read<SquareService>().createPayment(
+    final result = await context.read<SquareService?>()!.createPayment(
           sourceId: sourceId,
           amountCents: amountCents,
           note: body?['note'] as String?,

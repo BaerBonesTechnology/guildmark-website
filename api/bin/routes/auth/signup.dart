@@ -16,6 +16,7 @@ import '../../lib/db/pool.dart';
 import '../../lib/http_helpers.dart';
 import '../../lib/repos/subscription_repo.dart';
 import '../../lib/repos/user_repo.dart';
+import '../../lib/services/square_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -65,6 +66,28 @@ Future<Response> onRequest(RequestContext context) async {
 
     // Every new company starts on the free tier.
     await SubscriptionRepo(db).createFree(user.companyId);
+
+    // Create a Square Customer record so that payment history, saved cards,
+    // and invoices are owned by Square rather than stored in our DB.
+    // Fire-and-forget — a Square outage must never block signup.
+    final square = context.read<SquareService?>();
+    if (square != null) {
+      Future(() async {
+        try {
+          final customerId = await square.createCustomer(
+            email:       email,
+            companyName: companyName!,
+            referenceId: user.companyId,
+          );
+          await db.query(
+            'UPDATE companies SET square_customer_id = @cid WHERE id = @id::uuid',
+            parameters: {'cid': customerId, 'id': user.companyId},
+          );
+        } catch (e) {
+          stderr.writeln('[signup] Square customer creation failed: $e');
+        }
+      }).ignore();
+    }
 
     final cfg = context.read<AppConfig>();
     final jwt = context.read<JwtService>();

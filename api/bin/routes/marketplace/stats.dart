@@ -12,6 +12,7 @@ import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/db/pool.dart';
 import '../../lib/http_helpers.dart';
+import '../../lib/models/json_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -34,9 +35,9 @@ Future<Response> onRequest(RequestContext context) async {
   final row = result.first.toColumnMap();
 
   return Response.json(body: {
-    'totalListings':   row['total_listings']    as int,
-    'totalUnits':      row['total_units'],
-    'avgPricePerUnit': double.parse(row['avg_price_per_unit'].toString()),
-    'totalMarketValue': double.parse(row['total_market_value'].toString()),
+    'totalListings':    numToIntOrNull(row['total_listings'])       ?? 0,
+    'totalUnits':       numToIntOrNull(row['total_units'])          ?? 0,
+    'avgPricePerUnit':  numToDoubleOrNull(row['avg_price_per_unit']) ?? 0.0,
+    'totalMarketValue': numToDoubleOrNull(row['total_market_value']) ?? 0.0,
   });
 }

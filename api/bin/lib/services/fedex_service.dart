@@ -156,9 +156,11 @@ class FedexService {
     required this.clientId,
     required this.clientSecret,
     bool sandbox = true,
-  }) : _baseUrl = sandbox
-            ? 'https://apis-sandbox.fedex.com'
-            : 'https://apis.fedex.com';
+    String? apiUrl,
+  }) : _baseUrl = apiUrl ??
+            (sandbox
+                ? 'https://apis-sandbox.fedex.com'
+                : 'https://apis.fedex.com');
 
   final String clientId;
   final String clientSecret;

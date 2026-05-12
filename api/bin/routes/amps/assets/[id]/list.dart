@@ -40,8 +40,8 @@ Future<Response> onRequest(RequestContext context, String id) async {
       conditionGrade: asset.conditionGrade,
       ageMonths:      _ageMonths(asset.purchaseDate),
       cpuScore:       asset.cpuScore,
-      ramGb:          asset.ramGb,
-      storageGb:      asset.storageGb,
+      ramGb:          asset.ramGb?.toInt() ?? 0,
+      storageGb:      asset.storageGb?.toInt() ?? 0,
       originalPrice:  asset.originalPurchasePrice,
     ));
     fmv = valuation.fairMarketValue;

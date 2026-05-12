@@ -14,7 +14,7 @@ export function HowItWorks() {
       {/* With Data Wipe Service */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#3B82F6] text-white flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center">
             <Shield className="w-6 h-6" />
           </div>
           <div>
@@ -28,22 +28,22 @@ export function HowItWorks() {
         <div className="grid grid-cols-4 gap-4">
           <Card className="font-mono">
             <CardHeader>
-              <div className="w-10 h-10 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center text-xl font-bold mb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 1
               </div>
               <CardTitle className="text-base">List Assets</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+                <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Upload inventory</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+                <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Set pricing</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+                <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Enable data wipe</span>
               </div>
             </CardContent>
@@ -51,7 +51,7 @@ export function HowItWorks() {
 
           <Card className="font-mono">
             <CardHeader>
-              <div className="w-10 h-10 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center text-xl font-bold mb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 2
               </div>
               <CardTitle className="text-base">Ship to Orlando</CardTitle>
@@ -74,18 +74,18 @@ export function HowItWorks() {
 
           <Card className="font-mono">
             <CardHeader>
-              <div className="w-10 h-10 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center text-xl font-bold mb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 3
               </div>
               <CardTitle className="text-base">Get Paid Instantly</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-[#3B82F6]" />
+                <DollarSign className="w-4 h-4 text-primary" />
                 <span>Payment on arrival</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+                <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>You're done!</span>
               </div>
               <div className="flex items-center gap-2">
@@ -95,24 +95,24 @@ export function HowItWorks() {
             </CardContent>
           </Card>
 
-          <Card className="font-mono border-[#3B82F6]/30 bg-[#3B82F6]/5">
+          <Card className="font-mono border-primary/30 bg-primary/5">
             <CardHeader>
-              <div className="w-10 h-10 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center text-xl font-bold mb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 4
               </div>
               <CardTitle className="text-base">We Handle Rest</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#3B82F6]" />
+                <Shield className="w-4 h-4 text-primary" />
                 <span>NIST 800-88 wipe</span>
               </div>
               <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4 text-[#3B82F6]" />
+                <Truck className="w-4 h-4 text-primary" />
                 <span>Ship to buyer</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+                <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Compliance certs</span>
               </div>
             </CardContent>
@@ -122,7 +122,7 @@ export function HowItWorks() {
         <Card className="bg-muted/50 font-mono">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-[#3B82F6] mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
               <div>
                 <p className="font-semibold mb-1">Best for: Corporate IT departments prioritizing speed & compliance</p>
                 <p className="text-sm text-muted-foreground">
