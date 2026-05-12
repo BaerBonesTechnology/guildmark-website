@@ -230,7 +230,7 @@ export function PreLaunch() {
   const navigate         = useNavigate();
 
   return (
-    <div className="px-6 py-16 space-y-20 max-w-5xl mx-auto">
+    <div className="px-6 py-16 space-y-20 max-w-3/4 mx-auto">
       <div className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2 mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -249,9 +249,12 @@ export function PreLaunch() {
         <p className="text-lg text-muted-foreground text-center max-w-2xl leading-relaxed mb-12 font-sans">
           {t("prelaunch.description")}
         </p>
-
-        {/* ── Sign-up cards ─────────────────────────────────────────────── */}
-        <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex 3xl:flex-row 3xl:space-x-16 space-y-4 flex-col">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-sans font-bold">Sign up to stay in the loop on development.</h2>
+            <p className="text-sm text-muted-foreground font-sans">
+              We're offering mailing list and partner applications.</p>
+        <div className="flex-2 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {/* Waitlist card */}
           <div className="border border-primary rounded-xl p-6 space-y-4 text-left bg-background">
@@ -282,7 +285,6 @@ export function PreLaunch() {
           </div>
         </div>
 
-        {/* Trust signals */}
         <div className="flex flex-wrap justify-center gap-3 mt-8">
           <TrustBadge icon={Lock}   text="Escrow-secured payments" />
           <TrustBadge icon={Shield} text="NIST 800-88 certified wipe" />
@@ -290,8 +292,7 @@ export function PreLaunch() {
         </div>
       </div>
 
-      {/* ── Platform overview ─────────────────────────────────────────────── */}
-      <div className="space-y-4">
+      <div className="space-y-4 max-w-5xl">
         <div className="text-center space-y-1 mb-8">
           <h2 className="text-2xl font-bold font-sans">One platform. Two powerful tools.</h2>
           <p className="text-sm text-muted-foreground font-sans">
@@ -332,7 +333,6 @@ export function PreLaunch() {
             </ul>
           </div>
 
-          {/* Marketplace */}
           <div className="border rounded-xl p-6 space-y-4 bg-background">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -366,8 +366,8 @@ export function PreLaunch() {
           </div>
         </div>
       </div>
-
-      {/* ── How it works ─────────────────────────────────────────────────── */}
+      </div>
+</div>
       <div className="border rounded-xl p-8 bg-background space-y-6">
         <h2 className="text-sm font-sans uppercase tracking-wide text-muted-foreground">How it works</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
