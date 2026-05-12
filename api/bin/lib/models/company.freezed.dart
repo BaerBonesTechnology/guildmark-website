@@ -33,7 +33,21 @@ mixin _$Company {
       throw _privateConstructorUsedError; // Optional list of recent invoices
   List<Listing>? get listings =>
       throw _privateConstructorUsedError; // Optional list of recent listings
-  List<BuyerOffer>? get offers => throw _privateConstructorUsedError;
+  List<BuyerOffer>? get offers =>
+      throw _privateConstructorUsedError; // Optional map of listings to buyer offers
+// ── Per-company Jamf Pro credentials (stored in DB, not env) ───
+  String? get jamfInstanceUrl => throw _privateConstructorUsedError;
+  String? get jamfClientId => throw _privateConstructorUsedError;
+  String? get jamfClientSecret =>
+      throw _privateConstructorUsedError; // write-only; API returns null after save
+// ── Per-company Jamf School credentials ────────────────────────
+  String? get jamfSchoolUrl => throw _privateConstructorUsedError;
+  String? get jamfSchoolApiKey =>
+      throw _privateConstructorUsedError; // write-only; API returns null after save
+// ── Per-company Intune / Azure AD credentials ───────────────────
+  String? get azureTenantId => throw _privateConstructorUsedError;
+  String? get azureClientId => throw _privateConstructorUsedError;
+  String? get azureClientSecret => throw _privateConstructorUsedError;
 
   /// Serializes this Company to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -59,7 +73,15 @@ abstract class $CompanyCopyWith<$Res> {
       Map<String, String>? customFields,
       List<TaxInvoice>? invoices,
       List<Listing>? listings,
-      List<BuyerOffer>? offers});
+      List<BuyerOffer>? offers,
+      String? jamfInstanceUrl,
+      String? jamfClientId,
+      String? jamfClientSecret,
+      String? jamfSchoolUrl,
+      String? jamfSchoolApiKey,
+      String? azureTenantId,
+      String? azureClientId,
+      String? azureClientSecret});
 
   $PortfolioSummaryCopyWith<$Res>? get portfolioSummary;
 }
@@ -89,6 +111,14 @@ class _$CompanyCopyWithImpl<$Res, $Val extends Company>
     Object? invoices = freezed,
     Object? listings = freezed,
     Object? offers = freezed,
+    Object? jamfInstanceUrl = freezed,
+    Object? jamfClientId = freezed,
+    Object? jamfClientSecret = freezed,
+    Object? jamfSchoolUrl = freezed,
+    Object? jamfSchoolApiKey = freezed,
+    Object? azureTenantId = freezed,
+    Object? azureClientId = freezed,
+    Object? azureClientSecret = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -131,6 +161,38 @@ class _$CompanyCopyWithImpl<$Res, $Val extends Company>
           ? _value.offers
           : offers // ignore: cast_nullable_to_non_nullable
               as List<BuyerOffer>?,
+      jamfInstanceUrl: freezed == jamfInstanceUrl
+          ? _value.jamfInstanceUrl
+          : jamfInstanceUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfClientId: freezed == jamfClientId
+          ? _value.jamfClientId
+          : jamfClientId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfClientSecret: freezed == jamfClientSecret
+          ? _value.jamfClientSecret
+          : jamfClientSecret // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfSchoolUrl: freezed == jamfSchoolUrl
+          ? _value.jamfSchoolUrl
+          : jamfSchoolUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfSchoolApiKey: freezed == jamfSchoolApiKey
+          ? _value.jamfSchoolApiKey
+          : jamfSchoolApiKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      azureTenantId: freezed == azureTenantId
+          ? _value.azureTenantId
+          : azureTenantId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      azureClientId: freezed == azureClientId
+          ? _value.azureClientId
+          : azureClientId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      azureClientSecret: freezed == azureClientSecret
+          ? _value.azureClientSecret
+          : azureClientSecret // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -166,7 +228,15 @@ abstract class _$$CompanyImplCopyWith<$Res> implements $CompanyCopyWith<$Res> {
       Map<String, String>? customFields,
       List<TaxInvoice>? invoices,
       List<Listing>? listings,
-      List<BuyerOffer>? offers});
+      List<BuyerOffer>? offers,
+      String? jamfInstanceUrl,
+      String? jamfClientId,
+      String? jamfClientSecret,
+      String? jamfSchoolUrl,
+      String? jamfSchoolApiKey,
+      String? azureTenantId,
+      String? azureClientId,
+      String? azureClientSecret});
 
   @override
   $PortfolioSummaryCopyWith<$Res>? get portfolioSummary;
@@ -195,6 +265,14 @@ class __$$CompanyImplCopyWithImpl<$Res>
     Object? invoices = freezed,
     Object? listings = freezed,
     Object? offers = freezed,
+    Object? jamfInstanceUrl = freezed,
+    Object? jamfClientId = freezed,
+    Object? jamfClientSecret = freezed,
+    Object? jamfSchoolUrl = freezed,
+    Object? jamfSchoolApiKey = freezed,
+    Object? azureTenantId = freezed,
+    Object? azureClientId = freezed,
+    Object? azureClientSecret = freezed,
   }) {
     return _then(_$CompanyImpl(
       id: null == id
@@ -237,6 +315,38 @@ class __$$CompanyImplCopyWithImpl<$Res>
           ? _value._offers
           : offers // ignore: cast_nullable_to_non_nullable
               as List<BuyerOffer>?,
+      jamfInstanceUrl: freezed == jamfInstanceUrl
+          ? _value.jamfInstanceUrl
+          : jamfInstanceUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfClientId: freezed == jamfClientId
+          ? _value.jamfClientId
+          : jamfClientId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfClientSecret: freezed == jamfClientSecret
+          ? _value.jamfClientSecret
+          : jamfClientSecret // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfSchoolUrl: freezed == jamfSchoolUrl
+          ? _value.jamfSchoolUrl
+          : jamfSchoolUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      jamfSchoolApiKey: freezed == jamfSchoolApiKey
+          ? _value.jamfSchoolApiKey
+          : jamfSchoolApiKey // ignore: cast_nullable_to_non_nullable
+              as String?,
+      azureTenantId: freezed == azureTenantId
+          ? _value.azureTenantId
+          : azureTenantId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      azureClientId: freezed == azureClientId
+          ? _value.azureClientId
+          : azureClientId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      azureClientSecret: freezed == azureClientSecret
+          ? _value.azureClientSecret
+          : azureClientSecret // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -254,7 +364,15 @@ class _$CompanyImpl implements _Company {
       final Map<String, String>? customFields,
       final List<TaxInvoice>? invoices,
       final List<Listing>? listings,
-      final List<BuyerOffer>? offers})
+      final List<BuyerOffer>? offers,
+      this.jamfInstanceUrl,
+      this.jamfClientId,
+      this.jamfClientSecret,
+      this.jamfSchoolUrl,
+      this.jamfSchoolApiKey,
+      this.azureTenantId,
+      this.azureClientId,
+      this.azureClientSecret})
       : _personnel = personnel,
         _mdmConnections = mdmConnections,
         _customFields = customFields,
@@ -341,9 +459,32 @@ class _$CompanyImpl implements _Company {
     return EqualUnmodifiableListView(value);
   }
 
+// Optional map of listings to buyer offers
+// ── Per-company Jamf Pro credentials (stored in DB, not env) ───
+  @override
+  final String? jamfInstanceUrl;
+  @override
+  final String? jamfClientId;
+  @override
+  final String? jamfClientSecret;
+// write-only; API returns null after save
+// ── Per-company Jamf School credentials ────────────────────────
+  @override
+  final String? jamfSchoolUrl;
+  @override
+  final String? jamfSchoolApiKey;
+// write-only; API returns null after save
+// ── Per-company Intune / Azure AD credentials ───────────────────
+  @override
+  final String? azureTenantId;
+  @override
+  final String? azureClientId;
+  @override
+  final String? azureClientSecret;
+
   @override
   String toString() {
-    return 'Company(id: $id, name: $name, logoUrl: $logoUrl, personnel: $personnel, portfolioSummary: $portfolioSummary, mdmConnections: $mdmConnections, customFields: $customFields, invoices: $invoices, listings: $listings, offers: $offers)';
+    return 'Company(id: $id, name: $name, logoUrl: $logoUrl, personnel: $personnel, portfolioSummary: $portfolioSummary, mdmConnections: $mdmConnections, customFields: $customFields, invoices: $invoices, listings: $listings, offers: $offers, jamfInstanceUrl: $jamfInstanceUrl, jamfClientId: $jamfClientId, jamfClientSecret: $jamfClientSecret, jamfSchoolUrl: $jamfSchoolUrl, jamfSchoolApiKey: $jamfSchoolApiKey, azureTenantId: $azureTenantId, azureClientId: $azureClientId, azureClientSecret: $azureClientSecret)';
   }
 
   @override
@@ -364,7 +505,23 @@ class _$CompanyImpl implements _Company {
                 .equals(other._customFields, _customFields) &&
             const DeepCollectionEquality().equals(other._invoices, _invoices) &&
             const DeepCollectionEquality().equals(other._listings, _listings) &&
-            const DeepCollectionEquality().equals(other._offers, _offers));
+            const DeepCollectionEquality().equals(other._offers, _offers) &&
+            (identical(other.jamfInstanceUrl, jamfInstanceUrl) ||
+                other.jamfInstanceUrl == jamfInstanceUrl) &&
+            (identical(other.jamfClientId, jamfClientId) ||
+                other.jamfClientId == jamfClientId) &&
+            (identical(other.jamfClientSecret, jamfClientSecret) ||
+                other.jamfClientSecret == jamfClientSecret) &&
+            (identical(other.jamfSchoolUrl, jamfSchoolUrl) ||
+                other.jamfSchoolUrl == jamfSchoolUrl) &&
+            (identical(other.jamfSchoolApiKey, jamfSchoolApiKey) ||
+                other.jamfSchoolApiKey == jamfSchoolApiKey) &&
+            (identical(other.azureTenantId, azureTenantId) ||
+                other.azureTenantId == azureTenantId) &&
+            (identical(other.azureClientId, azureClientId) ||
+                other.azureClientId == azureClientId) &&
+            (identical(other.azureClientSecret, azureClientSecret) ||
+                other.azureClientSecret == azureClientSecret));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -380,7 +537,15 @@ class _$CompanyImpl implements _Company {
       const DeepCollectionEquality().hash(_customFields),
       const DeepCollectionEquality().hash(_invoices),
       const DeepCollectionEquality().hash(_listings),
-      const DeepCollectionEquality().hash(_offers));
+      const DeepCollectionEquality().hash(_offers),
+      jamfInstanceUrl,
+      jamfClientId,
+      jamfClientSecret,
+      jamfSchoolUrl,
+      jamfSchoolApiKey,
+      azureTenantId,
+      azureClientId,
+      azureClientSecret);
 
   /// Create a copy of Company
   /// with the given fields replaced by the non-null parameter values.
@@ -409,7 +574,15 @@ abstract class _Company implements Company {
       final Map<String, String>? customFields,
       final List<TaxInvoice>? invoices,
       final List<Listing>? listings,
-      final List<BuyerOffer>? offers}) = _$CompanyImpl;
+      final List<BuyerOffer>? offers,
+      final String? jamfInstanceUrl,
+      final String? jamfClientId,
+      final String? jamfClientSecret,
+      final String? jamfSchoolUrl,
+      final String? jamfSchoolApiKey,
+      final String? azureTenantId,
+      final String? azureClientId,
+      final String? azureClientSecret}) = _$CompanyImpl;
 
   factory _Company.fromJson(Map<String, dynamic> json) = _$CompanyImpl.fromJson;
 
@@ -432,7 +605,26 @@ abstract class _Company implements Company {
   @override
   List<Listing>? get listings; // Optional list of recent listings
   @override
-  List<BuyerOffer>? get offers;
+  List<BuyerOffer>? get offers; // Optional map of listings to buyer offers
+// ── Per-company Jamf Pro credentials (stored in DB, not env) ───
+  @override
+  String? get jamfInstanceUrl;
+  @override
+  String? get jamfClientId;
+  @override
+  String? get jamfClientSecret; // write-only; API returns null after save
+// ── Per-company Jamf School credentials ────────────────────────
+  @override
+  String? get jamfSchoolUrl;
+  @override
+  String? get jamfSchoolApiKey; // write-only; API returns null after save
+// ── Per-company Intune / Azure AD credentials ───────────────────
+  @override
+  String? get azureTenantId;
+  @override
+  String? get azureClientId;
+  @override
+  String? get azureClientSecret;
 
   /// Create a copy of Company
   /// with the given fields replaced by the non-null parameter values.

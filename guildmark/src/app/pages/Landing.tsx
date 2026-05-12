@@ -9,14 +9,14 @@ export function Landing() {
       {/* Hero Section */}
       <section className="pt-12 pb-16">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/20">
-            <div className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse" />
-            <span className="text-sm font-mono text-[#3B82F6]">B2B Asset Trading Platform</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-sm font-mono text-primary">B2B Asset Trading Platform</span>
           </div>
 
           <h1 className="text-6xl font-mono tracking-tight">
             Turn Idle Hardware Into
-            <span className="block text-[#3B82F6] mt-2">Liquid Capital</span>
+            <span className="block text-primary mt-2">Liquid Capital</span>
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-mono">
@@ -25,7 +25,7 @@ export function Landing() {
           </p>
 
           <div className="flex gap-4 justify-center pt-4">
-            <Button asChild size="lg" className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white font-mono">
               <Link to="/signup">
                 Start Free Forever
                 <ArrowRight />
@@ -40,15 +40,15 @@ export function Landing() {
 
           <div className="pt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground font-mono">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>3,240+ Assets Listed</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>$4.3M Market Value</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>NIST Certified</span>
             </div>
           </div>
@@ -65,8 +65,8 @@ export function Landing() {
         <div className="grid grid-cols-3 gap-6">
           <Card className="font-mono">
             <CardContent className="pt-6 space-y-4">
-              <div className="w-12 h-12 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-[#3B82F6]" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-lg">Real-Time Depreciation Analytics</h3>
               <p className="text-sm text-muted-foreground">
@@ -78,8 +78,8 @@ export function Landing() {
 
           <Card className="font-mono">
             <CardContent className="pt-6 space-y-4">
-              <div className="w-12 h-12 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-[#3B82F6]" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-lg">B2B Marketplace</h3>
               <p className="text-sm text-muted-foreground">
@@ -91,8 +91,8 @@ export function Landing() {
 
           <Card className="font-mono">
             <CardContent className="pt-6 space-y-4">
-              <div className="w-12 h-12 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-[#3B82F6]" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-lg">Compliant Data Wiping</h3>
               <p className="text-sm text-muted-foreground">
@@ -103,8 +103,8 @@ export function Landing() {
 
           <Card className="font-mono">
             <CardContent className="pt-6 space-y-4">
-              <div className="w-12 h-12 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-[#3B82F6]" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-lg">Frictionless Offload</h3>
               <p className="text-sm text-muted-foreground">
@@ -116,8 +116,8 @@ export function Landing() {
 
           <Card className="font-mono">
             <CardContent className="pt-6 space-y-4">
-              <div className="w-12 h-12 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-[#3B82F6]" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-lg">GuildMark Score</h3>
               <p className="text-sm text-muted-foreground">
@@ -129,8 +129,8 @@ export function Landing() {
 
           <Card className="font-mono">
             <CardContent className="pt-6 space-y-4">
-              <div className="w-12 h-12 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-[#3B82F6]" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-lg">Transparent Pricing</h3>
               <p className="text-sm text-muted-foreground">
@@ -151,7 +151,7 @@ export function Landing() {
 
         <div className="grid grid-cols-3 gap-8">
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-[#3B82F6] text-white flex items-center justify-center font-mono text-xl">
+            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-mono text-xl">
               1
             </div>
             <Card className="font-mono pt-8">
@@ -166,7 +166,7 @@ export function Landing() {
           </div>
 
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-[#3B82F6] text-white flex items-center justify-center font-mono text-xl">
+            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-mono text-xl">
               2
             </div>
             <Card className="font-mono pt-8">
@@ -181,7 +181,7 @@ export function Landing() {
           </div>
 
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-[#3B82F6] text-white flex items-center justify-center font-mono text-xl">
+            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-mono text-xl">
               3
             </div>
             <Card className="font-mono pt-8">
@@ -279,13 +279,13 @@ export function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-br from-[#3B82F6]/10 to-background border border-[#3B82F6]/20 rounded-xl p-12 text-center space-y-6">
+      <section className="bg-gradient-to-br from-primary/10 to-background border border-primary/20 rounded-xl p-12 text-center space-y-6">
         <h2 className="text-3xl font-mono">Ready to Optimize Your IT Assets?</h2>
         <p className="text-muted-foreground font-mono max-w-2xl mx-auto">
           Join hundreds of businesses turning depreciation into opportunity. Free forever, only pay when you sell.
         </p>
         <div className="flex gap-3 justify-center">
-          <Button asChild size="lg" className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+          <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white font-mono">
             <Link to="/signup">
               Get Started Free
               <ArrowRight />

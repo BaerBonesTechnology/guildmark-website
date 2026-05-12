@@ -2,9 +2,9 @@
 /// AMPS quick-list flows all hit through here.
 library;
 
-import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
+import '../models/json_helpers.dart';
 import '../models/listing.dart';
 import '../models/paginated.dart';
 
@@ -40,7 +40,8 @@ const _listingCols = '''
 /// Extra columns exposed on the public marketplace (seller is partially masked).
 const _marketplaceCols = '''
   $_listingCols,
-  c.industry AS seller_industry,
+  c.name      AS seller_name,
+  c.industry  AS seller_industry,
   c.size_band AS seller_size_band
 ''';
 
@@ -74,10 +75,8 @@ class ListingRepo {
       params['search'] = '%${filters.search}%';
     }
 
-    final offset = (filters.page - 1) * filters.pageSize;
-    params['limit']  = filters.pageSize;
-    params['offset'] = offset;
-
+    // Run count first — params must not contain @limit/@offset yet, as
+    // postgres Sql.named() rejects superfluous variables.
     final countResult = await _db.query(
       '''
       SELECT COUNT(*) AS n
@@ -88,7 +87,11 @@ class ListingRepo {
       ''',
       parameters: params,
     );
-    final total = (countResult.first.toColumnMap()['n'] as int?) ?? 0;
+    final total = numToIntOrNull(countResult.first.toColumnMap()['n']) ?? 0;
+
+    final offset = (filters.page - 1) * filters.pageSize;
+    params['limit']  = filters.pageSize;
+    params['offset'] = offset;
 
     final rows = await _db.query(
       '''
@@ -159,20 +162,18 @@ class ListingRepo {
     final flag = _valuationFlag(listedPrice, fairMarketValue);
 
     final result = await _db.query(
-      Sql.named(
-        '''
-        INSERT INTO listings
-          (asset_id, company_id, listed_price, fair_market_value, valuation_flag, status)
-        VALUES
-          (@assetId, @cid, @price, @fmv, @flag::valuation_flag, 'draft')
-        RETURNING
-          id, asset_id, company_id, listed_price, seller_offer_price,
-          buyer_ask_price, gross_margin, consumer_market_anchor,
-          fair_market_value, est_book_value, seller_recovery_ratio,
-          depreciation_pct, age_months, valuation_flag, status,
-          last_valued_at, created_at
-        ''',
-      ).toString(),
+      '''
+      INSERT INTO listings
+        (asset_id, company_id, listed_price, fair_market_value, valuation_flag, status)
+      VALUES
+        (@assetId, @cid, @price, @fmv, @flag::valuation_flag, 'draft')
+      RETURNING
+        id, asset_id, company_id, listed_price, seller_offer_price,
+        buyer_ask_price, gross_margin, consumer_market_anchor,
+        fair_market_value, est_book_value, seller_recovery_ratio,
+        depreciation_pct, age_months, valuation_flag, status,
+        last_valued_at, created_at
+      ''',
       parameters: {
         'assetId': assetId,
         'cid':     companyId,
@@ -180,6 +181,66 @@ class ListingRepo {
         'fmv':     fairMarketValue,
         'flag':    flag,
       },
+    );
+    return Listing.fromRow(result.first.toColumnMap());
+  }
+
+  /// Publish a draft listing (draft → active).
+  Future<Listing> publish({required String id, required String companyId}) async {
+    final result = await _db.query(
+      '''
+      UPDATE listings
+      SET status = 'active'
+      WHERE id = @id AND company_id = @cid AND status = 'draft'
+      RETURNING
+        id, asset_id, company_id, listed_price, seller_offer_price,
+        buyer_ask_price, gross_margin, consumer_market_anchor,
+        fair_market_value, est_book_value, seller_recovery_ratio,
+        depreciation_pct, age_months, valuation_flag, status,
+        last_valued_at, created_at
+      ''',
+      parameters: {'id': id, 'cid': companyId},
+    );
+    if (result.isEmpty) throw StateError('Listing $id not found or is not a draft');
+    return Listing.fromRow(result.first.toColumnMap());
+  }
+
+  /// Update the listed price and recompute the valuation flag against the
+  /// existing FMV on record. Pass [fairMarketValue] to override the stored FMV
+  /// (e.g. after a fresh ML call).
+  Future<Listing> updatePrice({
+    required String id,
+    required String companyId,
+    required double listedPrice,
+    double? fairMarketValue,
+  }) async {
+    // Fetch existing FMV only when the caller didn't supply a new one.
+    final existing = await _db.query(
+      'SELECT fair_market_value FROM listings WHERE id = @id AND company_id = @cid LIMIT 1',
+      parameters: {'id': id, 'cid': companyId},
+    );
+    if (existing.isEmpty) throw StateError('Listing $id not found');
+
+    final fmv = fairMarketValue ??
+        numToDoubleOrNull(existing.first.toColumnMap()['fair_market_value']);
+    final flag = _valuationFlag(listedPrice, fmv);
+
+    final result = await _db.query(
+      '''
+      UPDATE listings SET
+        listed_price       = @price,
+        fair_market_value  = COALESCE(@fmv, fair_market_value),
+        valuation_flag     = @flag::valuation_flag,
+        last_valued_at     = CASE WHEN @fmv IS NOT NULL THEN now() ELSE last_valued_at END
+      WHERE id = @id AND company_id = @cid
+      RETURNING
+        id, asset_id, company_id, listed_price, seller_offer_price,
+        buyer_ask_price, gross_margin, consumer_market_anchor,
+        fair_market_value, est_book_value, seller_recovery_ratio,
+        depreciation_pct, age_months, valuation_flag, status,
+        last_valued_at, created_at
+      ''',
+      parameters: {'id': id, 'cid': companyId, 'price': listedPrice, 'fmv': fmv, 'flag': flag},
     );
     return Listing.fromRow(result.first.toColumnMap());
   }
@@ -203,6 +264,50 @@ class ListingRepo {
     // If zero rows updated the listing doesn't exist / wrong company.
     if (result.isEmpty) throw StateError('Listing $id not found for company $companyId');
     return Listing.fromRow(result.first.toColumnMap());
+  }
+
+  /// Update the fair_market_value on a specific listing and recompute its
+  /// valuation flag. Used by the background valuation job that runs after
+  /// a company signs up for AMPS.
+  ///
+  /// No-ops silently if the listing has been removed or moved to a terminal
+  /// status between the time the job started and this call.
+  Future<void> updateFmvByListingId({
+    required String listingId,
+    required String companyId,
+    required double fmv,
+  }) async {
+    // Re-fetch the current listed_price so the valuation flag stays accurate.
+    final existing = await _db.query(
+      '''
+      SELECT listed_price FROM listings
+      WHERE id = @id AND company_id = @cid
+        AND status NOT IN ('sold', 'withdrawn')
+      LIMIT 1
+      ''',
+      parameters: {'id': listingId, 'cid': companyId},
+    );
+    if (existing.isEmpty) return; // removed or terminal before job reached it
+
+    final listedPrice =
+        numToDoubleOrNull(existing.first.toColumnMap()['listed_price']) ?? 0.0;
+    final flag = _valuationFlag(listedPrice, fmv);
+
+    await _db.query(
+      '''
+      UPDATE listings
+      SET fair_market_value = @fmv,
+          valuation_flag    = @flag::valuation_flag,
+          last_valued_at    = now()
+      WHERE id = @id AND company_id = @cid
+      ''',
+      parameters: {
+        'id':   listingId,
+        'cid':  companyId,
+        'fmv':  fmv,
+        'flag': flag,
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------

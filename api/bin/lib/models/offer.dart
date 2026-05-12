@@ -34,7 +34,7 @@ class BuyerOffer with _$BuyerOffer {
         buyerCompanyId: row['buyer_company_id']         as String,
         offerPrice:     numToDoubleOrNull(row['offer_price']) ?? 0.0,
         quantity:       numToIntOrNull(row['quantity']) ?? 0,
-        status:         row['status']                   as String,
+        status:         enumStr(row['status']),
         expiresAt:      row['expires_at']               as DateTime,
         createdAt:      row['created_at']               as DateTime,
         counterPrice:   numToDoubleOrNull(row['counter_price']),

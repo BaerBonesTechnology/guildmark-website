@@ -47,13 +47,13 @@ function statusConfig(status: OrderStatus) {
     case "in_transit":
       return {
         label: "In Transit",
-        className: "bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30",
+        className: "bg-primary/10 text-primary border-primary/30",
         Icon: Truck,
       };
     case "processing":
       return {
         label: "Processing",
-        className: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30",
+        className: "bg-warning/10 text-warning border-warning/30",
         Icon: Clock,
       };
     case "cancelled":
@@ -150,7 +150,7 @@ export function Orders() {
                 Active Orders
               </p>
             </div>
-            <p className="text-2xl font-mono text-[#3B82F6]">
+            <p className="text-2xl font-mono text-primary">
               {isLoading ? "—" : (stats?.activeOrders ?? 0)}
             </p>
           </CardContent>
@@ -197,7 +197,7 @@ export function Orders() {
             onClick={() => setActiveTab(key)}
             className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 -mb-px ${
               activeTab === key
-                ? "border-[#3B82F6] text-[#3B82F6]"
+                ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >

@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router";
-import { Mail, LogOut, Users, BarChart2, Handshake } from "lucide-react";
+import { Mail, LogOut, Users, BarChart2, Handshake, DollarSign, UsersRound } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
@@ -39,6 +39,14 @@ export function Dashboard() {
           <NavLink to="/partners" className={navLink}>
             <Handshake className="w-4 h-4" />
             Partners
+          </NavLink>
+          <NavLink to="/pricing" className={navLink}>
+            <DollarSign className="w-4 h-4" />
+            Pricing
+          </NavLink>
+          <NavLink to="/team" className={navLink}>
+            <UsersRound className="w-4 h-4" />
+            Team
           </NavLink>
         </nav>
 

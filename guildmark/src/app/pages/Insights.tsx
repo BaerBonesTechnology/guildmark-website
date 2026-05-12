@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { brand, semantic } from "../lib/tokens";
 import {
     BarChart,
     Bar,
@@ -235,7 +236,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
     const CADENCE_MONTHS = 12;
 
     const seasonalityData = activeView === "purchasing" ? PURCHASING_DATA : SUPPLY_DATA;
-    const barColor = activeView === "purchasing" ? "#3B82F6" : "#F59E0B";
+    const barColor = activeView === "purchasing" ? brand.primary : semantic.warning;
 
     return (
         <div className={`text-foreground ${inDrawer ? "" : "-mx-6 -my-6 min-h-screen"}`}>
@@ -311,7 +312,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                         step={10_000}
                                         value={assetValue}
                                         onChange={(e) => setAssetValue(Number(e.target.value))}
-                                        className="w-full h-1 rounded-full appearance-none bg-border accent-[#3B82F6] cursor-pointer"
+                                        className="w-full h-1 rounded-full appearance-none bg-border accent-primary cursor-pointer"
                                     />
                                     <div className="flex justify-between text-xs text-muted-foreground font-mono mt-1">
                                         <span>$50k</span><span>$2M</span>
@@ -391,7 +392,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                             title={isIdle ? "Idle, not deployed" : "Active"}
                                             className={`w-4 h-4 rounded-sm transition-colors ${isIdle
                                                     ? "bg-amber-500/40 border border-amber-500/30"
-                                                    : "bg-[#3B82F6]/30 border border-[#3B82F6]/20"
+                                                    : "bg-primary/30 border border-primary/20"
                                                 }`}
                                         />
                                     );
@@ -404,7 +405,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                             </div>
                             <div className="flex items-center gap-6 mt-5 text-xs font-mono text-muted-foreground">
                                 <span className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-sm bg-[#3B82F6]/30 border border-[#3B82F6]/20 inline-block" />
+                                    <span className="w-3 h-3 rounded-sm bg-primary/30 border border-primary/20 inline-block" />
                                     Active
                                 </span>
                                 <span className="flex items-center gap-2">
@@ -432,7 +433,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                                 {Math.round(monthlyOffload * (isQ4Adjacent ? 1.4 : height / 80))}
                                             </span>
                                             <div
-                                                className="w-full rounded-t bg-[#3B82F6]/40 border-t border-[#3B82F6]/60 transition-all duration-500"
+                                                className="w-full rounded-t bg-primary/40 border-t border-primary/60 transition-all duration-500"
                                                 style={{ height: `${height}%` }}
                                             />
                                             <span className="text-muted-foreground text-muted-foreground font-mono">{label}</span>
@@ -478,7 +479,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                         onClick={() => setActiveView(v)}
                                         className={`px-4 py-2 rounded-md transition-all ${activeView === v
                                                 ? v === "purchasing"
-                                                    ? "bg-[#3B82F6]/20 text-muted-foreground"
+                                                    ? "bg-primary/20 text-muted-foreground"
                                                     : "bg-amber-500/20 text-amber-400"
                                                 : "text-muted-foreground hover:text-foreground"
                                             }`}
@@ -563,7 +564,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                             value="$10.54B"
                             label="Global Refurbished Market Size"
                             tag="+11.2% Annual Growth"
-                            tagClass="bg-[#3B82F6]/10 text-muted-foreground"
+                            tagClass="bg-primary/10 text-muted-foreground"
                             cite={9}
                         />
                         <StatCard
@@ -631,7 +632,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                             </ResponsiveContainer>
                         </div>
 
-                        <div className="mt-6 p-4 bg-[#3B82F6]/5 border border-[#3B82F6]/20 rounded-xl text-sm text-foreground flex items-start gap-3">
+                        <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl text-sm text-foreground flex items-start gap-3">
                             <span className="text-xl">💡</span>
                             <p>
                                 An SMB buying on GuildMarket gets devices that are 2 to 3 years old from
@@ -729,7 +730,7 @@ function InsightCard({
 }) {
     return (
         <div
-            className={`bg-muted/50 p-5 rounded-xl border border-border border-l-4 ${accent === "green" ? "border-l-[#3B82F6]" : "border-l-slate-500"
+            className={`bg-muted/50 p-5 rounded-xl border border-border border-l-4 ${accent === "green" ? "border-l-primary" : "border-l-slate-500"
                 }`}
         >
             <h4 className="font-semibold text-foreground mb-2">{title}</h4>

@@ -23,3 +23,18 @@ class AuthPrincipal {
   final String companyId;
   final String role;
 }
+
+/// Injected into all /partner/* requests. Null when no valid partner JWT is
+/// present — auth routes use the null case to issue a new token; protected
+/// routes return 401 when this is null.
+class PartnerPrincipal {
+  PartnerPrincipal({required this.partnerId, required this.partnerCode});
+
+  factory PartnerPrincipal.fromClaims(PartnerClaims c) => PartnerPrincipal(
+        partnerId:   c.partnerId,
+        partnerCode: c.partnerCode,
+      );
+
+  final String partnerId;
+  final String partnerCode;
+}

@@ -9,6 +9,7 @@
 library;
 
 import '../db/pool.dart';
+import '../models/json_helpers.dart';
 
 // ---------------------------------------------------------------------------
 // Model
@@ -72,16 +73,12 @@ class AssetValuation {
         modelName: row['model_name'] as String,
         assetType: row['asset_type'] as String,
         conditionGrade: row['condition_grade'] as String,
-        ageMonths: row['age_months'] as int,
-        fairMarketValue: double.parse(row['fair_market_value'].toString()),
-        confidence: double.parse(row['confidence'].toString()),
+        ageMonths: numToIntOrNull(row['age_months']) ?? 0,
+        fairMarketValue: numToDoubleOrNull(row['fair_market_value']) ?? 0.0,
+        confidence: numToDoubleOrNull(row['confidence']) ?? 0.0,
         modelVersion: row['model_version'] as String,
-        listedPrice: row['listed_price'] != null
-            ? double.parse(row['listed_price'].toString())
-            : null,
-        priceToFmvRatio: row['price_to_fmv_ratio'] != null
-            ? double.parse(row['price_to_fmv_ratio'].toString())
-            : null,
+        listedPrice:    numToDoubleOrNull(row['listed_price']),
+        priceToFmvRatio: numToDoubleOrNull(row['price_to_fmv_ratio']),
         createdAt: row['created_at'] as DateTime,
       );
 }

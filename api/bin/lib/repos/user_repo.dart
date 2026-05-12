@@ -17,6 +17,8 @@ class UserRecord {
     required this.fullName,
     required this.role,
     required this.companyName,
+    this.subscriptionPlan   = 'free',
+    this.subscriptionStatus = 'active',
   });
 
   final String id;
@@ -26,14 +28,20 @@ class UserRecord {
   final String fullName;
   final String role;
   final String companyName;
+  /// Current subscription plan: 'free' | 'starter' | 'growth' | 'pro'
+  final String subscriptionPlan;
+  /// 'active' | 'cancelled' | 'past_due'
+  final String subscriptionStatus;
 
   Map<String, dynamic> toAuthUser() => {
-        'id': id,
-        'email': email,
-        'full_name': fullName,
-        'role': role,
-        'company_id': companyId,
-        'company': companyName,
+        'id':                  id,
+        'email':               email,
+        'full_name':           fullName,
+        'role':                role,
+        'company_id':          companyId,
+        'company':             companyName,
+        'subscription_plan':   subscriptionPlan,
+        'subscription_status': subscriptionStatus,
       };
 }
 
@@ -46,9 +54,12 @@ class UserRepo {
       '''
       SELECT u.id::text, u.company_id::text, u.email::text, u.password_hash,
              u.full_name, u.role::text,
-             c.name AS company_name
+             c.name AS company_name,
+             COALESCE(s.plan::text,   'free')   AS subscription_plan,
+             COALESCE(s.status::text, 'active') AS subscription_status
       FROM users u
       JOIN companies c ON c.id = u.company_id
+      LEFT JOIN subscriptions s ON s.company_id = u.company_id
       WHERE u.email = @email
       LIMIT 1
       ''',
@@ -56,15 +67,7 @@ class UserRepo {
     );
     if (result.isEmpty) return null;
     final row = result.first.toColumnMap();
-    return UserRecord(
-      id:           row['id'].toString(),
-      companyId:    row['company_id'].toString(),
-      email:        row['email'].toString(),
-      passwordHash: row['password_hash'].toString(),
-      fullName:     row['full_name'].toString(),
-      role:         row['role'].toString(),
-      companyName:  row['company_name'].toString(),
-    );
+    return _fromRow(row);
   }
 
   Future<UserRecord> create({
@@ -107,13 +110,15 @@ class UserRepo {
       final userRow = userResult.first.toColumnMap();
 
       return UserRecord(
-        id:           userRow['id'].toString(),
-        companyId:    companyId,
-        email:        userRow['email'].toString(),
-        passwordHash: userRow['password_hash'].toString(),
-        fullName:     userRow['full_name'].toString(),
-        role:         userRow['role'].toString(),
-        companyName:  compName,
+        id:                 userRow['id'].toString(),
+        companyId:          companyId,
+        email:              userRow['email'].toString(),
+        passwordHash:       userRow['password_hash'].toString(),
+        fullName:           userRow['full_name'].toString(),
+        role:               userRow['role'].toString(),
+        companyName:        compName,
+        subscriptionPlan:   'free',
+        subscriptionStatus: 'active',
       );
     });
   }
@@ -170,22 +175,18 @@ class UserRepo {
         Sql.named(
           'SELECT u.id::text, u.company_id::text, u.email::text, u.password_hash, '
           '       u.full_name, u.role::text, '
-          '       c.name AS company_name '
-          'FROM users u JOIN companies c ON c.id = u.company_id '
+          '       c.name AS company_name, '
+          "       COALESCE(s.plan::text,   'free')   AS subscription_plan, "
+          "       COALESCE(s.status::text, 'active') AS subscription_status "
+          'FROM users u '
+          'JOIN companies c ON c.id = u.company_id '
+          'LEFT JOIN subscriptions s ON s.company_id = u.company_id '
           'WHERE u.id = @uid',
         ),
         parameters: {'uid': userId},
       );
       final row = userResult.first.toColumnMap();
-      return UserRecord(
-        id:           row['id'].toString(),
-        companyId:    row['company_id'].toString(),
-        email:        row['email'].toString(),
-        passwordHash: row['password_hash'].toString(),
-        fullName:     row['full_name'].toString(),
-        role:         row['role'].toString(),
-        companyName:  row['company_name'].toString(),
-      );
+      return _fromRow(row);
     });
   }
 
@@ -195,6 +196,18 @@ class UserRepo {
       parameters: {'h': _hash(plaintextToken)},
     );
   }
+
+  static UserRecord _fromRow(Map<String, dynamic> row) => UserRecord(
+    id:                 row['id'].toString(),
+    companyId:          row['company_id'].toString(),
+    email:              row['email'].toString(),
+    passwordHash:       row['password_hash'].toString(),
+    fullName:           row['full_name'].toString(),
+    role:               row['role'].toString(),
+    companyName:        row['company_name'].toString(),
+    subscriptionPlan:   row['subscription_plan']?.toString()   ?? 'free',
+    subscriptionStatus: row['subscription_status']?.toString() ?? 'active',
+  );
 
   static String _hash(String plaintext) =>
       sha256.convert(utf8.encode(plaintext)).toString();

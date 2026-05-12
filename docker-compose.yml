@@ -84,6 +84,7 @@ services:
       ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
       ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
       ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-}
+      PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-}
     volumes:
       # Migrations live outside the build context (./api/bin) so they are
       # mounted at runtime.  MigrationRunner defaults to "../migrations"
@@ -140,6 +141,20 @@ services:
       - guildmark-net
     # Port not exposed publicly — nginx proxies to guildmark:80 internally.
 
+  # ── Partner portal ───────────────────────────────────────────────────────
+  partners:
+    build:
+      context:    ./partners
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://api.guildmark.co}
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - guildmark-net
+    # Port not exposed directly — nginx proxies to partners:80 on host port 3002.
+
   # ── DevDash admin panel ───────────────────────────────────────────────────
   devdash:
     build:
@@ -165,11 +180,13 @@ services:
       - api
       - guildmark
       - devdash
+      - partners
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"    # API (prod)        → localhost:8080
       - "3001:3001"    # DevDash (prod)    → localhost:3001
+      - "3002:3002"    # Partners (prod)   → localhost:3002
       - "8001:8001"    # ML (prod)         → localhost:8001 (only with --profile ml)
       - "9080:9080"    # API (staging)     → localhost:9080
       - "4001:4001"    # DevDash (staging) → localhost:4001

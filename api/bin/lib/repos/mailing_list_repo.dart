@@ -4,6 +4,7 @@ library;
 import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
+import '../models/json_helpers.dart';
 
 class MailingListEntry {
   MailingListEntry({
@@ -114,7 +115,7 @@ class MailingListRepo {
       'SELECT COUNT(*)::int AS n FROM mailing_list $where',
       parameters: source != null ? {'source': source} : {},
     );
-    return result.first.toColumnMap()['n'] as int? ?? 0;
+    return numToIntOrNull(result.first.toColumnMap()['n']) ?? 0;
   }
 
   /// Mark a subscriber as contacted and optionally add a note.

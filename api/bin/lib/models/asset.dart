@@ -43,8 +43,8 @@ class Asset with _$Asset {
     String?  costCenter,
     @NullableIsoDateTimeConverter()   DateTime? lastMdmSync,
     double?  cpuScore,
-    int?     ramGb,
-    int?     storageGb,
+    double?  ramGb,
+    double?  storageGb,
   }) = _Asset;
 
   factory Asset.fromJson(Map<String, dynamic> json) => _$AssetFromJson(json);
@@ -54,10 +54,10 @@ class Asset with _$Asset {
   factory Asset.fromRow(Map<String, dynamic> row) => Asset(
         id:                    row['id']                    as String,
         companyId:             row['company_id']            as String,
-        mdmSource:             row['mdm_source']            as String,
+        mdmSource:             enumStr(row['mdm_source']),
         modelName:             row['model_name']            as String,
-        assetType:             row['asset_type']            as String,
-        conditionGrade:        row['condition_grade']       as String,
+        assetType:             enumStr(row['asset_type']),
+        conditionGrade:        enumStr(row['condition_grade']),
         quantity:              numToIntOrNull(row['quantity']) ?? 1,
         createdAt:             row['created_at']            as DateTime,
         updatedAt:             row['updated_at']            as DateTime,
@@ -74,7 +74,7 @@ class Asset with _$Asset {
         costCenter:            row['cost_center']           as String?,
         lastMdmSync:           row['last_mdm_sync']         as DateTime?,
         cpuScore:              numToDoubleOrNull(row['cpu_score']),
-        ramGb:                 numToIntOrNull(row['ram_gb']),
-        storageGb:             numToIntOrNull(row['storage_gb']),
+        ramGb:                 numToDoubleOrNull(row['ram_gb']),
+        storageGb:             numToDoubleOrNull(row['storage_gb']),
       );
 }

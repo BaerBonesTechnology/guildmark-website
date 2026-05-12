@@ -6,6 +6,7 @@ import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Skeleton } from "../../components/ui/skeleton";
 import { usePortfolioSummary } from "../../lib/apiHooks";
+import { grades, chartColors } from "../../lib/tokens";
 
 export function PortfolioOverview() {
   const { data: portfolio, isLoading, error } = usePortfolioSummary();
@@ -48,7 +49,7 @@ export function PortfolioOverview() {
   const fleetByCondition = Object.entries(portfolio?.by_condition ?? {}).map(([name, d]) => ({
     name: name === "A" ? "Excellent (A)" : name === "B" ? "Good (B)" : "Fair (C)",
     value: d.count,
-    color: name === "A" ? "#3B82F6" : name === "B" ? "#F59E0B" : "#EF4444",
+    color: name === "A" ? grades.A.bg : name === "B" ? grades.B.bg : grades.C.bg,
   }));
 
   const portfolioData = (portfolio?.trend ?? []).map(t => ({

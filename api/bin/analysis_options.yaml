@@ -9,3 +9,4 @@ analyzer:
 linter:
   rules:
     public_member_api_docs: false   # Routes don't benefit from doc comments.
+    no_default_cases: false        # Allow switch on HttpMethod to omit default case.

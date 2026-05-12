@@ -24,7 +24,7 @@ export function TermsOfService() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-[#3B82F6] uppercase tracking-widest">Legal</p>
+        <p className="text-xs font-mono text-primary uppercase tracking-widest">Legal</p>
         <h1 className="text-3xl font-bold font-mono">Terms of Service</h1>
         <p className="text-sm font-mono text-muted-foreground">Effective Date: January 1, 2025 · Last Updated: May 1, 2025</p>
         <p className="text-sm text-foreground/80 leading-relaxed">
@@ -95,7 +95,7 @@ export function TermsOfService() {
         </Section>
 
         <Section n={9} title="Contact">
-          <p>Questions about these Terms: <a href="mailto:legal@guildmark.co" className="text-[#3B82F6] hover:underline">legal@guildmark.co</a></p>
+          <p>Questions about these Terms: <a href="mailto:legal@guildmark.co" className="text-primary hover:underline">legal@guildmark.co</a></p>
         </Section>
 
       </div>

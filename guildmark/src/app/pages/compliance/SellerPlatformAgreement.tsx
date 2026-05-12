@@ -24,7 +24,7 @@ export function SellerPlatformAgreement() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-[#3B82F6] uppercase tracking-widest">Legal</p>
+        <p className="text-xs font-mono text-primary uppercase tracking-widest">Legal</p>
         <h1 className="text-3xl font-bold font-mono">Seller Platform Agreement</h1>
         <p className="text-sm font-mono text-muted-foreground">Effective Date: January 1, 2025 · Last Updated: May 1, 2025</p>
         <p className="text-sm text-foreground/80 leading-relaxed">
@@ -146,7 +146,7 @@ export function SellerPlatformAgreement() {
         </Section>
 
         <Section n={12} title="Contact">
-          <p>Seller support and agreement questions: <a href="mailto:sellers@guildmark.co" className="text-[#3B82F6] hover:underline">sellers@guildmark.co</a></p>
+          <p>Seller support and agreement questions: <a href="mailto:sellers@guildmark.co" className="text-primary hover:underline">sellers@guildmark.co</a></p>
         </Section>
 
       </div>

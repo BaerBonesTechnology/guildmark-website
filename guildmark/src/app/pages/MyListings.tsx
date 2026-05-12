@@ -1,23 +1,40 @@
 import { useState } from "react";
-import { Plus, Eye, MessageSquare, DollarSign, Edit, Trash2 } from "lucide-react";
+import { Plus, Upload, Eye, MessageSquare, Edit, Trash2, Package, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { SpecPill } from "../components/SpecPill";
 import { CreateListingDialog } from "../components/CreateListingDialog";
-
-const myListings: { id: string; item: string; specs: string; condition: string; quantity: number; pricePerUnit: number; views: number; offers: number; status: string; listedDate: string }[] = [];
+import { ImportListingsDialog } from "../components/ImportListingsDialog";
+import { EditListingDialog } from "../components/EditListingDialog";
+import { useMyListings, useWithdrawListing, usePublishListing } from "../lib/apiHooks";
+import type { Listing } from "../models/listing";
 
 const recentOffers: { id: string; listingId: string; buyer: string; item: string; quantity: number; offerPrice: number; yourPrice: number; status: string; timestamp: string }[] = [];
+
+function priceColor(flag: string | undefined): string {
+  switch (flag) {
+    case "seller_overpriced": return "text-red-500";
+    case "distressed":        return "text-amber-500";
+    case "standard":          return "text-emerald-500";
+    default:                  return "text-muted-foreground"; // insufficient_data or unknown
+  }
+}
+
+const totalOffers = recentOffers.length;
 
 export function MyListings() {
   const [activeTab, setActiveTab] = useState<"listings" | "offers">("listings");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [editListing, setEditListing]           = useState<Listing | null>(null);
+  const { data: myListings = [], isLoading } = useMyListings();
+  const withdrawListing = useWithdrawListing();
+  const publishListing  = usePublishListing();
 
-  const totalValue = myListings.reduce((sum, l) => sum + l.quantity * l.pricePerUnit, 0);
-  const totalOffers = myListings.reduce((sum, l) => sum + l.offers, 0);
-  const totalViews = myListings.reduce((sum, l) => sum + l.views, 0);
+  const activeListings = myListings.filter((l) => l.status === "active");
+  const totalValue = myListings.reduce((sum, l) => sum + (l.listed_price ?? 0) * (l.quantity ?? 1), 0);
 
   return (
     <div className="space-y-6 pb-20">
@@ -26,38 +43,57 @@ export function MyListings() {
         <Card className="font-mono">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Active Listings</p>
-            <p className="text-2xl font-mono text-foreground mt-1">{myListings.length}</p>
+            <p className="text-2xl font-mono text-foreground mt-1">{activeListings.length}</p>
           </CardContent>
         </Card>
         <Card className="font-mono">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Value</p>
-            <p className="text-2xl font-mono text-[#3B82F6] mt-1">${totalValue.toLocaleString()}</p>
+            <p className="text-2xl font-mono text-primary mt-1">${totalValue.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card className="font-mono">
           <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Views</p>
-            <p className="text-2xl font-mono text-foreground mt-1">{totalViews}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Listings</p>
+            <p className="text-2xl font-mono text-foreground mt-1">{myListings.length}</p>
           </CardContent>
         </Card>
         <Card className="font-mono">
           <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Pending Offers</p>
-            <p className="text-2xl font-mono text-[#F59E0B] mt-1">{totalOffers}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Valuation Flags</p>
+            <p className="text-2xl font-mono text-warning mt-1">
+              {myListings.filter((l) => l.valuation_flag === "seller_overpriced").length}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Action Button */}
-      <div className="flex justify-end">
-        <Button onClick={() => setCreateDialogOpen(true)} className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="font-mono">
+          <Upload />
+          Import CSV
+        </Button>
+        <Button onClick={() => setCreateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-white font-mono">
           <Plus />
           Create New Listing
         </Button>
       </div>
 
-      <CreateListingDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <CreateListingDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
+
+      <ImportListingsDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+      />
+
+      <EditListingDialog
+        listing={editListing}
+        onOpenChange={(open) => { if (!open) setEditListing(null); }}
+      />
 
       {/* Tabs */}
       <div className="flex gap-2 border-b">
@@ -65,7 +101,7 @@ export function MyListings() {
           onClick={() => setActiveTab("listings")}
           className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 ${
             activeTab === "listings"
-              ? "border-[#3B82F6] text-[#3B82F6]"
+              ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -75,13 +111,13 @@ export function MyListings() {
           onClick={() => setActiveTab("offers")}
           className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 relative ${
             activeTab === "offers"
-              ? "border-[#3B82F6] text-[#3B82F6]"
+              ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           Offers Received
           {totalOffers > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#F59E0B] text-white text-xs rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning text-white text-xs rounded-full flex items-center justify-center">
               {totalOffers}
             </span>
           )}
@@ -111,40 +147,64 @@ export function MyListings() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {isLoading && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-40 text-center text-muted-foreground font-mono text-sm">
+                      Loading listings…
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!isLoading && myListings.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-40 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Package className="w-8 h-8 opacity-30" />
+                        <p className="text-sm font-mono">No listings yet</p>
+                        <Button variant="outline" size="sm" className="font-mono mt-1" onClick={() => setCreateDialogOpen(true)}>
+                          <Plus className="w-3 h-3 mr-1" /> Create your first listing
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
                 {myListings.map((listing) => (
                   <TableRow key={listing.id}>
                     <TableCell>
-                      <span className="font-mono text-sm">{listing.id}</span>
+                      <span className="font-mono text-sm">{listing.id.slice(0, 8)}</span>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-mono text-sm">{listing.item}</p>
+                        <p className="font-mono text-sm">{listing.model_name}</p>
                         <div className="flex gap-1 mt-1 flex-wrap">
-                          {listing.specs.split(" / ").slice(0, 2).map((spec) => (
-                            <SpecPill key={spec}>{spec}</SpecPill>
-                          ))}
+                          {listing.asset_type && <SpecPill>{listing.asset_type}</SpecPill>}
+                          {listing.condition_grade && <SpecPill>Grade {listing.condition_grade}</SpecPill>}
+                          {listing.ram_gb && <SpecPill>{listing.ram_gb}GB RAM</SpecPill>}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm">{listing.quantity}</span>
+                      <span className="font-mono text-sm">{listing.quantity ?? 1}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm text-[#3B82F6]">${listing.pricePerUnit}</span>
+                      <span className={`font-mono text-sm ${priceColor(listing.valuation_flag)}`}>
+                        ${listing.listed_price?.toLocaleString() ?? "—"}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm">${(listing.quantity * listing.pricePerUnit).toLocaleString()}</span>
+                      <span className="font-mono text-sm">
+                        ${((listing.listed_price ?? 0) * (listing.quantity ?? 1)).toLocaleString()}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Eye className="w-3 h-3 text-muted-foreground" />
-                        <span className="font-mono text-sm">{listing.views}</span>
+                        <span className="font-mono text-sm text-muted-foreground">—</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <MessageSquare className="w-3 h-3 text-muted-foreground" />
-                        <span className="font-mono text-sm">{listing.offers}</span>
+                        <span className="font-mono text-sm text-muted-foreground">—</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -152,8 +212,8 @@ export function MyListings() {
                         variant={listing.status === "active" ? "default" : "secondary"}
                         className={
                           listing.status === "active"
-                            ? "bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/30"
-                            : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30"
+                            ? "bg-primary/20 text-primary border-primary/30"
+                            : "bg-muted text-muted-foreground"
                         }
                       >
                         {listing.status}
@@ -161,10 +221,34 @@ export function MyListings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="sm">
+                        {listing.status === "draft" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary hover:text-primary/80"
+                            title="Publish to marketplace"
+                            disabled={publishListing.isPending}
+                            onClick={() => publishListing.mutate(listing.id)}
+                          >
+                            <Zap className="w-3 h-3" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Edit price"
+                          onClick={() => setEditListing(listing)}
+                        >
                           <Edit className="w-3 h-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-600"
+                          title="Withdraw listing"
+                          disabled={withdrawListing.isPending}
+                          onClick={() => withdrawListing.mutate(listing.id)}
+                        >
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
@@ -224,7 +308,7 @@ export function MyListings() {
                       <TableCell>
                         <span
                           className={`font-mono text-sm ${
-                            isHigher ? "text-[#3B82F6]" : "text-red-500"
+                            isHigher ? "text-primary" : "text-red-500"
                           }`}
                         >
                           {isHigher ? "+" : ""}${diff} ({isHigher ? "+" : ""}{diffPercent}%)
@@ -235,7 +319,7 @@ export function MyListings() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-mono">
                             Accept
                           </Button>
                           <Button variant="outline" size="sm" className="font-mono">

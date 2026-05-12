@@ -5,6 +5,7 @@
 import type { Listing } from "./listing";
 
 export interface MarketplaceListing extends Listing {
+  seller_name?:       string;
   seller_industry?:   string;
   seller_size_band?:  string;
 }

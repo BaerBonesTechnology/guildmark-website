@@ -78,12 +78,27 @@ Future<Response> onRequest(RequestContext context) async {
     upsert: source == 'partner' && loiAccepted,
   );
 
+  final mail = context.read<EmailService>();
+
   // Send confirmation only for genuinely new subscribers (entry is null when
   // the email already existed — avoids spamming existing contacts).
   if (entry != null) {
-    // Fire-and-forget: email failure must never break the signup flow.
+    // Fire-and-forget: email failures must never break the signup flow.
+    unawaited(mail.sendWaitlistConfirmation(email));
+  }
+
+  // Notify operations@guildmark.co for every new signup, plus partner LOI
+  // re-submissions (upserts where email already existed) since the signed
+  // LOI date and partner fields are always worth surfacing to the team.
+  final isPartnerLoi = source == 'partner' && loiAccepted;
+  if (entry != null || isPartnerLoi) {
     unawaited(
-      context.read<EmailService>().sendWaitlistConfirmation(email),
+      mail.sendNewSubscriberNotification(
+        subscriberEmail: email,
+        source: source,
+        notes: notes,
+        signedUpAt: entry?.createdAt,
+      ),
     );
   }
 

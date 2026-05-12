@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
+import { usePlatformFees } from "../lib/apiHooks";
 import {
   CheckCircle2, TrendingUp, Shield, Truck, Store,
   BarChart2, Layers, Lock, ArrowRight, Zap,
@@ -15,7 +16,7 @@ import {
 function FeatureItem({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2 text-sm text-muted-foreground">
-      <CheckCircle2 className="w-4 h-4 text-[#3B82F6] mt-0.5 shrink-0" />
+      <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
       <span>{children}</span>
     </li>
   );
@@ -24,7 +25,7 @@ function FeatureItem({ children }: { children: React.ReactNode }) {
 function Step({ n, title, body }: { n: number; title: string; body: string }) {
   return (
     <div className="flex gap-3">
-      <div className="w-7 h-7 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
         {n}
       </div>
       <div>
@@ -38,6 +39,13 @@ function Step({ n, title, body }: { n: number; title: string; body: string }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function Signup() {
+  const { data: fees } = usePlatformFees();
+
+  // Format a decimal fee rate as a percentage string, falling back while loading.
+  const freeFee = fees
+    ? `${parseFloat((fees.seller_fee_free * 100).toFixed(2))}%`
+    : "—";
+
   const [formData, setFormData] = useState({
     company:         "",
     fullName:        "",
@@ -149,14 +157,14 @@ export function Signup() {
                 <p className="text-sm text-red-500 font-mono">{passwordError ?? error}</p>
               )}
 
-              <Button type="submit" className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-mono">
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-mono">
                 Create Account — Free Forever
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
 
               <p className="text-center text-sm text-muted-foreground font-mono">
                 Already have an account?{" "}
-                <Link to="/login" className="text-[#3B82F6] hover:underline">
+                <Link to="/login" className="text-primary hover:underline">
                   Sign in
                 </Link>
               </p>
@@ -180,8 +188,8 @@ export function Signup() {
           <Card className="font-mono">
             <CardContent className="pt-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                  <Layers className="w-5 h-5 text-[#3B82F6]" />
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Layers className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-semibold">AMPS — Asset Management & Portfolio System</h3>
@@ -212,8 +220,8 @@ export function Signup() {
           <Card className="font-mono">
             <CardContent className="pt-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
-                  <Store className="w-5 h-5 text-[#3B82F6]" />
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Store className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-semibold">B2B Marketplace</h3>
@@ -265,22 +273,22 @@ export function Signup() {
           </Card>
 
           {/* Pricing summary */}
-          <Card className="font-mono border-[#3B82F6]/20 bg-[#3B82F6]/5">
+          <Card className="font-mono border-primary/20 bg-primary/5">
             <CardContent className="pt-5 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-mono font-bold text-[#3B82F6]">$0</span>
+                <span className="text-2xl font-mono font-bold text-primary">$0</span>
                 <span className="text-sm text-muted-foreground">to get started — no subscription, ever</span>
               </div>
               <div className="grid grid-cols-3 gap-3 pt-1">
                 {[
-                  { icon: BarChart2, label: "Platform fee", value: "12% on sale" },
+                  { icon: BarChart2, label: "Seller fee (free)", value: `${freeFee} on sale` },
                   { icon: Shield,    label: "Data wipe",    value: "Flat rate / asset" },
                   { icon: Truck,     label: "Shipping",     value: "Actual cost" },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="text-center space-y-1">
                     <div className="flex justify-center">
-                      <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center">
-                        <Icon className="w-4 h-4 text-[#3B82F6]" />
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Icon className="w-4 h-4 text-primary" />
                       </div>
                     </div>
                     <p className="text-xs font-semibold">{value}</p>
@@ -299,7 +307,7 @@ export function Signup() {
               { icon: Zap,    text: "Live market valuations" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 border rounded-full px-3 py-1.5">
-                <Icon className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <Icon className="w-3.5 h-3.5 text-primary" />
                 {text}
               </div>
             ))}
