@@ -63,7 +63,7 @@ const categoryToAssetType: Record<string, AssetType | undefined> = {
 
 function ListingSkeleton() {
   return (
-    <Card className="font-mono animate-pulse">
+    <Card className="font-sans animate-pulse">
       <CardHeader>
         <div className="h-4 bg-muted rounded w-2/3 mb-2" />
         <div className="h-3 bg-muted rounded w-1/2" />
@@ -94,10 +94,10 @@ function ListingDetailDialog({ listing, onClose, onOffer }: {
   const price = listing.listed_price ?? listing.buyer_ask_price ?? 0;
   return (
     <Dialog open={!!listing} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg font-mono">
+      <DialogContent className="max-w-lg font-sans">
         <DialogHeader>
-          <DialogTitle className="font-mono">{listing.model_name ?? "Listing"}</DialogTitle>
-          <DialogDescription className="font-mono text-xs flex items-center gap-1">
+          <DialogTitle className="font-sans">{listing.model_name ?? "Listing"}</DialogTitle>
+          <DialogDescription className="font-sans text-xs flex items-center gap-1">
             <Building2 className="w-3 h-3" />
             {listing.seller_name ?? "B2B Seller"}
             {listing.seller_industry ? ` · ${listing.seller_industry}` : ""}
@@ -109,19 +109,19 @@ function ListingDetailDialog({ listing, onClose, onOffer }: {
             {listing.condition_grade && (
               <div className="bg-muted/50 rounded p-3">
                 <p className="text-xs text-muted-foreground mb-1">Condition</p>
-                <p className="font-mono">{conditionLabel[listing.condition_grade]}</p>
+                <p className="font-sans">{conditionLabel[listing.condition_grade]}</p>
               </div>
             )}
             <div className="bg-muted/50 rounded p-3">
               <p className="text-xs text-muted-foreground mb-1">Quantity</p>
-              <p className="font-mono">{listing.quantity ?? 1} units</p>
+              <p className="font-sans">{listing.quantity ?? 1} units</p>
             </div>
             {listing.ram_gb && (
               <div className="bg-muted/50 rounded p-3 flex items-center gap-2">
                 <MemoryStick className="w-3 h-3 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">RAM</p>
-                  <p className="font-mono">{listing.ram_gb} GB</p>
+                  <p className="font-sans">{listing.ram_gb} GB</p>
                 </div>
               </div>
             )}
@@ -130,7 +130,7 @@ function ListingDetailDialog({ listing, onClose, onOffer }: {
                 <HardDrive className="w-3 h-3 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Storage</p>
-                  <p className="font-mono">{listing.storage_gb} GB</p>
+                  <p className="font-sans">{listing.storage_gb} GB</p>
                 </div>
               </div>
             )}
@@ -139,7 +139,7 @@ function ListingDetailDialog({ listing, onClose, onOffer }: {
                 <Cpu className="w-3 h-3 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">CPU Score</p>
-                  <p className="font-mono">{listing.cpu_score}</p>
+                  <p className="font-sans">{listing.cpu_score}</p>
                 </div>
               </div>
             )}
@@ -148,7 +148,7 @@ function ListingDetailDialog({ listing, onClose, onOffer }: {
                 <Package className="w-3 h-3 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Type</p>
-                  <p className="font-mono capitalize">{listing.asset_type}</p>
+                  <p className="font-sans capitalize">{listing.asset_type}</p>
                 </div>
               </div>
             )}
@@ -156,12 +156,12 @@ function ListingDetailDialog({ listing, onClose, onOffer }: {
           <div className="border-t pt-3 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Listed Price / Unit</p>
-              <p className="text-2xl font-mono text-foreground">
+              <p className="text-2xl font-sans text-foreground">
                 {price > 0 ? `$${price.toLocaleString()}` : "—"}
               </p>
             </div>
             <Button
-              className="bg-primary hover:bg-primary/90 text-white font-mono"
+              className="bg-primary hover:bg-primary/90 text-white font-sans"
               onClick={() => { onClose(); onOffer(listing); }}
             >
               Make Offer
@@ -209,27 +209,27 @@ function MakeOfferDialog({ listing, onClose }: {
 
   return (
     <Dialog open={!!listing} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm font-mono">
+      <DialogContent className="max-w-sm font-sans">
         <DialogHeader>
-          <DialogTitle className="font-mono">Make an Offer</DialogTitle>
-          <DialogDescription className="font-mono text-xs truncate">
+          <DialogTitle className="font-sans">Make an Offer</DialogTitle>
+          <DialogDescription className="font-sans text-xs truncate">
             {listing?.model_name} · {listing?.seller_name ?? "B2B Seller"}
           </DialogDescription>
         </DialogHeader>
         {submitted ? (
           <div className="py-6 text-center space-y-2">
-            <p className="text-primary font-mono text-sm">✓ Offer submitted</p>
+            <p className="text-primary font-sans text-sm">✓ Offer submitted</p>
             <p className="text-xs text-muted-foreground">The seller will be notified and can accept, counter, or decline.</p>
-            <Button className="mt-4 font-mono" onClick={onClose}>Close</Button>
+            <Button className="mt-4 font-sans" onClick={onClose}>Close</Button>
           </div>
         ) : (
           <div className="space-y-4 pt-2">
             <div className="space-y-1">
-              <Label className="font-mono text-xs uppercase tracking-wide">Offer Price / Unit (USD)</Label>
+              <Label className="font-sans text-xs uppercase tracking-wide">Offer Price / Unit (USD)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                 <Input
-                  className="pl-6 font-mono"
+                  className="pl-6 font-sans"
                   type="number" min="0.01" step="0.01"
                   value={offerPrice}
                   onChange={(e) => { setOfferPrice(e.target.value); setError(null); }}
@@ -237,32 +237,32 @@ function MakeOfferDialog({ listing, onClose }: {
                 />
               </div>
               {listing?.listed_price && (
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground font-sans">
                   Listed at ${listing.listed_price.toLocaleString()}
                 </p>
               )}
             </div>
             <div className="space-y-1">
-              <Label className="font-mono text-xs uppercase tracking-wide">Quantity</Label>
+              <Label className="font-sans text-xs uppercase tracking-wide">Quantity</Label>
               <Input
-                className="font-mono"
+                className="font-sans"
                 type="number" min="1" step="1"
                 value={quantity}
                 onChange={(e) => { setQuantity(e.target.value); setError(null); }}
               />
               {listing?.quantity && (
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground font-sans">
                   {listing.quantity} units available
                 </p>
               )}
             </div>
-            {error && <p className="text-xs text-red-500 font-mono">{error}</p>}
+            {error && <p className="text-xs text-red-500 font-sans">{error}</p>}
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" className="font-mono" onClick={onClose} disabled={makeOffer.isPending}>
+              <Button variant="outline" className="font-sans" onClick={onClose} disabled={makeOffer.isPending}>
                 Cancel
               </Button>
               <Button
-                className="bg-primary hover:bg-primary/90 text-white font-mono"
+                className="bg-primary hover:bg-primary/90 text-white font-sans"
                 onClick={handleSubmit}
                 disabled={makeOffer.isPending}
               >
@@ -293,7 +293,7 @@ function ListingCard({ listing, onDetails, onOffer }: {
   const age      = daysAgo(listing.created_at);
 
   return (
-    <Card className="font-mono hover:border-primary/50 transition-colors">
+    <Card className="font-sans hover:border-primary/50 transition-colors">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -336,28 +336,28 @@ function ListingCard({ listing, onDetails, onOffer }: {
         <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
           <div>
             <p className="text-xs text-muted-foreground">Price / Unit</p>
-            <p className="text-lg font-mono text-foreground">
+            <p className="text-lg font-sans text-foreground">
               {price > 0 ? `$${price.toLocaleString()}` : "—"}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Quantity</p>
-            <p className="text-lg font-mono">{quantity} {quantity === 1 ? "unit" : "units"}</p>
+            <p className="text-lg font-sans">{quantity} {quantity === 1 ? "unit" : "units"}</p>
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t">
           <div>
             <p className="text-xs text-muted-foreground">Total Value</p>
-            <p className="text-xl font-mono text-foreground">
+            <p className="text-xl font-sans text-foreground">
               {total > 0 ? `$${total.toLocaleString()}` : "—"}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="font-mono" onClick={() => onDetails(listing)}>
+            <Button variant="outline" size="sm" className="font-sans" onClick={() => onDetails(listing)}>
               Details
             </Button>
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-mono" onClick={() => onOffer(listing)}>
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-sans" onClick={() => onOffer(listing)}>
               Make Offer
             </Button>
           </div>
@@ -444,43 +444,15 @@ export function Marketplace() {
   return (
     <div className="space-y-6 pb-20">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-mono font-semibold mb-2">Browse the GuildMarket</h1>
-        <p className="text-muted-foreground font-mono text-sm">
+      <div className="mb-6 justify-items-center">
+        <h1 className="text-3xl font-sans font-semibold mb-2">Browse the <span className="text-primary">GuildMarket</span></h1>
+        <p className="text-muted-foreground font-sans text-sm">
           Discover enterprise hardware from verified B2B sellers across the country
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="font-mono">
-          <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Active Listings</p>
-            <p className="text-2xl font-mono text-foreground mt-1">{stats.totalListings.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card className="font-mono">
-          <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Units Available</p>
-            <p className="text-2xl font-mono text-foreground mt-1">{stats.totalUnits.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card className="font-mono">
-          <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Avg Price / Unit</p>
-            <p className="text-2xl font-mono text-primary mt-1">${stats.avgPricePerUnit}</p>
-          </CardContent>
-        </Card>
-        <Card className="font-mono">
-          <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Market Value</p>
-            <p className="text-2xl font-mono text-primary mt-1">${stats.totalMarketValue}</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <Card className="font-mono">
+      <Card className="font-sans">
         <CardContent className="pt-6">
           <div className="grid grid-cols-5 gap-4">
             <div className="col-span-2 relative">
@@ -489,40 +461,40 @@ export function Marketplace() {
                 placeholder="Search assets..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 font-mono"
+                className="pl-10 font-sans"
               />
             </div>
 
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="font-mono"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectTrigger className="font-sans"><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all"        className="font-mono">All Categories</SelectItem>
-                <SelectItem value="laptops"    className="font-mono">Laptops</SelectItem>
-                <SelectItem value="desktops"   className="font-mono">Desktops</SelectItem>
-                <SelectItem value="servers"    className="font-mono">Servers</SelectItem>
-                <SelectItem value="phones"     className="font-mono">Phones</SelectItem>
-                <SelectItem value="tablets"    className="font-mono">Tablets</SelectItem>
-                <SelectItem value="networking" className="font-mono">Networking</SelectItem>
+                <SelectItem value="all"        className="font-sans">All Categories</SelectItem>
+                <SelectItem value="laptops"    className="font-sans">Laptops</SelectItem>
+                <SelectItem value="desktops"   className="font-sans">Desktops</SelectItem>
+                <SelectItem value="servers"    className="font-sans">Servers</SelectItem>
+                <SelectItem value="phones"     className="font-sans">Phones</SelectItem>
+                <SelectItem value="tablets"    className="font-sans">Tablets</SelectItem>
+                <SelectItem value="networking" className="font-sans">Networking</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={condition} onValueChange={setCondition}>
-              <SelectTrigger className="font-mono"><SelectValue placeholder="Condition" /></SelectTrigger>
+              <SelectTrigger className="font-sans"><SelectValue placeholder="Condition" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="font-mono">All Conditions</SelectItem>
-                <SelectItem value="a"   className="font-mono">Grade A</SelectItem>
-                <SelectItem value="b"   className="font-mono">Grade B</SelectItem>
-                <SelectItem value="c"   className="font-mono">Grade C</SelectItem>
+                <SelectItem value="all" className="font-sans">All Conditions</SelectItem>
+                <SelectItem value="a"   className="font-sans">Grade A</SelectItem>
+                <SelectItem value="b"   className="font-sans">Grade B</SelectItem>
+                <SelectItem value="c"   className="font-sans">Grade C</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="font-mono"><SelectValue placeholder="Sort by" /></SelectTrigger>
+              <SelectTrigger className="font-sans"><SelectValue placeholder="Sort by" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest"     className="font-mono">Newest First</SelectItem>
-                <SelectItem value="price-low"  className="font-mono">Price: Low to High</SelectItem>
-                <SelectItem value="price-high" className="font-mono">Price: High to Low</SelectItem>
-                <SelectItem value="demand"     className="font-mono">High Demand</SelectItem>
+                <SelectItem value="newest"     className="font-sans">Newest First</SelectItem>
+                <SelectItem value="price-low"  className="font-sans">Price: Low to High</SelectItem>
+                <SelectItem value="price-high" className="font-sans">Price: High to Low</SelectItem>
+                <SelectItem value="demand"     className="font-sans">High Demand</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -535,15 +507,15 @@ export function Marketplace() {
           {Array.from({ length: 6 }).map((_, i) => <ListingSkeleton key={i} />)}
         </div>
       ) : isError ? (
-        <Card className="font-mono">
+        <Card className="font-sans">
           <CardContent className="py-16 text-center text-muted-foreground">
             <p className="text-sm">Failed to load listings. Please try again.</p>
           </CardContent>
         </Card>
       ) : sorted.length === 0 ? (
-        <Card className="font-mono">
+        <Card className="font-sans">
           <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-base font-mono mb-1">No listings found</p>
+            <p className="text-base font-sans mb-1">No listings found</p>
             <p className="text-sm">Try adjusting your filters or search term.</p>
           </CardContent>
         </Card>
@@ -563,19 +535,19 @@ export function Marketplace() {
       {/* Pagination */}
       {!isLoading && !isError && totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-sans">
             Page {page} of {totalPages} · {totalCount.toLocaleString()} listings
           </p>
           <div className="flex items-center gap-2">
             <Button
-              variant="outline" size="sm" className="font-mono"
+              variant="outline" size="sm" className="font-sans"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
               <ChevronLeft className="w-4 h-4 mr-1" /> Prev
             </Button>
             <Button
-              variant="outline" size="sm" className="font-mono"
+              variant="outline" size="sm" className="font-sans"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >

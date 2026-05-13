@@ -87,6 +87,8 @@ services:
       ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
       ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
       ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-https://staging.devdash.guildmark.co}
+      PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-partner.guildmark.co}
+
     volumes:
       - ./api/migrations:/app/migrations:ro
     networks:

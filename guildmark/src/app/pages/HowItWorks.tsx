@@ -5,8 +5,8 @@ export function HowItWorks() {
   return (
     <div className="space-y-12 pb-20">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-mono">Two Ways to Sell</h1>
-        <p className="text-muted-foreground font-mono max-w-2xl mx-auto">
+        <h1 className="text-4xl font-sans">Two Ways to Sell</h1>
+        <p className="text-muted-foreground font-sans max-w-2xl mx-auto">
           Choose the workflow that works best for your business
         </p>
       </div>
@@ -18,15 +18,15 @@ export function HowItWorks() {
             <Shield className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-mono">Option 1: With Data Wipe Service</h2>
-            <p className="text-sm text-muted-foreground font-mono">
+            <h2 className="text-2xl font-sans">Option 1: With Data Wipe Service</h2>
+            <p className="text-sm text-muted-foreground font-sans">
               Fastest payment, zero liability, compliance included (+$8/asset)
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-4 gap-4">
-          <Card className="font-mono">
+          <Card className="font-sans">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 1
@@ -49,7 +49,7 @@ export function HowItWorks() {
             </CardContent>
           </Card>
 
-          <Card className="font-mono">
+          <Card className="font-sans">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 2
@@ -72,7 +72,7 @@ export function HowItWorks() {
             </CardContent>
           </Card>
 
-          <Card className="font-mono">
+          <Card className="font-sans">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 3
@@ -95,7 +95,7 @@ export function HowItWorks() {
             </CardContent>
           </Card>
 
-          <Card className="font-mono border-primary/30 bg-primary/5">
+          <Card className="font-sans border-primary/30 bg-primary/5">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold mb-2">
                 4
@@ -119,7 +119,7 @@ export function HowItWorks() {
           </Card>
         </div>
 
-        <Card className="bg-muted/50 font-mono">
+        <Card className="bg-muted/50 font-sans">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
@@ -142,15 +142,15 @@ export function HowItWorks() {
             <Truck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-mono">Option 2: Direct to Buyer</h2>
-            <p className="text-sm text-muted-foreground font-mono">
+            <h2 className="text-2xl font-sans">Option 2: Direct to Buyer</h2>
+            <p className="text-sm text-muted-foreground font-sans">
               Handle your own data wipe, ship directly to buyer (no service fee)
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <Card className="font-mono">
+          <Card className="font-sans">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-slate-600/10 text-slate-600 flex items-center justify-center text-xl font-bold mb-2">
                 1
@@ -173,7 +173,7 @@ export function HowItWorks() {
             </CardContent>
           </Card>
 
-          <Card className="font-mono">
+          <Card className="font-sans">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-slate-600/10 text-slate-600 flex items-center justify-center text-xl font-bold mb-2">
                 2
@@ -196,7 +196,7 @@ export function HowItWorks() {
             </CardContent>
           </Card>
 
-          <Card className="font-mono">
+          <Card className="font-sans">
             <CardHeader>
               <div className="w-10 h-10 rounded-full bg-slate-600/10 text-slate-600 flex items-center justify-center text-xl font-bold mb-2">
                 3
@@ -220,7 +220,7 @@ export function HowItWorks() {
           </Card>
         </div>
 
-        <Card className="bg-muted/50 font-mono">
+        <Card className="bg-muted/50 font-sans">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-slate-600 mt-0.5" />

@@ -24,7 +24,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={preLaunchRouter} />
+        <RouterProvider router={router} />
       </AuthProvider>
     </QueryClientProvider>
   );
