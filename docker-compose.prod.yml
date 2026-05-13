@@ -59,7 +59,7 @@ services:
       GM_DEBUG:                ${GM_DEBUG:-false}
       SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
       SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
-      SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-sandbox}
+      SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-production}
       GM_WALLET_ACH_ROUTING:   ${GM_WALLET_ACH_ROUTING:-}
       GM_WALLET_ACH_ACCOUNT:   ${GM_WALLET_ACH_ACCOUNT:-}
       JAMF_PRO_CLIENT_ID:      ${JAMF_PRO_CLIENT_ID:-}
@@ -74,11 +74,13 @@ services:
       RESEND_API_KEY:          ${RESEND_API_KEY:-}
       ESCROW_API_KEY:          ${ESCROW_API_KEY:-}
       ESCROW_EMAIL:            ${ESCROW_EMAIL:-}
-      ESCROW_ENVIRONMENT:      ${ESCROW_ENVIRONMENT:-sandbox}
+      ESCROW_ENVIRONMENT:      ${ESCROW_ENVIRONMENT:-production}
       FEDEX_CLIENT_ID:         ${FEDEX_CLIENT_ID:-}
       FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
-      FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
+      FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-production}
+      ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-devdash.guildmark.co}
+      PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-partner.guildmark.co}
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────
   ml:

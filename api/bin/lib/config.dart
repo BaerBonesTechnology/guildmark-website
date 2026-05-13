@@ -122,17 +122,17 @@ class AppConfig {
       isDebug: optionalBool('GM_DEBUG'),
       mlServiceUrl: optional('ML_SERVICE_URL'),
       // Square
-      squareAccessToken:    require('SQUARE_ACCESS_TOKEN'),
-      squareApplicationId:  require('SQUARE_APPLICATION_ID'),
-      squareLocationId:     require('SQUARE_LOCATION_ID'),
-      squareEnvironment:    squareEnvironment,
+      squareAccessToken: require('SQUARE_ACCESS_TOKEN'),
+      squareApplicationId: require('SQUARE_APPLICATION_ID'),
+      squareLocationId: require('SQUARE_LOCATION_ID'),
+      squareEnvironment: squareEnvironment,
       // Subscription plan variation IDs — monthly and annual per tier.
       squarePlanStarterMonthly: optional('SQUARE_PLAN_STARTER_MONTHLY'),
-      squarePlanStarterAnnual:  optional('SQUARE_PLAN_STARTER_ANNUAL'),
-      squarePlanGrowthMonthly:  optional('SQUARE_PLAN_GROWTH_MONTHLY'),
-      squarePlanGrowthAnnual:   optional('SQUARE_PLAN_GROWTH_ANNUAL'),
-      squarePlanProMonthly:     optional('SQUARE_PLAN_PRO_MONTHLY'),
-      squarePlanProAnnual:      optional('SQUARE_PLAN_PRO_ANNUAL'),
+      squarePlanStarterAnnual: optional('SQUARE_PLAN_STARTER_ANNUAL'),
+      squarePlanGrowthMonthly: optional('SQUARE_PLAN_GROWTH_MONTHLY'),
+      squarePlanGrowthAnnual: optional('SQUARE_PLAN_GROWTH_ANNUAL'),
+      squarePlanProMonthly: optional('SQUARE_PLAN_PRO_MONTHLY'),
+      squarePlanProAnnual: optional('SQUARE_PLAN_PRO_ANNUAL'),
       squareApiUrl: env(
         'SQUARE_API_URL',
         squareEnvironment == 'production'
@@ -144,19 +144,20 @@ class AppConfig {
       gmWalletAchAccount: optional('GM_WALLET_ACH_ACCOUNT'),
       intuneApiUrl: env('INTUNE_API_URL', 'https://graph.microsoft.com/v1.0'),
       // eBay
-      ebayAppId:  optional('EBAY_APP_ID'),
+      ebayAppId: optional('EBAY_APP_ID'),
       ebayCertId: optional('EBAY_CERT_ID'),
-      ebayDevId:  optional('EBAY_DEV_ID'),
+      ebayDevId: optional('EBAY_DEV_ID'),
       ebayApiUrl: env('EBAY_API_URL', 'https://api.sandbox.ebay.com'),
       // Back Market
       backmarketApiKey: optional('BACKMARKET_API_KEY'),
-      backmarketApiUrl: env('BACKMARKET_API_URL', 'https://www.backmarket.com/ws'),
+      backmarketApiUrl:
+          env('BACKMARKET_API_URL', 'https://www.backmarket.com/ws'),
       // Resend
       resendApiKey: optional('RESEND_API_KEY'),
       resendApiUrl: env('RESEND_API_URL', 'https://api.resend.com/emails'),
       // Escrow.com
-      escrowApiKey:  optional('ESCROW_API_KEY'),
-      escrowEmail:   optional('ESCROW_EMAIL'),
+      escrowApiKey: optional('ESCROW_API_KEY'),
+      escrowEmail: optional('ESCROW_EMAIL'),
       escrowSandbox: escrowEnvironment != 'production',
       escrowApiUrl: env(
         'ESCROW_API_URL',
@@ -165,8 +166,8 @@ class AppConfig {
             : 'https://api.escrow-sandbox.com/2017-09-01',
       ),
       // FedEx
-      fedexApiKey:        optional('FEDEX_API_KEY'),
-      fedexSecretKey:     optional('FEDEX_SECRET_KEY'),
+      fedexApiKey: optional('FEDEX_API_KEY'),
+      fedexSecretKey: optional('FEDEX_SECRET_KEY'),
       fedexWebhookSecret: optional('FEDEX_WEBHOOK_SECRET'),
       fedexSandbox: fedexEnvironment != 'production',
       fedexApiUrl: env(
@@ -183,7 +184,7 @@ class AppConfig {
       dopplerBearerToken: optional('DOPPLER_BEARER_TOKEN'),
       ebayVerificationToken: optional('EBAY_VERIFICATION_TOKEN'),
       ebayDeletionEndpoint: optional('EBAY_DELETION_ENDPOINT'),
-      webauthnRpId:   optional('WEBAUTHN_RP_ID'),
+      webauthnRpId: optional('WEBAUTHN_RP_ID'),
       webauthnRpName: optional('WEBAUTHN_RP_NAME'),
     );
   }
@@ -203,8 +204,10 @@ class AppConfig {
   // ── Square Web Payments ─────────────────────────────────────────────────────
   /// Server-side secret — never sent to the browser.
   final String squareAccessToken;
+
   /// Public application ID — safe to expose as VITE_SQUARE_APPLICATION_ID.
   final String squareApplicationId;
+
   /// Public location ID — safe to expose as VITE_SQUARE_LOCATION_ID.
   final String squareLocationId;
 
@@ -223,11 +226,11 @@ class AppConfig {
   /// Returns the monthly plan variation ID for the given plan name.
   /// Returns null if not configured.
   String? monthlyVariationId(String plan) => switch (plan) {
-    'starter' => squarePlanStarterMonthly,
-    'growth'  => squarePlanGrowthMonthly,
-    'pro'     => squarePlanProMonthly,
-    _         => null,
-  };
+        'starter' => squarePlanStarterMonthly,
+        'growth' => squarePlanGrowthMonthly,
+        'pro' => squarePlanProMonthly,
+        _ => null,
+      };
 
   /// Base URL for Square API calls. Defaults to the sandbox URL unless
   /// SQUARE_ENVIRONMENT=production or SQUARE_API_URL is set explicitly.

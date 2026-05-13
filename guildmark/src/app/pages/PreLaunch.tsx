@@ -249,7 +249,7 @@ export function PreLaunch() {
         <p className="text-lg text-muted-foreground text-center max-w-2xl leading-relaxed mb-12 font-sans">
           {t("prelaunch.description")}
         </p>
-        <div className="flex 3xl:flex-row 3xl:space-x-16 space-y-4 flex-col">
+        <div className="2xl:flex 2xl:flex-row 2xl:space-x-16 space-y-4 flex-col">
           <div className="space-y-4">
             <h2 className="text-2xl font-sans font-bold">Sign up to stay in the loop on development.</h2>
             <p className="text-sm text-muted-foreground font-sans">

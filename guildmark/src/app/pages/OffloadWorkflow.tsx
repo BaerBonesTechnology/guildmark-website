@@ -132,7 +132,7 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
                 >
                   <step.Icon className="w-6 h-6" />
                 </div>
-                <p className={`text-xs font-mono mt-3 text-center max-w-[72px] leading-tight ${
+                <p className={`text-xs font-sans mt-3 text-center max-w-[72px] leading-tight ${
                   isComplete || isActive
                     ? "text-slate-800 dark:text-slate-200"
                     : "text-slate-400 dark:text-slate-500"
@@ -140,7 +140,7 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
                   {step.label}
                 </p>
                 {isActive && (
-                  <span className="text-xs text-yellow-500 font-mono mt-1">In Progress</span>
+                  <span className="text-xs text-yellow-500 font-sans mt-1">In Progress</span>
                 )}
               </div>
             );
@@ -150,7 +150,7 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
 
       {/* FedEx details */}
       {isLoading && (
-        <div className="flex items-center gap-2 text-sm font-mono text-slate-400">
+        <div className="flex items-center gap-2 text-sm font-sans text-slate-400">
           <Loader2 className="w-4 h-4 animate-spin" />
           Fetching live tracking…
         </div>
@@ -161,16 +161,16 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
           {/* Status + ETA row */}
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-slate-400 uppercase tracking-wide">Status</span>
-              <span className="text-sm font-mono font-semibold text-slate-800 dark:text-slate-100">
+              <span className="text-xs font-sans text-slate-400 uppercase tracking-wide">Status</span>
+              <span className="text-sm font-sans font-semibold text-slate-800 dark:text-slate-100">
                 {tracking.status}
               </span>
             </div>
             {tracking.estimated_delivery && !tracking.actual_delivery && (
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-xs font-mono text-slate-400">ETA</span>
-                <span className="text-sm font-mono text-slate-700 dark:text-slate-200">
+                <span className="text-xs font-sans text-slate-400">ETA</span>
+                <span className="text-sm font-sans text-slate-700 dark:text-slate-200">
                   {fmtDateTime(tracking.estimated_delivery)}
                 </span>
               </div>
@@ -178,8 +178,8 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
             {tracking.actual_delivery && (
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-xs font-mono text-slate-400">Delivered</span>
-                <span className="text-sm font-mono text-emerald-500">
+                <span className="text-xs font-sans text-slate-400">Delivered</span>
+                <span className="text-sm font-sans text-emerald-500">
                   {fmtDateTime(tracking.actual_delivery)}
                 </span>
               </div>
@@ -188,7 +188,7 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-sans text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-50 transition-colors"
               >
                 <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
                 Refresh
@@ -203,7 +203,7 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
                 {tracking.events.slice(0, 12).map((ev, i) => (
                   <div
                     key={i}
-                    className={`flex gap-4 px-4 py-3 text-sm font-mono ${
+                    className={`flex gap-4 px-4 py-3 text-sm font-sans ${
                       i < tracking.events.length - 1
                         ? "border-b border-slate-100 dark:border-slate-700/30"
                         : ""
@@ -233,13 +233,13 @@ function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
 
       {/* No tracking number yet */}
       {!isLoading && !tracking && !error && order.trackingNumber && (
-        <p className="text-sm font-mono text-slate-400">
+        <p className="text-sm font-sans text-slate-400">
           Tracking unavailable — FedEx may not have scanned this shipment yet.
         </p>
       )}
 
       {!order.trackingNumber && (
-        <p className="text-sm font-mono text-slate-400">
+        <p className="text-sm font-sans text-slate-400">
           No tracking number attached to this order yet.
         </p>
       )}
@@ -267,19 +267,19 @@ export function OffloadWorkflow() {
 
       {/* ── Logistics Generation ── */}
       <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-6">
-        <h2 className="font-mono text-slate-900 dark:text-slate-100 mb-6">Logistics Generation</h2>
+        <h2 className="font-sans text-slate-900 dark:text-slate-100 mb-6">Logistics Generation</h2>
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
+            <label className="block text-xs font-sans text-slate-400 mb-2 uppercase tracking-wide">
               Shipping Method
             </label>
-            <select className="w-full bg-slate-900/50 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-200 focus:outline-none focus:border-primary">
+            <select className="w-full bg-slate-900/50 border border-slate-700 rounded px-3 py-2 text-sm font-sans text-slate-200 focus:outline-none focus:border-primary">
               <option>Prepaid Labels (1–5 units)</option>
               <option>Pallet Pickup (6+ units)</option>
             </select>
           </div>
           <div className="flex items-end">
-            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+            <p className="text-xs font-sans text-slate-400 leading-relaxed">
               Labels are generated per order when a buyer offer is accepted and the escrow is funded.
             </p>
           </div>
@@ -287,20 +287,20 @@ export function OffloadWorkflow() {
         <div className="flex gap-4 mt-6">
           <button
             disabled
-            className="flex-1 bg-primary/60 text-white px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+            className="flex-1 bg-primary/60 text-white px-4 py-3 rounded-lg font-sans text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
           >
             <Download className="w-4 h-4" />
             Generate Shipping Labels
           </button>
           <button
             disabled
-            className="flex-1 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-4 py-3 rounded-lg font-mono text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
+            className="flex-1 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-4 py-3 rounded-lg font-sans text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-60"
           >
             <Truck className="w-4 h-4" />
             Schedule Pallet Pickup
           </button>
         </div>
-        <p className="text-xs text-slate-400 font-mono mt-3">
+        <p className="text-xs text-slate-400 font-sans mt-3">
           Logistics actions are triggered automatically through the order flow — select a funded order to proceed.
         </p>
       </div>
@@ -309,13 +309,13 @@ export function OffloadWorkflow() {
       <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-mono text-slate-900 dark:text-slate-100">
+            <h2 className="font-sans text-slate-900 dark:text-slate-100">
               {trackedOrder
                 ? `Active Shipment: ${trackedOrder.transactionId}`
                 : "Shipment Tracker"}
             </h2>
             {trackedOrder?.trackingNumber && (
-              <p className="text-xs font-mono text-slate-400 mt-0.5">
+              <p className="text-xs font-sans text-slate-400 mt-0.5">
                 FedEx {trackedOrder.trackingNumber}
               </p>
             )}
@@ -325,7 +325,7 @@ export function OffloadWorkflow() {
             <select
               value={trackedId ?? trackedOrder?.id ?? ""}
               onChange={e => setTrackedId(e.target.value)}
-              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-700 dark:text-slate-300 focus:outline-none"
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs font-sans text-slate-700 dark:text-slate-300 focus:outline-none"
             >
               {shipped.map(o => (
                 <option key={o.id} value={o.id}>{o.transactionId}</option>
@@ -335,7 +335,7 @@ export function OffloadWorkflow() {
         </div>
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-sm font-mono text-slate-400 py-8 justify-center">
+          <div className="flex items-center gap-2 text-sm font-sans text-slate-400 py-8 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" />
             Loading orders…
           </div>
@@ -348,7 +348,7 @@ export function OffloadWorkflow() {
         {!isLoading && !trackedOrder && (
           <div className="py-10 flex flex-col items-center gap-2 text-center">
             <Truck className="w-10 h-10 text-slate-300 dark:text-slate-600" />
-            <p className="font-mono text-sm text-slate-400">
+            <p className="font-sans text-sm text-slate-400">
               No active shipments. Orders in transit will appear here.
             </p>
           </div>
@@ -358,9 +358,9 @@ export function OffloadWorkflow() {
       {/* ── Order History ── */}
       <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg">
         <div className="p-6 border-b border-slate-200 dark:border-slate-700/50 flex items-center justify-between">
-          <h2 className="font-mono text-slate-900 dark:text-slate-100">Order History</h2>
+          <h2 className="font-sans text-slate-900 dark:text-slate-100">Order History</h2>
           {data?.stats && (
-            <div className="flex gap-4 text-xs font-mono text-slate-400">
+            <div className="flex gap-4 text-xs font-sans text-slate-400">
               <span>{data.stats.totalOrders} orders</span>
               <span className="text-primary font-semibold">
                 {usd(data.stats.totalValue * 100)} total value
@@ -374,7 +374,7 @@ export function OffloadWorkflow() {
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-700/50">
                 {["Order ID","Product","Qty","Status","Date","Value","Tracking"].map(h => (
-                  <th key={h} className="text-left p-4 text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                  <th key={h} className="text-left p-4 text-xs font-sans text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     {h}
                   </th>
                 ))}
@@ -383,7 +383,7 @@ export function OffloadWorkflow() {
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-sm font-mono text-slate-400">
+                  <td colSpan={7} className="p-8 text-center text-sm font-sans text-slate-400">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
                     Loading…
                   </td>
@@ -392,7 +392,7 @@ export function OffloadWorkflow() {
               {error && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center">
-                    <div className="flex items-center justify-center gap-2 text-sm font-mono text-red-400">
+                    <div className="flex items-center justify-center gap-2 text-sm font-sans text-red-400">
                       <AlertCircle className="w-4 h-4" />
                       Failed to load orders
                     </div>
@@ -401,7 +401,7 @@ export function OffloadWorkflow() {
               )}
               {!isLoading && orders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-sm font-mono text-slate-400">
+                  <td colSpan={7} className="p-8 text-center text-sm font-sans text-slate-400">
                     No orders yet
                   </td>
                 </tr>
@@ -420,45 +420,45 @@ export function OffloadWorkflow() {
                   }}
                 >
                   <td className="p-4">
-                    <span className="font-mono text-sm text-slate-700 dark:text-slate-200">
+                    <span className="font-sans text-sm text-slate-700 dark:text-slate-200">
                       {order.transactionId}
                     </span>
                   </td>
                   <td className="p-4">
-                    <p className="font-mono text-sm text-slate-700 dark:text-slate-200 truncate max-w-[160px]">
+                    <p className="font-sans text-sm text-slate-700 dark:text-slate-200 truncate max-w-[160px]">
                       {order.productName}
                     </p>
                     {order.specs && (
-                      <p className="text-xs text-slate-400 font-mono truncate max-w-[160px]">{order.specs}</p>
+                      <p className="text-xs text-slate-400 font-sans truncate max-w-[160px]">{order.specs}</p>
                     )}
                   </td>
                   <td className="p-4">
-                    <span className="font-mono text-sm text-slate-600 dark:text-slate-300">{order.quantity}</span>
+                    <span className="font-sans text-sm text-slate-600 dark:text-slate-300">{order.quantity}</span>
                   </td>
                   <td className="p-4">
-                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-mono ${statusBadge(order.orderStatus)}`}>
+                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-sans ${statusBadge(order.orderStatus)}`}>
                       {order.orderStatus.replace(/_/g, " ")}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className="font-mono text-sm text-slate-500 dark:text-slate-400">{fmt(order.createdAt)}</span>
+                    <span className="font-sans text-sm text-slate-500 dark:text-slate-400">{fmt(order.createdAt)}</span>
                   </td>
                   <td className="p-4">
-                    <span className="font-mono text-sm text-primary font-semibold">
+                    <span className="font-sans text-sm text-primary font-semibold">
                       {usd(order.totalValue * 100)}
                     </span>
                   </td>
                   <td className="p-4">
                     {order.trackingNumber ? (
                       <button
-                        className="text-xs font-mono text-violet-400 hover:text-violet-300 flex items-center gap-1"
+                        className="text-xs font-sans text-violet-400 hover:text-violet-300 flex items-center gap-1"
                         onClick={e => { e.stopPropagation(); setTrackedId(order.id); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       >
                         <Truck className="w-3 h-3" />
                         {order.trackingNumber.slice(0, 12)}…
                       </button>
                     ) : (
-                      <span className="text-xs font-mono text-slate-400">—</span>
+                      <span className="text-xs font-sans text-slate-400">—</span>
                     )}
                   </td>
                 </tr>
@@ -472,8 +472,8 @@ export function OffloadWorkflow() {
       <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="font-mono text-slate-900 dark:text-slate-100">Compliance Vault</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-mono">
+            <h2 className="font-sans text-slate-900 dark:text-slate-100">Compliance Vault</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
               Certificates of data destruction for legal and audit purposes
             </p>
           </div>
@@ -481,7 +481,7 @@ export function OffloadWorkflow() {
         </div>
 
         {complete.length === 0 ? (
-          <p className="text-sm font-mono text-slate-400 py-4">
+          <p className="text-sm font-sans text-slate-400 py-4">
             Certificates appear here once orders reach the <strong>complete</strong> status.
           </p>
         ) : (
@@ -496,16 +496,16 @@ export function OffloadWorkflow() {
                     <FileText className="w-6 h-6 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-mono text-slate-800 dark:text-slate-200 truncate">
+                    <p className="text-sm font-sans text-slate-800 dark:text-slate-200 truncate">
                       {order.transactionId}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-sans">
                       NIST 800-88 · {order.quantity} unit{order.quantity !== 1 ? "s" : ""}
                     </p>
-                    <p className="text-xs text-slate-400 font-mono">{fmt(order.completedAt ?? order.createdAt)}</p>
+                    <p className="text-xs text-slate-400 font-sans">{fmt(order.completedAt ?? order.createdAt)}</p>
                   </div>
                 </div>
-                <button className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-mono text-primary hover:text-primary/80 transition-colors py-1.5 border border-primary/20 hover:border-primary/40 rounded">
+                <button className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-sans text-primary hover:text-primary/80 transition-colors py-1.5 border border-primary/20 hover:border-primary/40 rounded">
                   <Download className="w-3 h-3" />
                   Download Certificate
                 </button>
