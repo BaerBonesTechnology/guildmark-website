@@ -1,6 +1,5 @@
 /// Seller dashboard aggregate. Lightweight summary the landing dashboard
 /// page hits on every navigation.
-library;
 
 import '../db/pool.dart';
 import '../models/json_helpers.dart';
@@ -246,18 +245,4 @@ class DashboardRepo {
       totalFleetValue:     totalFleetValue,
       inMarketValue:       inMarketValue,
       stagedValue:         stagedValue,
-      ampsPortfolioValue:  ampsPortfolioValue,
-      totalListedValue:    totalListedValue,
-      totalMarketValue:    totalMarketValue,
-      projectedLoss6mo:    0.0,   // ML feature — not yet built
-      recoveryOpportunity: goodListings,
-      idleUnits:           idleUnits,
-      fleetEfficiencyPct:  efficiencyPct,
-      activeListings:      activeListings,
-      pendingOffers:       pendingOffers,
-      totalRecovered:      totalRecovered,
-      overpricedCount:     overpricedCount,
-      highDemandAssets:    highDemandAssets,
-    );
-  }
-}
+      ampsPortfolioValue:  ampsPo

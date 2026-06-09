@@ -1,5 +1,4 @@
 /// PATCH /seller/listings/:id/withdraw
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

@@ -2,7 +2,6 @@
 ///
 /// Buyer confirms delivery — releases funds from escrow to the seller.
 /// Status transitions: delivered | inspecting  →  complete
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

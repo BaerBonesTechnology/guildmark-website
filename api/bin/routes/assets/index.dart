@@ -1,5 +1,4 @@
 /// GET /assets — manual + MDM-imported assets for the auth'd company.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

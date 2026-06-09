@@ -1,5 +1,4 @@
 /// PATCH /seller/listings/:id/publish  — promote a draft to active.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

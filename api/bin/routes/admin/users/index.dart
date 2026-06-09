@@ -5,7 +5,6 @@
 ///   offset  (default 0)
 ///   q       — search by email, full name, or company name (ILIKE)
 ///   plan    — filter by subscription plan (free | starter | growth | pro)
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

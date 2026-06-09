@@ -3,7 +3,6 @@
 /// Auth routes (login, refresh, logout) operate with a null principal.
 /// All other partner routes MUST call `context.read<PartnerPrincipal?>()` and
 /// return 401 if it is null.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

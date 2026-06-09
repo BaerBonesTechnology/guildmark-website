@@ -2,7 +2,6 @@
 ///
 /// Updates the admin notes on a subscriber without marking them as contacted.
 /// Admin-only.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

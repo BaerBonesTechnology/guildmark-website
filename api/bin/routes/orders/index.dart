@@ -1,6 +1,5 @@
 /// GET /orders  — list all orders for the authenticated company.
 /// POST /orders  — create an order from an accepted offer and open escrow.
-library;
 
 import 'dart:async';
 

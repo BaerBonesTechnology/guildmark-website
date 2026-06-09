@@ -23,7 +23,7 @@ services:
 
   # ML service is optional — omit from `depends_on` so the API starts without it.
   ml:
-    build:   ./py
+    build:   ../ml-qv
     restart: unless-stopped
     environment:
       ML_PORT:       ${ML_PORT:-8001}
@@ -31,7 +31,7 @@ services:
     ports:
       - "${ML_PORT:-8001}:8001"
     volumes:
-      - ./py/model_artifacts:/app/model_artifacts
+      - ../ml-qv/model_artifacts:/app/model_artifacts
     healthcheck:
       test:     ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
       interval: 10s

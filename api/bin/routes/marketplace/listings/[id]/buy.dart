@@ -9,7 +9,6 @@
 ///   payment_terms  string? — "immediate" | "net_30" | "net_60"
 ///
 /// Returns: the created Order.
-library;
 
 import 'dart:async';
 

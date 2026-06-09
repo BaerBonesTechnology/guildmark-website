@@ -3,7 +3,6 @@
 /// Public endpoint — returns the current platform fee rates so the frontend
 /// can display accurate fee previews before a seller submits a listing.
 /// No auth required (rates are not sensitive).
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

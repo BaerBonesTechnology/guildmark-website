@@ -6,7 +6,6 @@
 ///
 /// Free users receive a structured 403 with a `SUBSCRIPTION_REQUIRED` code
 /// so the frontend can show an upgrade prompt rather than a generic error.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

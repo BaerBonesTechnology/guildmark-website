@@ -13,7 +13,6 @@
 ///
 /// FedEx sends events as JSON POST with header:
 ///   x-fedex-signature: <hmac-sha256-hex>
-library;
 
 import 'dart:async';
 import 'dart:convert';

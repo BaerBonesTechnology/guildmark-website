@@ -2,7 +2,6 @@
 ///
 /// For "counter" the body should include `{ counter_price: number }`.
 /// Sends email to the buyer on every action.
-library;
 
 import 'dart:async';
 import 'dart:io';

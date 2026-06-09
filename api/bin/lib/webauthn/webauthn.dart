@@ -11,7 +11,6 @@
 /// References:
 ///   https://www.w3.org/TR/webauthn-2/
 ///   https://www.iana.org/assignments/cose/cose.xhtml (COSE key parameters)
-library;
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -322,15 +321,4 @@ Map<String, dynamic> verifyClientData({
 
   // Challenges may differ in padding; normalise before comparing.
   final normalise = (String? s) =>
-      s?.replaceAll('=', '') ?? '';
-
-  if (normalise(challenge) != normalise(expectedChallenge)) {
-    throw FormatException('clientData challenge mismatch');
-  }
-
-  if (origin != expectedOrigin) {
-    throw FormatException('clientData origin mismatch: got $origin, want $expectedOrigin');
-  }
-
-  return data;
-}
+      s?.replaceAll('=', '') ?? ''

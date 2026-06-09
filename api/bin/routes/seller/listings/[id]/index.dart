@@ -1,5 +1,4 @@
 /// PATCH /seller/listings/:id  — update listed price (re-evaluates flag vs FMV).
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

@@ -19,7 +19,6 @@
 ///   EBAY_VERIFICATION_TOKEN  — the token you entered in the eBay Developer Portal
 ///   EBAY_DELETION_ENDPOINT   — the full URL of this endpoint, e.g.
 ///                              https://api.guildmark.co/webhooks/ebay/account-deletion
-library;
 
 import 'dart:convert';
 

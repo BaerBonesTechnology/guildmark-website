@@ -15,7 +15,6 @@
 ///
 /// Called by the frontend immediately after a successful AMPS subscription
 /// checkout so returning users see current values without waiting 24 hours.
-library;
 
 import 'dart:io';
 

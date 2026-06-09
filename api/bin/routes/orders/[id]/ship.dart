@@ -4,7 +4,6 @@
 /// Status transitions: funded | awaiting_payment  →  shipped
 ///
 /// Body: { tracking_number: string, carrier?: string }
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

@@ -6,7 +6,6 @@
 /// reference them for the Account & Payouts page.
 ///
 /// Requires: valid partner JWT.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

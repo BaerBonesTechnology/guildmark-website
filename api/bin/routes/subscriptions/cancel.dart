@@ -5,7 +5,6 @@
 /// that Square stops billing automatically. Our DB row is then marked as
 /// cancelled regardless of the Square API result (Square errors are logged but
 /// do not block the cancellation from the user's perspective).
-library;
 
 import 'dart:io';
 

@@ -1,6 +1,6 @@
 # Multi-stage build: produce a tiny native binary, no Dart SDK at runtime.
 
-FROM dart:3.4 AS build
+FROM dart:stable AS build
 
 WORKDIR /app
 COPY pubspec.yaml .

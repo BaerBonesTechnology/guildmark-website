@@ -1,6 +1,5 @@
 /// GET  /admin/employees — list all employees
 /// POST /admin/employees — create a new employee (superadmin only)
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

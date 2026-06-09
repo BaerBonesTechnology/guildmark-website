@@ -1,7 +1,6 @@
 /// GET /dashboard — top-level seller dashboard summary.
 ///
 /// Aggregates active listings count, pending offers, recent valuation flags.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

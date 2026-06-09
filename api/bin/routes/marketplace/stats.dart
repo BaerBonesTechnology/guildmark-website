@@ -6,7 +6,6 @@
 ///   totalUnits       — sum of asset quantities across active listings
 ///   avgPricePerUnit  — average listed_price where price is set
 ///   totalMarketValue — sum of (listed_price * quantity) across active listings
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

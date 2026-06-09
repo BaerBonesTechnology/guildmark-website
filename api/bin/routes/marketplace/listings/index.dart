@@ -3,7 +3,6 @@
 /// Public endpoint — no auth required. Returns a paginated list of active
 /// listings with filters: asset_type, condition_grade, max_price, search,
 /// page, page_size.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 
@@ -28,6 +27,4 @@ Future<Response> onRequest(RequestContext context) async {
 
   final result = await ListingRepo(context.read<Db>()).searchActive(filters);
   return Response.json(
-    body: result.toJson((l) => l.toJson()),
-  );
-}
+    body: res

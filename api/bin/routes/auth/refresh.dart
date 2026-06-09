@@ -2,7 +2,6 @@
 ///
 /// Reads the `astech_refresh` httpOnly cookie, rotates it (single-use refresh
 /// tokens), and returns a fresh access token.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

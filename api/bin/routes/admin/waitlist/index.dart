@@ -2,7 +2,6 @@
 /// POST /admin/waitlist        — (reserved for future bulk actions)
 ///
 /// Admin-only. Requires a valid JWT with role = 'admin'.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

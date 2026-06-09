@@ -6,7 +6,6 @@
 ///
 /// Uses ON CONFLICT (email) DO UPDATE to append the new message to any
 /// existing notes, so repeat submissions from the same email are not lost.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

@@ -6,7 +6,6 @@
 /// - Returns the updated assignment.
 ///
 /// Requires: valid partner JWT.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:postgres/postgres.dart';

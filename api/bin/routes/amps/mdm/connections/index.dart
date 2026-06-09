@@ -1,5 +1,4 @@
 /// GET /amps/mdm/connections — list this company's MDM sources.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

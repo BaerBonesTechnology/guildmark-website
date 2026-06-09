@@ -2,7 +2,6 @@
 ///
 /// Returns the calling company's current subscription plan + status,
 /// along with recent billing invoices.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

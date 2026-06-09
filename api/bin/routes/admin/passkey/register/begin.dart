@@ -13,7 +13,6 @@
 ///     user:                { id, name, display_name }
 ///     pub_key_cred_params: [{ type: 'public-key', alg: -7 }]
 ///   }
-library;
 
 import 'dart:math';
 import 'dart:typed_data';

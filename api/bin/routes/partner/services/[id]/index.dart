@@ -18,7 +18,6 @@
 ///   shipped             → complete
 ///
 /// Requires: valid partner JWT + partner must own the assignment.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

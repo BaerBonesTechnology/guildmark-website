@@ -9,7 +9,6 @@
 ///
 /// Verification is done with constant-time comparison to prevent
 /// timing-based side-channel attacks.
-library;
 
 import 'dart:convert';
 import 'dart:io';

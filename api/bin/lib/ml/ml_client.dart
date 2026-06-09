@@ -3,7 +3,6 @@
 /// The Dart layer never trains or stores models — it only forwards inference
 /// requests. Keeping this surface tiny means the Python service can swap
 /// implementations (sklearn, XGBoost, ONNX runtime) without Dart changes.
-library;
 
 import 'dart:convert';
 
@@ -140,10 +139,4 @@ class DepreciationPoint {
 }
 
 class MlServiceException implements Exception {
-  MlServiceException(this.statusCode, this.body);
-  final int statusCode;
-  final String body;
-
-  @override
-  String toString() => 'MlServiceException($statusCode): $body';
-}
+  MlServiceException(this.statusCode, th

@@ -8,7 +8,6 @@
 /// populated without a separate nightly cron, `summarize` upserts today's
 /// computed values at the end of every call — the snapshot table then acts as
 /// a rolling daily history that the chart can plot.
-library;
 
 import '../db/pool.dart';
 import '../models/json_helpers.dart';
@@ -175,13 +174,4 @@ class PortfolioRepo {
       totalDevices:        totalDevices,
       totalPortfolioValue: totalPortfolioValue,
       totalBookValue:      totalBookValue,
-      totalDepreciation:   totalDepreciation,
-      depreciationPct:     depreciationPct,
-      avgAssetAgeMonths:   avgAgeMonths,
-      assetsAtRisk:        assetsAtRisk,
-      byType:              byType,
-      byCondition:         byCondition,
-      trend:               trend,
-    );
-  }
-}
+ 

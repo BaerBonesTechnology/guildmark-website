@@ -5,7 +5,6 @@
 /// Authentication: OAuth 2.0 client-credentials flow.
 /// Tokens are cached in-memory (expiry = issued_at + expires_in − 60s buffer).
 /// Failures are logged but never thrown — callers check for null returns.
-library;
 
 import 'dart:convert';
 import 'dart:io';
@@ -254,12 +253,4 @@ class FedexService {
       _token = json['access_token'] as String;
       final expiresIn = (json['expires_in'] as num).toInt();
       // Subtract 60 s buffer so we refresh before actual expiry.
-      _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn - 60));
-      stdout.writeln('[fedex] token refreshed (expires in ${expiresIn}s)');
-      return _token;
-    } catch (e) {
-      stderr.writeln('[fedex] token error: $e');
-      return null;
-    }
-  }
-}
+      _tokenExpiry = D

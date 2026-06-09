@@ -21,7 +21,6 @@
 ///
 ///   C. WEBAUTHN_RP_ID not set (or env-var fallback path)
 ///      → Issues a full access JWT immediately (legacy / bootstrap)
-library;
 
 import 'dart:math';
 import 'dart:typed_data';

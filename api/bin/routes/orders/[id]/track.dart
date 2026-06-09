@@ -29,7 +29,6 @@
 /// 409 when the order has no tracking number yet.
 /// 502 when FedEx is not configured or the API call failed — the frontend
 ///     should fall back to displaying the stored order status.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

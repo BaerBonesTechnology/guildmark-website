@@ -10,7 +10,6 @@
 ///
 /// TODO: Replace the stub response with a real job-enqueue call once the
 /// worker infrastructure is in place.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

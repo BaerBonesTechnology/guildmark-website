@@ -1,7 +1,6 @@
 /// GET /marketplace/listings/:id
 ///
 /// Public single-listing detail. Returns 404 if the listing isn't active.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

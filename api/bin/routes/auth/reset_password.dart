@@ -3,7 +3,6 @@
 /// Body:    { token, new_password }
 /// Returns: 200 on success, 400/422 on failure
 /// Side:    Marks token used, writes new bcrypt hash to users table.
-library;
 
 import 'dart:convert';
 
@@ -74,5 +73,4 @@ Future<Response> onRequest(RequestContext context) async {
     parameters: {'uid': userId},
   );
 
-  return Response.json(body: {'message': 'Password updated successfully'});
-}
+  return Response.json(body: {'messa

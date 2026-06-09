@@ -9,7 +9,6 @@
 ///
 /// The frontend polls this at 3-second intervals while status == "running"
 /// and dismisses its loading banner once "complete" or "failed" is received.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 
