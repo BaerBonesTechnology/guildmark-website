@@ -5,7 +5,6 @@
 /// Side:    If a user with that email exists, sends a password-reset link via Resend.
 ///          Token is a 48-byte random plaintext; SHA-256 hash stored in DB.
 ///          Link: {FRONTEND_URL}/reset-password?token={plaintext}
-library;
 
 import 'dart:async';
 import 'dart:convert';

@@ -1,6 +1,5 @@
 /// GET  /buyer/offers   — offers placed by this company
 /// POST /buyer/offers   — place an offer on a listing
-library;
 import 'dart:async';
 import 'dart:io';
 

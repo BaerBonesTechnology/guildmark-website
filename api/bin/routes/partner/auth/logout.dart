@@ -2,7 +2,6 @@
 ///
 /// Revokes the current partner refresh token (best-effort) and clears the
 /// `partner_refresh` cookie.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

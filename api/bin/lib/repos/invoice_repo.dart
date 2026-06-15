@@ -4,7 +4,6 @@
 /// Invoice numbers use the pattern `INV-YYYYMMDD-XXXX` where XXXX is a
 /// zero-padded daily sequence. A unique constraint on `invoice_number` in the
 /// DB backs this up if two requests race.
-library;
 
 import 'package:postgres/postgres.dart';
 
@@ -138,9 +137,4 @@ class InvoiceRepo {
         },
       );
 
-      final row = result.first.toColumnMap()..['model_name'] = modelName;
-      return TaxInvoice.fromRow(row);
-    });
-  }
-
-}
+      final row = result.first.toColumnMap

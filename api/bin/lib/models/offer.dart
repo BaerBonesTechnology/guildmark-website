@@ -1,5 +1,4 @@
 /// Buyer offer model — mirrors `BuyerOffer` in types.ts.
-library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -36,8 +35,4 @@ class BuyerOffer with _$BuyerOffer {
         quantity:       numToIntOrNull(row['quantity']) ?? 0,
         status:         enumStr(row['status']),
         expiresAt:      row['expires_at']               as DateTime,
-        createdAt:      row['created_at']               as DateTime,
-        counterPrice:   numToDoubleOrNull(row['counter_price']),
-        message:        row['message']                  as String?,
-      );
-}
+        createdAt:      row['created_at']     

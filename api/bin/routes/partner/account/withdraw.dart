@@ -7,7 +7,6 @@
 /// Returns: { payout } with the new partner_payouts row.
 ///
 /// Requires: valid partner JWT + partner must be active.
-library;
 
 import 'dart:math';
 

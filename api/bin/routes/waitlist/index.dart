@@ -10,7 +10,6 @@
 ///   company      — company name
 ///   partner_type — reseller | msp | refurbisher | itservices | other
 ///   phone        — contact phone number
-library;
 
 import 'dart:async';
 

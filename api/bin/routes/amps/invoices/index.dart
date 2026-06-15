@@ -1,5 +1,4 @@
 /// GET /amps/invoices — list write-off / disposal invoices for this company.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

@@ -1,6 +1,4 @@
 /// Shared response helpers — keeps error JSON consistent across routes.
-library;
-
 import 'package:dart_frog/dart_frog.dart';
 
 Response jsonError(int status, String code, String message) {

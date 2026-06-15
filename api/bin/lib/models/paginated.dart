@@ -4,7 +4,6 @@
 /// globally in `build.yaml`. Callers pass a `T Function(Object?)` to
 /// `fromJson` and `Object? Function(T)` to `toJson` so the inner items can
 /// be (de)serialized through the right factory.
-library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -40,7 +39,4 @@ class PaginatedResponse<T> with _$PaginatedResponse<T> {
         data:       data,
         total:      total,
         page:       page,
-        pageSize:   pageSize,
-        totalPages: (total / pageSize).ceil(),
-      );
-}
+        pag

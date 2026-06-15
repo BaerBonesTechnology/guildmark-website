@@ -1,6 +1,5 @@
 /// PATCH /admin/employees/:id — update role or active status
 /// DELETE /admin/employees/:id — deactivate (soft delete)
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

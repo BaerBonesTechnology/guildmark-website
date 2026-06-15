@@ -8,7 +8,6 @@
 /// from on-demand calculator calls (not just listing creation).
 ///
 /// Returns 503 if the ML service is not configured (ML_SERVICE_URL unset).
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

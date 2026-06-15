@@ -8,7 +8,6 @@
 ///   2. Call escrow.acceptDelivery (fire-and-forget)
 ///
 /// Auth: admin role required.
-library;
 
 import 'dart:async';
 import 'dart:io';

@@ -3,7 +3,6 @@
 /// Aggregates the AMPS dashboard hero stats + N-month trend for a company.
 /// Trend data is sourced from pre-aggregated `valuation_snapshots` rows; hero
 /// stats are computed live from the `assets` table.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

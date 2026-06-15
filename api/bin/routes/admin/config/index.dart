@@ -2,7 +2,6 @@
 ///
 /// Returns or replaces the platform-wide fee configuration.
 /// Requires an admin JWT (role = 'admin').
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

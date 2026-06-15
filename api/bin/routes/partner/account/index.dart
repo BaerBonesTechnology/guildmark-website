@@ -3,7 +3,6 @@
 /// Returns the authenticated partner's profile + recent payout history.
 ///
 /// Requires: valid partner JWT.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

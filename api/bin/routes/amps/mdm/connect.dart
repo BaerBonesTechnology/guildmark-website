@@ -13,7 +13,6 @@
 ///
 /// TODO: After storing the connection, trigger an immediate background sync so
 /// the user sees their devices without waiting for the next scheduled run.
-library;
 
 import 'dart:typed_data';
 

@@ -3,7 +3,6 @@
 /// Uses package:postgres v3, which is connection-per-query async by default.
 /// We wrap a `Pool` so handlers can run several queries concurrently without
 /// re-establishing TLS each time.
-library;
 
 import 'package:postgres/postgres.dart';
 
@@ -75,4 +74,3 @@ class Db {
   }
 
   Future<void> close() => _pool.close();
-}

@@ -6,7 +6,6 @@
 /// The caller can optionally pass `{ listed_price: number }` to override the
 /// ML-recommended price. If omitted, `buyer_ask_price` from the ML response
 /// is used.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

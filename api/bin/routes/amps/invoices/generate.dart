@@ -7,7 +7,6 @@
 /// queue (e.g. a `invoice_pdf_jobs` Postgres table polled by a worker, or a
 /// Redis/BullMQ queue). The worker should call a PDF templating service and
 /// then UPDATE tax_invoices SET pdf_storage_path = '<path>' when done.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

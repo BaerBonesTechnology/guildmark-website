@@ -1,8 +1,6 @@
 /// Enum string constants matching the Postgres types and types.ts unions.
 /// Kept as `const` strings rather than Dart enums so they round-trip to JSON
 /// without any case/serialization translation.
-library;
-
 abstract final class AssetType {
   static const laptop = 'laptop';
   static const desktop = 'desktop';

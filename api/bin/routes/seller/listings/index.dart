@@ -1,6 +1,5 @@
 /// GET  /seller/listings   — list this company's listings
 /// POST /seller/listings   — create a new listing (calls ML for valuation)
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

@@ -15,7 +15,6 @@
 ///
 /// On success:
 ///   Issues a full access JWT and returns { access_token, employee }
-library;
 
 import 'dart:typed_data';
 

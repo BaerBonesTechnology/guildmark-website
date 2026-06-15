@@ -7,7 +7,6 @@
 ///     `num` from the postgres package.
 ///
 /// Run `dart run build_runner build` to regenerate `.freezed.dart` / `.g.dart`.
-library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -64,17 +63,4 @@ class Asset with _$Asset {
         serialNumber:          row['serial_number']         as String?,
         reasonForOffload:      row['reason_for_offload']    as String?,
         purchaseDate:          row['purchase_date']         as DateTime?,
-        originalPurchasePrice: numToDoubleOrNull(row['original_purchase_price']),
-        osVersion:             row['os_version']            as String?,
-        batteryHealthPct:      numToDoubleOrNull(row['battery_health_pct']),
-        batteryCycles:         numToIntOrNull(row['battery_cycles']),
-        complianceState:       row['compliance_state']      as String?,
-        assignedUser:          row['assigned_user']         as String?,
-        department:            row['department']            as String?,
-        costCenter:            row['cost_center']           as String?,
-        lastMdmSync:           row['last_mdm_sync']         as DateTime?,
-        cpuScore:              numToDoubleOrNull(row['cpu_score']),
-        ramGb:                 numToDoubleOrNull(row['ram_gb']),
-        storageGb:             numToDoubleOrNull(row['storage_gb']),
-      );
-}
+   

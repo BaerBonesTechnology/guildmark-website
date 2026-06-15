@@ -31,6 +31,35 @@ CREATE TABLE users (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE TABLE email_verification_tokens (
+    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash   TEXT        NOT NULL UNIQUE,
+    used_at      TIMESTAMPTZ,
+    expires_at   TIMESTAMPTZ NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX evt_user_id_idx ON email_verification_tokens(user_id);
+
+CREATE TABLE user_totp (
+    user_id      UUID        PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    secret_cipher BYTEA     NOT NULL,
+    secret_nonce  BYTEA     NOT NULL,
+    enabled       BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+);
+
+CREATE TABLE totp_backup_codes (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash   TEXT NOT NULL,
+    used_at     TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX users_company_id_idx ON users(company_id);
 
 -- Refresh tokens — opaque, server-side validated. Access tokens are JWT.

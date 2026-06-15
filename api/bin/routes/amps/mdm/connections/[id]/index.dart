@@ -2,7 +2,6 @@
 ///
 /// TODO: Revoke OAuth tokens / API keys upstream before deleting the row so
 /// the credentials don't remain valid after the user disconnects.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

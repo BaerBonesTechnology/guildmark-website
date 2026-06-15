@@ -1,5 +1,4 @@
 /// Tax invoice model — mirrors `TaxInvoice` in types.ts.
-library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -44,9 +43,4 @@ class TaxInvoice with _$TaxInvoice {
         generatedAt:           row['generated_at']               as DateTime,
         serialNumber:          row['serial_number']              as String?,
         originalCost:          numToDoubleOrNull(row['original_cost']),
-        bookValueAtDisposal:   numToDoubleOrNull(row['book_value_at_disposal']),
-        marketAnchorEbay:      numToDoubleOrNull(row['market_anchor_ebay']),
-        pdfStoragePath:        row['pdf_storage_path']           as String?,
-        modelName:             row['model_name']                 as String?,
-      );
-}
+        bookValueAtDisposal:   numToDoubleOrNull(row['book_value_at_dispo

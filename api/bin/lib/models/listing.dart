@@ -3,7 +3,6 @@
 /// MarketplaceListing isn't a subclass; freezed disallows extends between
 /// freezed classes. It's a sibling type with the same listing fields plus
 /// the two seller-mask fields the marketplace API joins in.
-library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -129,17 +128,4 @@ class MarketplaceListing with _$MarketplaceListing {
         estBookValue:         numToDoubleOrNull(row['est_book_value']),
         sellerRecoveryRatio:  numToDoubleOrNull(row['seller_recovery_ratio']),
         depreciationPct:      numToDoubleOrNull(row['depreciation_pct']),
-        ageMonths:            numToIntOrNull(row['age_months']),
-        lastValuedAt:         row['last_valued_at']           as DateTime?,
-        modelName:            row['model_name']               as String?,
-        assetType:            enumStrOrNull(row['asset_type']),
-        conditionGrade:       enumStrOrNull(row['condition_grade']),
-        quantity:             numToIntOrNull(row['quantity']),
-        cpuScore:             numToDoubleOrNull(row['cpu_score']),
-        ramGb:                numToDoubleOrNull(row['ram_gb']),
-        storageGb:            numToDoubleOrNull(row['storage_gb']),
-        sellerName:           row['seller_name']              as String?,
-        sellerIndustry:       row['seller_industry']          as String?,
-        sellerSizeBand:       row['seller_size_band']         as String?,
-      );
-}
+       

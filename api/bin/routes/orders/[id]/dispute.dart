@@ -1,5 +1,4 @@
 /// POST /orders/:id/dispute — buyer raises a dispute during inspection window.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

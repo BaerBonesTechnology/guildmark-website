@@ -1,5 +1,4 @@
 /// MDM connection model — mirrors `MdmConnection` in types.ts.
-library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -33,7 +32,4 @@ class MdmConnection with _$MdmConnection {
         syncEnabled:    row['sync_enabled']             as bool,
         createdAt:      row['created_at']               as DateTime,
         lastSyncAt:     row['last_sync_at']             as DateTime?,
-        lastSyncStatus: enumStrOrNull(row['last_sync_status']),
-        deviceCount:    numToIntOrNull(row['device_count']),
-      );
-}
+   

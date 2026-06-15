@@ -3,7 +3,6 @@
 /// Body:    { email, password }
 /// Returns: { access_token, partner }
 /// Side:    Sets `partner_refresh` httpOnly cookie (Path=/partner/auth).
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

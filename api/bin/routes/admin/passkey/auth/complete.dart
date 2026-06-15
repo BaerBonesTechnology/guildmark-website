@@ -16,7 +16,6 @@
 ///
 /// On success:
 ///   Issues a full access JWT and returns { access_token, employee }
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

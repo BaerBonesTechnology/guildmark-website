@@ -8,7 +8,6 @@
 ///   amount_cents  int     — amount in USD cents
 ///   note          string? — optional description
 ///   reference_id  string? — your internal order/transaction ID
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

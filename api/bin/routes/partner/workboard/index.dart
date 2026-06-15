@@ -5,7 +5,6 @@
 /// creation date descending so the newest jobs appear first.
 ///
 /// Requires: valid partner JWT (PartnerPrincipal must not be null).
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

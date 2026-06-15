@@ -5,7 +5,6 @@
 /// Deliberately minimal: no down-migrations, no transactions across files,
 /// no checksums. Good enough for boot-time application; for anything more
 /// complex use sqitch or a dedicated tool.
-library;
 
 import 'dart:io';
 
@@ -174,9 +173,4 @@ class MigrationRunner {
         .isNotEmpty;
   }
 
-  /// Extract the version prefix — for `0001_init.sql` -> `0001_init`.
-  String _versionOf(File f) {
-    final name = f.uri.pathSegments.last;
-    return name.replaceAll('.sql', '');
-  }
-}
+  /// Extract the version prefix — for `0001_

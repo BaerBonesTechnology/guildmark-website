@@ -2,7 +2,6 @@
 ///
 /// Reads the `partner_refresh` httpOnly cookie, rotates it (single-use), and
 /// returns a fresh partner access token.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

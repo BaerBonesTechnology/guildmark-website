@@ -4,7 +4,6 @@
 ///
 /// Returns summary stats + daily time-series for the analytics dashboard.
 /// Admin-only.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

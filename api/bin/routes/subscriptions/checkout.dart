@@ -25,7 +25,6 @@
 ///   billing_address  object? — forwarded to Square for AVS
 ///
 /// Returns: updated subscription + the new invoice row.
-library;
 
 import 'dart:io';
 

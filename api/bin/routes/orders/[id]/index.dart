@@ -1,5 +1,4 @@
 /// GET /orders/:id — fetch a single order.
-library;
 
 import 'package:dart_frog/dart_frog.dart';
 

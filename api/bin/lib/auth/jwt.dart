@@ -1,7 +1,6 @@
 /// JWT issue + verify. Access tokens are short-lived (15 min default);
 /// refresh tokens are opaque random strings stored hashed in the DB and
 /// delivered via httpOnly cookie.
-library;
 
 import 'dart:convert';
 import 'dart:math';
@@ -107,10 +106,4 @@ class PartnerJwtService {
       final jwt     = JWT.verify(token, SecretKey(accessSecret));
       final payload = jwt.payload as Map<String, dynamic>;
       // Reject tokens not issued by the partner auth service.
-      if (payload['iss'] != 'prt') return null;
-      return PartnerClaims.fromJson(payload);
-    } catch (_) {
-      return null;
-    }
-  }
-}
+      if (pa

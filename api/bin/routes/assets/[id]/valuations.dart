@@ -1,13 +1,3 @@
-/// GET /assets/:id/valuations
-///
-/// Returns the valuation history for a single asset — all ML valuations ever
-/// recorded for it, newest first. Each row includes the fair market value at
-/// the time, the listed price (if from a listing), and the price-to-FMV ratio
-/// so callers can see how this asset has been priced relative to market.
-///
-/// Scoped to the caller's company — cannot read another company's assets.
-library;
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';

@@ -8,7 +8,6 @@
 /// TODO: Implement `lib/mdm/credentials.dart` with an AesCipher class that
 /// wraps dart:crypto's AES-GCM support. Key material should be loaded from
 /// the `MDM_ENCRYPTION_KEY` env variable (base64-encoded 256-bit key).
-library;
 
 import '../db/pool.dart';
 import '../models/mdm_connection.dart';
@@ -91,9 +90,4 @@ class MdmRepo {
       parameters: {
         'id':          id,
         'status':      status,
-        'error':       error,
-        'deviceCount': deviceCount,
-      },
-    );
-  }
-}
+      

@@ -5,7 +5,6 @@
 /// Authentication: HTTP Basic auth — base64("email:api_key").
 /// All failures are logged and return null/false; they never throw so that
 /// an Escrow.com outage never breaks the order flow.
-library;
 
 import 'dart:convert';
 import 'dart:io';
@@ -214,11 +213,4 @@ class EscrowService {
         stdout.writeln('[escrow] $action on $transactionId OK');
         return true;
       }
-      stderr.writeln('[escrow] $action ${resp.statusCode}: ${resp.body}');
-      return false;
-    } catch (e) {
-      stderr.writeln('[escrow] $action error: $e');
-      return false;
-    }
-  }
-}
+      stderr.write
