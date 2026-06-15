@@ -60,6 +60,7 @@ services:
       SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
       SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
       SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-production}
+      SQUARE_APPLICATION_ID:   ${SQUARE_APPLICATION_ID:-none}
       GM_WALLET_ACH_ROUTING:   ${GM_WALLET_ACH_ROUTING:-}
       GM_WALLET_ACH_ACCOUNT:   ${GM_WALLET_ACH_ACCOUNT:-}
       JAMF_PRO_CLIENT_ID:      ${JAMF_PRO_CLIENT_ID:-}
@@ -80,6 +81,8 @@ services:
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
       FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-production}
       ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-devdash.guildmark.co}
+      ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
+      ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
       PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-partner.guildmark.co}
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────

@@ -63,6 +63,7 @@ services:
       CORS_ORIGIN:             ${CORS_ORIGIN:-https://staging.guildmark.co}
       GM_DEBUG:                ${GM_DEBUG:-true}
       SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_APPLICATION_ID:   ${SQUARE_APPLICATION_ID:-none}
       SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
       SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-sandbox}
       GM_WALLET_ACH_ROUTING:   ${GM_WALLET_ACH_ROUTING:-}

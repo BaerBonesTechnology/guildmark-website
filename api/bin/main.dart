@@ -52,10 +52,6 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     environment: cfg.squareEnvironment,
     apiUrl:      cfg.squareApiUrl,
   );
-  stdout.writeln('[boot] Square env=${cfg.squareEnvironment} '
-      'appId=${cfg.squareApplicationId} '
-      'locationId=${cfg.squareLocationId} '
-      'apiUrl=${cfg.squareApiUrl}');
 
   final email = EmailService(
     apiKey: cfg.resendApiKey ?? '',
