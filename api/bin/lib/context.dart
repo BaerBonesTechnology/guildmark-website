@@ -2,6 +2,7 @@
 ///
 /// Dart Frog providers attach these to `RequestContext`; route handlers read
 /// them via `context.read<T>()`.
+library;
 
 import 'auth/jwt.dart';
 
@@ -35,4 +36,5 @@ class PartnerPrincipal {
       );
 
   final String partnerId;
-  final Stri
+  final String partnerCode;
+}

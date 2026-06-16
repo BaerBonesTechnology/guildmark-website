@@ -1,5 +1,6 @@
 /// Listings data-access. The marketplace browse, seller listings, and
 /// AMPS quick-list flows all hit through here.
+library;
 
 
 import '../db/pool.dart';
@@ -318,4 +319,10 @@ class ListingRepo {
   /// Thresholds are deliberately conservative — a 20% premium over FMV counts
   /// as overpriced. Adjust if market data suggests otherwise.
   static String _valuationFlag(double listedPrice, double? fmv) {
-    if (fmv == null || fmv <= 0) return 'insuffici
+    if (fmv == null || fmv <= 0) return 'insufficient_data';
+    final ratio = listedPrice / fmv;
+    if (ratio >= 1.20)  return 'seller_overpriced';
+    if (ratio <= 0.60)  return 'distressed';
+    return 'standard';
+  }
+}

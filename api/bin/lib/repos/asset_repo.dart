@@ -1,4 +1,5 @@
 /// Assets data-access. Handles both manual entries and MDM-synced records.
+library;
 
 import '../db/pool.dart';
 import '../models/asset.dart';
@@ -152,4 +153,9 @@ class AssetRepo {
   Future<Asset?> findById({required String id, required String companyId}) async {
     final result = await _db.query(
       'SELECT $_cols FROM assets WHERE id = @id AND company_id = @cid LIMIT 1',
-      parameters: {'id': id, 'cid': companyId}
+      parameters: {'id': id, 'cid': companyId},
+    );
+    if (result.isEmpty) return null;
+    return Asset.fromRow(result.first.toColumnMap());
+  }
+}

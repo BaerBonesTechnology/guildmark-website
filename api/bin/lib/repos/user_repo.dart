@@ -1,4 +1,5 @@
 /// Data-access for users + companies + refresh tokens.
+library;
 
 import 'dart:convert';
 
@@ -204,4 +205,10 @@ class UserRepo {
     fullName:           row['full_name'].toString(),
     role:               row['role'].toString(),
     companyName:        row['company_name'].toString(),
- 
+    subscriptionPlan:   row['subscription_plan']?.toString()   ?? 'free',
+    subscriptionStatus: row['subscription_status']?.toString() ?? 'active',
+  );
+
+  static String _hash(String plaintext) =>
+      sha256.convert(utf8.encode(plaintext)).toString();
+}

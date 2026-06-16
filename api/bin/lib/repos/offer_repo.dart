@@ -1,4 +1,5 @@
 /// Buyer offers data-access. Covers both buyer-create and seller-respond.
+library;
 
 import 'package:postgres/postgres.dart';
 
@@ -146,4 +147,9 @@ class OfferRepo {
           'oid': offerId,
           'status': newStatus,
           'counterPrice': counterPrice,
-    
+        },
+      );
+      return BuyerOffer.fromRow(result.first.toColumnMap());
+    });
+  }
+}

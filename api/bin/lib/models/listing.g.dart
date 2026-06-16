@@ -101,7 +101,7 @@ _$MarketplaceListingImpl _$$MarketplaceListingImplFromJson(
       cpuScore: (json['cpu_score'] as num?)?.toDouble(),
       ramGb: (json['ram_gb'] as num?)?.toDouble(),
       storageGb: (json['storage_gb'] as num?)?.toDouble(),
-      sellerName:     json['seller_name']     as String?,
+      sellerName: json['seller_name'] as String?,
       sellerIndustry: json['seller_industry'] as String?,
       sellerSizeBand: json['seller_size_band'] as String?,
     );
@@ -139,7 +139,7 @@ Map<String, dynamic> _$$MarketplaceListingImplToJson(
       if (instance.cpuScore case final value?) 'cpu_score': value,
       if (instance.ramGb case final value?) 'ram_gb': value,
       if (instance.storageGb case final value?) 'storage_gb': value,
-      if (instance.sellerName     case final value?) 'seller_name':     value,
+      if (instance.sellerName case final value?) 'seller_name': value,
       if (instance.sellerIndustry case final value?) 'seller_industry': value,
       if (instance.sellerSizeBand case final value?) 'seller_size_band': value,
     };

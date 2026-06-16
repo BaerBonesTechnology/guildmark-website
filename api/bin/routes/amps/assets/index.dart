@@ -2,6 +2,7 @@
 ///
 /// Query params: asset_type, condition_grade, search, filter (e.g. "aging"),
 ///               page, page_size.
+library;
 
 import 'package:dart_frog/dart_frog.dart';
 
@@ -31,4 +32,5 @@ Future<Response> onRequest(RequestContext context) async {
     companyId: auth.companyId,
     filters:   filters,
   );
-  return Response.j
+  return Response.json(body: result.toJson((a) => a.toJson()));
+}

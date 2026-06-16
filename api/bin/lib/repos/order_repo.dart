@@ -2,6 +2,7 @@
 ///
 /// An order is created from an accepted buyer_offer. It holds the escrow
 /// transaction ID and FedEx tracking number alongside financial snapshots.
+library;
 
 import 'package:postgres/postgres.dart';
 
@@ -521,4 +522,47 @@ class OrderRepo {
           status             = 'delivered'
       WHERE id = @id AND status = 'shipped'
       ''',
-      para
+      parameters: {
+        'id':         id,
+        'delivered':  deliveredAt,
+        'inspection': inspectionEndsAt,
+      },
+    );
+    return findById(id);
+  }
+
+  /// Buyer confirms receipt — escrow acceptance should follow immediately.
+  Future<Order?> markComplete(String id, String buyerCompanyId) async {
+    final rows = await _db.query(
+      '''
+      UPDATE orders
+      SET status       = 'complete',
+          completed_at = now()
+      WHERE id = @id
+        AND buyer_company_id = @buyer
+        AND status IN ('delivered', 'inspecting')
+      RETURNING id
+      ''',
+      parameters: {'id': id, 'buyer': buyerCompanyId},
+    );
+    if (rows.isEmpty) return null;
+    return findById(id);
+  }
+
+  /// Escalate to disputed status.
+  Future<Order?> markDisputed(String id) async {
+    await _db.query(
+      "UPDATE orders SET status = 'disputed' WHERE id = @id",
+      parameters: {'id': id},
+    );
+    return findById(id);
+  }
+
+  /// Sync the latest escrow status from Escrow.com.
+  Future<void> updateEscrowStatus(String id, String escrowStatus) async {
+    await _db.query(
+      'UPDATE orders SET escrow_status = @s WHERE id = @id',
+      parameters: {'id': id, 's': escrowStatus},
+    );
+  }
+}

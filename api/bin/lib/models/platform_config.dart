@@ -52,4 +52,6 @@ class PlatformConfig {
     'starter' => sellerFeeStarter,
     'growth'  => sellerFeeGrowth,
     'pro'     => sellerFeePro,
-  
+    _         => sellerFeeFree,
+  };
+}

@@ -3,6 +3,7 @@
 /// Every company has exactly one subscription row (created at signup, free by
 /// default). The plan determines AMPS feature access and the seller-side
 /// marketplace fee applied at order creation.
+library;
 
 import '../db/pool.dart';
 
@@ -171,4 +172,8 @@ class SubscriptionRepo {
   /// Mark a subscription as past_due (called from Square webhook on payment failure).
   Future<void> markPastDue(String companyId) async {
     await _db.query(
-      
+      "UPDATE subscriptions SET status = 'past_due' WHERE company_id = @cid",
+      parameters: {'cid': companyId},
+    );
+  }
+}

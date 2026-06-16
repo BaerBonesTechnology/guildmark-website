@@ -1,5 +1,6 @@
 /// Portfolio aggregate models — mirror `PortfolioSummary` and
 /// `ValuationSnapshot` in types.ts.
+library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -59,4 +60,6 @@ class PortfolioSummary with _$PortfolioSummary {
     required List<ValuationSnapshot>      trend,
   }) = _PortfolioSummary;
 
-  fa
+  factory PortfolioSummary.fromJson(Map<String, dynamic> json) =>
+      _$PortfolioSummaryFromJson(json);
+}

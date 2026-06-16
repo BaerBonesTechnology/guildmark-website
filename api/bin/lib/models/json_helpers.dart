@@ -1,3 +1,12 @@
+/// JSON conversion helpers for freezed/json_serializable models.
+///
+/// Two date converters because the API talks two flavors of date:
+///   - timestamps (ISO 8601 with time + zone) for created_at, last_sync_at, etc.
+///   - dates only (YYYY-MM-DD) for purchase_date, invoice_date.
+///
+/// Apply with `@IsoDateTimeConverter()` or `@DateOnlyConverter()` on a field.
+library;
+
 import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -84,4 +93,6 @@ String enumStr(Object? v) {
 String? enumStrOrNull(Object? v) {
   if (v == null) return null;
   if (v is String) return v;
-  if (v is Undeco
+  if (v is UndecodedBytes) return utf8.decode(v.bytes);
+  throw ArgumentError('Cannot convert $v to enum string');
+}

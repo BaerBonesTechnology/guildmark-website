@@ -3,14 +3,15 @@
 /// Note: this is the public-facing User. The internal `UserRecord` in
 /// `lib/repos/user_repo.dart` carries password_hash and a few other fields
 /// that should never leave the server.
+library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
 
-@freezed
-abstract class User with _$User {
+@Freezed()
+class User with _$User {
   const factory User({
     required String id,
     required String name,
@@ -36,4 +37,7 @@ abstract class User with _$User {
 
   factory User.empty() => const User(
         id: '',
-  
+        name: '',
+        email: '',
+      );
+}

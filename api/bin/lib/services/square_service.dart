@@ -5,6 +5,7 @@
 /// (cents for USD).
 ///
 /// Docs: https://developer.squareup.com/reference/square/payments-api
+library;
 
 import 'dart:convert';
 import 'dart:io';
@@ -378,4 +379,22 @@ class SquareBillingAddress {
   final String  postalCode;
   final String  country;
 
-  Map<String, dynami
+  Map<String, dynamic> toJson() => {
+        'address_line_1':                 addressLine1,
+        if (addressLine2 != null)
+          'address_line_2':               addressLine2,
+        'locality':                       city,
+        'administrative_district_level_1': state,
+        'postal_code':                    postalCode,
+        'country':                        country,
+      };
+}
+
+class SquareException implements Exception {
+  SquareException(this.statusCode, this.detail);
+  final int statusCode;
+  final String detail;
+
+  @override
+  String toString() => 'SquareException($statusCode): $detail';
+}

@@ -15,8 +15,7 @@ export function Landing() {
           </div>
 
           <h1 className="text-6xl font-sans tracking-tight">
-            Turn Idle Hardware Into
-            <span className="block text-primary mt-2">Liquid Capital</span>
+            Turn Idle Hardware Into Liquid Capital
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-sans">

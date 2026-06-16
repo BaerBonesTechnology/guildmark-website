@@ -1,4 +1,5 @@
 /// Data access for the platform_config singleton row.
+library;
 
 import '../db/pool.dart';
 import '../models/platform_config.dart';
@@ -44,4 +45,16 @@ class ConfigRepo {
       parameters: {
         'sellerFeeFree':    sellerFeeFree,
         'sellerFeeStarter': sellerFeeStarter,
-        'sellerFeeGrowth':  sellerFe
+        'sellerFeeGrowth':  sellerFeeGrowth,
+        'sellerFeePro':     sellerFeePro,
+        'buyerFee':         buyerFee,
+        'deferralFee':      deferralFee,
+        'dataWipePrice':    dataWipePrice,
+        'updatedBy':        updatedBy,
+      },
+    );
+
+    print('Updated platform_config: ${rows.first.toColumnMap()}');
+    return PlatformConfig.fromRow(rows.first.toColumnMap());
+  }
+}
