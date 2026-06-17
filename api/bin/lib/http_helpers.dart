@@ -1,4 +1,3 @@
-/// Shared response helpers — keeps error JSON consistent across routes.
 import 'package:dart_frog/dart_frog.dart';
 
 Response jsonError(int status, String code, String message) {
@@ -23,7 +22,4 @@ Response notFound([String message = 'Not found']) =>
 Response serverError([String message = 'Internal server error']) =>
     jsonError(500, 'INTERNAL', message);
 
-/// 501 Not Implemented — used by routes whose repo/integration isn't wired
-/// up yet. Returning this (instead of a fake 200) means the frontend
-/// surfaces the gap immediately during development.
 Response notImplemented(String hint) => jsonError(501, 'NOT_IMPLEMENTED', hint);

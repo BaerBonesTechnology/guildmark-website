@@ -3,6 +3,9 @@ import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { GMNavbar } from "./widgets/NavigationBar";
 import { GMFooter } from "./widgets/Footer";
+import {isLaunch, isDebug} from "../config.ts";
+
+
 
 // Active: soft primary pill. Inactive: muted text, subtle hover.
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -33,12 +36,15 @@ const SidebarSection = ({ label }: { label: string }) => (
 );
 
 export function Layout() {
+
+  const isHeroPage = useLocation().pathname === "/pre/";
+  
  return( 
         <div className="min-h-screen bg-background text-foreground">
           
     <GMNavbar />
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 pt-6 pb-16">
+      <main className={`max-w-screen mx-auto overflow-hidden font-sans ${isHeroPage ? "" : "p-4"}`}>
         <Outlet />
       </main>
       <GMFooter/>

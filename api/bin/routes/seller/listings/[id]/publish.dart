@@ -1,5 +1,3 @@
-/// PATCH /seller/listings/:id/publish  — promote a draft to active.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/context.dart';
@@ -15,8 +13,9 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (auth == null) return unauthorized();
 
   try {
-    final listing = await ListingRepo(context.read<Db>())
-        .publish(id: id, companyId: auth.companyId);
+    final listing = await ListingRepo(
+      context.read<Db>(),
+    ).publish(id: id, companyId: auth.companyId);
     return Response.json(body: listing.toJson());
   } on StateError {
     return notFound('Listing $id not found or is not a draft');

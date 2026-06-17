@@ -1,4 +1,4 @@
-import { Outlet, useSearchParams } from "react-router";
+import { Link, Outlet, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Sun, Moon, BookOpen, X } from "lucide-react";
 import { Drawer } from "vaul";
@@ -19,6 +19,8 @@ function InsightsDrawer() {
     }, { replace: true });
   }
 
+
+
   return (
     <Drawer.Root
       open={open}
@@ -38,7 +40,7 @@ function InsightsDrawer() {
           <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-border shrink-0">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-primary" />
-              <span className="text-sm font-mono text-foreground">{t("insights.title")}</span>
+              <span className="text-sm  text-foreground">{t("insights.title")}</span>
             </div>
             <button
               onClick={close}
@@ -102,11 +104,17 @@ export function PreLaunchLayout() {
           </p>
           <button
             onClick={openInsights}
-            className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-1.5 text-xs  text-muted-foreground hover:text-primary transition-colors"
           >
             <BookOpen className="w-3 h-3" />
             {t("footer.marketResearch")}
           </button>
+           <Link
+            to="/pre/"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Interested in seeing our platform? demo it now.
+          </Link>
         </div>
       </footer>
 

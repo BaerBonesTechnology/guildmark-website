@@ -66,7 +66,7 @@ function exportCSV(assets: LocalAsset[]) {
 function SourceBadge({ source }: { source?: string }) {
   if (!source || source === "mdm") return null;
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono ml-1.5 ${
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px]  ml-1.5 ${
       source === "csv"    ? "bg-amps-accent/10 text-amps-accent" :
       source === "manual" ? "bg-warning/10 text-warning" : ""
     }`}>
@@ -122,10 +122,10 @@ export function AssetInventory() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-mono font-semibold mb-2">Asset Inventory</h1>
+          <h1 className="text-3xl  font-semibold mb-2">Asset Inventory</h1>
           <p className="text-muted-foreground text-sm">
             Full catalog of devices with real-time valuations
-            <span className="font-mono ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">
+            <span className=" ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">
               {assets.length} total
             </span>
           </p>
@@ -165,7 +165,7 @@ export function AssetInventory() {
                 placeholder="Search by model..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 font-mono"
+                className="pl-9 "
               />
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -205,7 +205,7 @@ export function AssetInventory() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <p className="text-sm">
-                <span className="font-semibold font-mono">{selectedAssets.length}</span>
+                <span className="font-semibold ">{selectedAssets.length}</span>
                 {" "}asset{selectedAssets.length !== 1 ? "s" : ""} selected
               </p>
               <div className="flex gap-2">
@@ -238,15 +238,15 @@ export function AssetInventory() {
                     className="rounded border-border"
                   />
                 </TableHead>
-                <TableHead className="font-mono">Model</TableHead>
-                <TableHead className="font-mono">Type</TableHead>
-                <TableHead className="font-mono text-center">Grade</TableHead>
-                <TableHead className="font-mono text-right">Age (mo)</TableHead>
-                <TableHead className="font-mono text-right">Fair market value</TableHead>
-                <TableHead className="font-mono text-right">Book value</TableHead>
-                <TableHead className="font-mono text-right">Depreciation</TableHead>
-                <TableHead className="font-mono">Status</TableHead>
-                <TableHead className="font-mono">Last sync</TableHead>
+                <TableHead className="">Model</TableHead>
+                <TableHead className="">Type</TableHead>
+                <TableHead className=" text-center">Grade</TableHead>
+                <TableHead className=" text-right">Age (mo)</TableHead>
+                <TableHead className=" text-right">Fair market value</TableHead>
+                <TableHead className=" text-right">Book value</TableHead>
+                <TableHead className=" text-right">Depreciation</TableHead>
+                <TableHead className="">Status</TableHead>
+                <TableHead className="">Last sync</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -269,12 +269,12 @@ export function AssetInventory() {
                       />
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono font-medium">{asset.model}</span>
+                      <span className=" font-medium">{asset.model}</span>
                       <SourceBadge source={asset.source} />
                     </TableCell>
-                    <TableCell className="font-mono text-muted-foreground">{asset.type}</TableCell>
+                    <TableCell className=" text-muted-foreground">{asset.type}</TableCell>
                     <TableCell className="text-center">
-                      <span className={`inline-flex items-center justify-center w-8 h-6 rounded font-mono text-xs font-semibold ${
+                      <span className={`inline-flex items-center justify-center w-8 h-6 rounded  text-xs font-semibold ${
                         asset.condition === "A"
                           ? "bg-grade-a-subtle text-grade-a-text"
                           : asset.condition === "B"
@@ -284,14 +284,14 @@ export function AssetInventory() {
                         {asset.condition}
                       </span>
                     </TableCell>
-                    <TableCell className="font-mono text-right">{asset.age}</TableCell>
-                    <TableCell className="font-mono text-right font-medium">
+                    <TableCell className=" text-right">{asset.age}</TableCell>
+                    <TableCell className=" text-right font-medium">
                       ${asset.fairMarketValue.toLocaleString()}
                     </TableCell>
-                    <TableCell className="font-mono text-right text-muted-foreground">
+                    <TableCell className=" text-right text-muted-foreground">
                       ${asset.bookValue.toLocaleString()}
                     </TableCell>
-                    <TableCell className="font-mono text-right">
+                    <TableCell className=" text-right">
                       <span className={
                         asset.depreciation < 20 ? "text-success" :
                         asset.depreciation < 30 ? "text-warning" : "text-danger"
@@ -300,7 +300,7 @@ export function AssetInventory() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-mono ${
+                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs  ${
                         asset.status === "Active"
                           ? "bg-success/10 text-success"
                           : "bg-warning/10 text-warning"
@@ -308,7 +308,7 @@ export function AssetInventory() {
                         {asset.status}
                       </span>
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
+                    <TableCell className=" text-xs text-muted-foreground">
                       {asset.lastSync}
                     </TableCell>
                     <TableCell>
@@ -327,7 +327,7 @@ export function AssetInventory() {
       </Card>
 
       {/* Footer */}
-      <p className="text-center text-sm text-muted-foreground font-mono">
+      <p className="text-center text-sm text-muted-foreground ">
         Showing {filteredAssets.length} of {assets.length} assets
       </p>
 

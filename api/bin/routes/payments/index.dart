@@ -1,14 +1,3 @@
-/// POST /payments
-///
-/// Creates a Square payment from a Web Payments SDK nonce.
-/// Auth required — only registered users can initiate payments.
-///
-/// Body:
-///   source_id     string  — Square payment nonce from frontend SDK
-///   amount_cents  int     — amount in USD cents
-///   note          string? — optional description
-///   reference_id  string? — your internal order/transaction ID
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/context.dart';
@@ -42,11 +31,11 @@ Future<Response> onRequest(RequestContext context) async {
 
   try {
     final result = await context.read<SquareService?>()!.createPayment(
-          sourceId: sourceId,
-          amountCents: amountCents,
-          note: body?['note'] as String?,
-          referenceId: body?['reference_id'] as String?,
-        );
+      sourceId: sourceId,
+      amountCents: amountCents,
+      note: body?['note'] as String?,
+      referenceId: body?['reference_id'] as String?,
+    );
     return Response.json(body: result.toJson());
   } on SquareException catch (e) {
     return jsonError(502, 'PAYMENT_FAILED', e.detail);

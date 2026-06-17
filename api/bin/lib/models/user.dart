@@ -1,9 +1,3 @@
-/// User model — minimal shape for client-facing user data.
-///
-/// Note: this is the public-facing User. The internal `UserRecord` in
-/// `lib/repos/user_repo.dart` carries password_hash and a few other fields
-/// that should never leave the server.
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'user.freezed.dart';
@@ -22,18 +16,24 @@ abstract class User with _$User {
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
   factory User.fromRow(Map<String, dynamic> row) => User(
-        id: row['id'] as String,
-        name: row['name'] as String,
-        email: row['email'] as String,
-        companyIds: (row['company_ids'] as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            [],
-        companyRoles: (row['company_roles'] as Map<String, dynamic>?)
-                ?.map((k, v) => MapEntry(k, v as String)) ??
-            {},
-      );
+    id: row['id'] as String,
+    name: row['name'] as String,
+    email: row['email'] as String,
+    companyIds:
+        (row['company_ids'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        [],
+    companyRoles:
+        (row['company_roles'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(k, v as String),
+        ) ??
+        {},
+  );
 
   factory User.empty() => const User(
-        id: '',
-  
+    id: '',
+    name: '',
+    email: '',
+  );
+}

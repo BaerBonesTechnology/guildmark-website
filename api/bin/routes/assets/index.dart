@@ -1,5 +1,3 @@
-/// GET /assets — manual + MDM-imported assets for the auth'd company.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/context.dart';
@@ -14,6 +12,8 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final assets = await AssetRepo(context.read<Db>()).findByCompany(auth.companyId);
+  final assets = await AssetRepo(
+    context.read<Db>(),
+  ).findByCompany(auth.companyId);
   return Response.json(body: assets.map((a) => a.toJson()).toList());
 }

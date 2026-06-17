@@ -1,9 +1,3 @@
-/// GET /amps/portfolio
-///
-/// Aggregates the AMPS dashboard hero stats + N-month trend for a company.
-/// Trend data is sourced from pre-aggregated `valuation_snapshots` rows; hero
-/// stats are computed live from the `assets` table.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/context.dart';
@@ -18,11 +12,11 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final q            = context.request.uri.queryParameters;
-  final trendMonths  = int.tryParse(q['trend_months'] ?? '12') ?? 12;
+  final q = context.request.uri.queryParameters;
+  final trendMonths = int.tryParse(q['trend_months'] ?? '12') ?? 12;
 
   final summary = await PortfolioRepo(context.read<Db>()).summarize(
-    companyId:   auth.companyId,
+    companyId: auth.companyId,
     trendMonths: trendMonths.clamp(1, 36),
   );
   return Response.json(body: summary.toJson());

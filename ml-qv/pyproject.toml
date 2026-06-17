@@ -1,7 +1,7 @@
 [project]
-name            = "astech-ml"
+name            = "guildmark-ml"
 version         = "0.1.0"
-description     = "AsTech ML inference service — fair market value + depreciation forecasting."
+description     = "GuildMark ML inference service — fair market value + depreciation forecasting."
 requires-python = ">=3.11"
 
 [tool.ruff]

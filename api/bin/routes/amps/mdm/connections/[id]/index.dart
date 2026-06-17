@@ -1,8 +1,3 @@
-/// DELETE /amps/mdm/connections/:id — disconnect an MDM source.
-///
-/// TODO: Revoke OAuth tokens / API keys upstream before deleting the row so
-/// the credentials don't remain valid after the user disconnects.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../../lib/context.dart';

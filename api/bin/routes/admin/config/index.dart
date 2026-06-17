@@ -1,8 +1,3 @@
-/// GET|PUT /admin/config
-///
-/// Returns or replaces the platform-wide fee configuration.
-/// Requires an admin JWT (role = 'admin').
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -35,38 +30,54 @@ Future<Response> onRequest(RequestContext context) async {
 
       // Validate all required fields are present.
       final required = [
-        'seller_fee_free', 'seller_fee_starter', 'seller_fee_growth',
-        'seller_fee_pro', 'buyer_fee', 'deferral_fee', 'data_wipe_price',
+        'seller_fee_free',
+        'seller_fee_starter',
+        'seller_fee_growth',
+        'seller_fee_pro',
+        'buyer_fee',
+        'deferral_fee',
+        'data_wipe_price',
       ];
       for (final k in required) {
         if (body[k] == null) return badRequest('Missing field: $k');
       }
 
-      final sellerFeeFree    = parse('seller_fee_free')!;
+      final sellerFeeFree = parse('seller_fee_free')!;
       final sellerFeeStarter = parse('seller_fee_starter')!;
-      final sellerFeeGrowth  = parse('seller_fee_growth')!;
-      final sellerFeePro     = parse('seller_fee_pro')!;
-      final buyerFee         = parse('buyer_fee')!;
-      final deferralFee      = parse('deferral_fee')!;
-      final dataWipePrice    = parse('data_wipe_price')!;
+      final sellerFeeGrowth = parse('seller_fee_growth')!;
+      final sellerFeePro = parse('seller_fee_pro')!;
+      final buyerFee = parse('buyer_fee')!;
+      final deferralFee = parse('deferral_fee')!;
+      final dataWipePrice = parse('data_wipe_price')!;
 
       // Guard against obviously wrong values.
-      for (final v in [sellerFeeFree, sellerFeeStarter, sellerFeeGrowth, sellerFeePro, buyerFee, deferralFee]) {
-        if (v < 0 || v > 1) return badRequest('Fee rates must be between 0 and 1 (e.g. 0.08 for 8%)');
+      for (final v in [
+        sellerFeeFree,
+        sellerFeeStarter,
+        sellerFeeGrowth,
+        sellerFeePro,
+        buyerFee,
+        deferralFee,
+      ]) {
+        if (v < 0 || v > 1)
+          return badRequest(
+            'Fee rates must be between 0 and 1 (e.g. 0.08 for 8%)',
+          );
       }
-      if (dataWipePrice < 0) return badRequest('data_wipe_price must be non-negative');
+      if (dataWipePrice < 0)
+        return badRequest('data_wipe_price must be non-negative');
 
       final updatedBy = (body['updated_by'] as String?)?.trim();
 
       final updated = await repo.update(
-        sellerFeeFree:    sellerFeeFree,
+        sellerFeeFree: sellerFeeFree,
         sellerFeeStarter: sellerFeeStarter,
-        sellerFeeGrowth:  sellerFeeGrowth,
-        sellerFeePro:     sellerFeePro,
-        buyerFee:         buyerFee,
-        deferralFee:      deferralFee,
-        dataWipePrice:    dataWipePrice,
-        updatedBy:        updatedBy,
+        sellerFeeGrowth: sellerFeeGrowth,
+        sellerFeePro: sellerFeePro,
+        buyerFee: buyerFee,
+        deferralFee: deferralFee,
+        dataWipePrice: dataWipePrice,
+        updatedBy: updatedBy,
       );
 
       return Response.json(body: updated.toJson());

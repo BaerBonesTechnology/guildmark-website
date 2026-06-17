@@ -1,11 +1,3 @@
-/// Lightweight migration runner — applies every `*.sql` file in the
-/// `migrations/` directory in lexicographic order, tracking applied
-/// versions in a `schema_migrations` table.
-///
-/// Deliberately minimal: no down-migrations, no transactions across files,
-/// no checksums. Good enough for boot-time application; for anything more
-/// complex use sqitch or a dedicated tool.
-
 import 'dart:io';
 
 import 'package:postgres/postgres.dart';
@@ -14,12 +6,11 @@ import 'pool.dart';
 
 class MigrationRunner {
   MigrationRunner(this._db, {String migrationsDir = '../migrations'})
-      : _migrationsDir = migrationsDir;
+    : _migrationsDir = migrationsDir;
 
   final Db _db;
   final String _migrationsDir;
 
-  /// Apply any unapplied migrations. Idempotent — safe to call on every boot.
   Future<int> run() async {
     await _db.rawExecute('''
       CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -29,8 +20,9 @@ class MigrationRunner {
     ''');
 
     final applied = await _appliedVersions();
-    final pending =
-        _pendingFiles().where((f) => !applied.contains(_versionOf(f))).toList();
+    final pending = _pendingFiles()
+        .where((f) => !applied.contains(_versionOf(f)))
+        .toList();
 
     for (final file in pending) {
       final version = _versionOf(file);
@@ -62,25 +54,16 @@ class MigrationRunner {
   List<File> _pendingFiles() {
     final dir = Directory(_migrationsDir);
     if (!dir.existsSync()) return const [];
-    final files = dir
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.sql'))
-        .toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final files =
+        dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.sql'))
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
     return files;
   }
 
-  /// Splits a SQL script into individual executable statements.
-  ///
-  /// A naive `.split(';')` breaks on semicolons inside plpgsql function bodies
-  /// (dollar-quoted with `$$...$$`) and string literals.  This parser tracks
-  /// those contexts so only top-level semicolons are treated as separators.
-  ///
-  /// Handles:
-  ///   - Dollar-quoted blocks  $$...$$   (semicolons inside are not separators)
-  ///   - Single-quoted strings '...'     ('' escape supported)
-  ///   - Line comments         --        (stripped when testing for emptiness)
   static List<String> _splitStatements(String sql) {
     final statements = <String>[];
     final buf = StringBuffer();
@@ -164,7 +147,6 @@ class MigrationRunner {
     return statements;
   }
 
-  /// Returns true if [stmt] contains SQL beyond line comments.
   static bool _isMeaningful(String stmt) {
     if (stmt.isEmpty) return false;
     return stmt
@@ -173,4 +155,8 @@ class MigrationRunner {
         .isNotEmpty;
   }
 
-  /// Extract the version prefix — for `0001_
+  String _versionOf(File f) {
+    final name = f.uri.pathSegments.last;
+    return name.replaceAll('.sql', '');
+  }
+}

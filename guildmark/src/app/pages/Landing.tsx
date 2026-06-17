@@ -2,43 +2,63 @@ import { Link } from "react-router";
 import { TrendingUp, Shield, Zap, Users, ArrowRight, CheckCircle2, Cloud, FileText, Sparkles } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import React, {useState } from 'react';
+import {motion } from 'framer-motion';
+// Hero Images
+import heroImg_Woman from "../../hero-imgs/hero-image-woman.png";
+import heroImg_ServerRoom from "../../hero-imgs/hero-image-server-rrom.png";
+import heroImg_Floor from "../../hero-imgs/hero-image-floor.png";
 
 export function Landing() {
-  return (
-    <div className="space-y-24 pb-20">
-      {/* Hero Section */}
-      <section className="pt-12 pb-16">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm font-sans text-primary">B2B Asset Trading Platform</span>
-          </div>
+const [isLoaded, setIsLoaded] = useState(false);
 
-          <h1 className="text-6xl font-sans tracking-tight">
-            Turn Idle Hardware Into
-            <span className="block text-primary mt-2">Liquid Capital</span>
+const LayeredFadeImage = ({ src, alt, layer, className }: { src: string; alt: string; layer: number; className?: string }) => {
+  return (
+    <motion.img
+      src={src}
+      alt={alt}
+      className={`transform transition-transform duration-3000 ${isLoaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"} z-${layer} absolute -left-8 w-1/2 h-screen object-cover ${className}`}
+      initial={{ opacity: 0, x: -32 }}
+      animate={isLoaded ? { opacity: 1, x: 0 } : { opacity: 0, x: -32 }}
+      onLoad={() => setIsLoaded(true)}
+    />
+  );
+};
+
+  return (
+    <div className="flex flex-row h-screen overflow-y-clip">
+      {/* Hero Section */}
+      <section className="w-1/2 h-screen bg-primary/10 flex items-center p-12">
+        <div className="absolute inset-0 pointer-events-none top-20">
+          <LayeredFadeImage src={heroImg_Woman} alt="Hero Image Woman" layer={1}  />
+          <LayeredFadeImage src={heroImg_ServerRoom} alt="Hero Image Server Room" layer={2} />
+          <LayeredFadeImage src={heroImg_Floor} alt="Hero Image Floor" layer={3} />
+        </div>
+        <div className="max-w-4xl mx-auto text-center space-y-8 z-10 text-white">
+
+          <h1 className="text-8xl font-sans tracking-tight font-semibold">
+            Find What Your <br/> Business Needs
           </h1>
 
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-sans">
-            The financial terminal for IT asset management. Track depreciation, predict value cliffs,
-            and trade hardware on the B2B marketplace—all in real-time.
+          <p className="text-xl text-white max-w-2xl mx-auto font-sans">
+            Procurement Simplified. Buy, Sell, and Manage Your IT Assets Effortlessly.
           </p>
 
           <div className="flex gap-4 justify-center pt-4">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white font-sans">
-              <Link to="/signup">
+              <Link to="/pre/signup">
                 Start Free Forever
                 <ArrowRight />
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="font-sans">
-              <Link to="/marketplace">
+              <Link to="/pre/marketplace">
                 Browse Marketplace
               </Link>
             </Button>
           </div>
 
-          <div className="pt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground font-sans">
+          {/* <div className="pt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground font-sans">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>3,240+ Assets Listed</span>
@@ -51,10 +71,11 @@ export function Landing() {
               <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>NIST Certified</span>
             </div>
-          </div>
-        </div>
+          </div>*/}
+        </div> 
       </section>
 
+      <div className="w-1/2 h-full flex flex-col overflow-y-auto py-8 mx-8 space-y-8 pb-25">
       {/* Features Grid */}
       <section className="space-y-8">
         <div className="text-center space-y-4">
@@ -139,8 +160,7 @@ export function Landing() {
               </p>
             </CardContent>
           </Card>
-        </div>
-      </section>
+        </div>    </section>
 
       {/* How It Works */}
       <section className="space-y-8">
@@ -151,9 +171,6 @@ export function Landing() {
 
         <div className="grid grid-cols-3 gap-8">
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-sans text-xl">
-              1
-            </div>
             <Card className="font-sans pt-8">
               <CardContent className="space-y-3">
                 <h3 className="text-lg">Upload Your Inventory</h3>
@@ -166,9 +183,6 @@ export function Landing() {
           </div>
 
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-sans text-xl">
-              2
-            </div>
             <Card className="font-sans pt-8">
               <CardContent className="space-y-3">
                 <h3 className="text-lg">Choose Your Path</h3>
@@ -181,9 +195,6 @@ export function Landing() {
           </div>
 
           <div className="relative">
-            <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-sans text-xl">
-              3
-            </div>
             <Card className="font-sans pt-8">
               <CardContent className="space-y-3">
                 <h3 className="text-lg">Get Paid Fast</h3>
@@ -198,7 +209,7 @@ export function Landing() {
 
         <div className="text-center pt-4">
           <Button asChild variant="outline" size="lg" className="font-sans">
-            <Link to="/how-it-works">
+            <Link to="/pre/how-it-works">
               View Detailed Workflows
               <ArrowRight />
             </Link>
@@ -266,7 +277,7 @@ export function Landing() {
 
           <div className="text-center">
             <Button asChild size="lg" className="bg-gradient-to-r from-amps-accent to-amps-highlight hover:from-amps-accent/90 hover:to-amps-highlight/90 text-white font-sans">
-              <Link to="/signup">
+              <Link to="/pre/signup">
                 Start GM Pro Trial
                 <Sparkles className="w-4 h-4" />
               </Link>
@@ -286,18 +297,20 @@ export function Landing() {
         </p>
         <div className="flex gap-3 justify-center">
           <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white font-sans">
-            <Link to="/signup">
+            <Link to="/pre/signup">
               Get Started Free
               <ArrowRight />
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="font-sans">
-            <Link to="/login">
+            <Link to="/pre/login">
               Sign In
             </Link>
           </Button>
         </div>
       </section>
+
+      </div>
     </div>
   );
 }

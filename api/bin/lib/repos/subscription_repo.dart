@@ -1,28 +1,18 @@
-/// Subscription tier management.
-///
-/// Every company has exactly one subscription row (created at signup, free by
-/// default). The plan determines AMPS feature access and the seller-side
-/// marketplace fee applied at order creation.
-
 import '../db/pool.dart';
 
 // ---------------------------------------------------------------------------
 // Constants — fee rates by plan
 // ---------------------------------------------------------------------------
 
-/// Returns the seller-side fee percentage (0–1) for a given plan string.
-/// Defaults to the free tier rate if the plan is unrecognised.
 double sellerFeePct(String plan) => switch (plan) {
-      'pro'     => 0.03,
-      'growth'  => 0.05,
-      'starter' => 0.06,
-      _         => 0.08, // free
-    };
+  'pro' => 0.03,
+  'growth' => 0.05,
+  'starter' => 0.06,
+  _ => 0.08, // free
+};
 
-/// Buyer-side fee — flat across all tiers.
 const double kBuyerFeePct = 0.03;
 
-/// Net 30/60 deferral fee — flat across all tiers.
 const double kDeferralFeePct = 0.013;
 
 // ---------------------------------------------------------------------------
@@ -45,8 +35,9 @@ class Subscription {
 
   final String id;
   final String companyId;
-  final String plan;   // subscription_plan enum: free | starter | growth | pro
-  final String status; // subscription_status enum: active | cancelled | past_due
+  final String plan; // subscription_plan enum: free | starter | growth | pro
+  final String
+  status; // subscription_status enum: active | cancelled | past_due
   final String? squareSubscriptionId;
   final DateTime? currentPeriodStart;
   final DateTime? currentPeriodEnd;
@@ -56,28 +47,27 @@ class Subscription {
 
   bool get isActive => status == 'active';
 
-  /// Seller-side fee percentage for this plan.
   double get sellerFeeRate => sellerFeePct(plan);
 
   factory Subscription.fromRow(Map<String, dynamic> row) => Subscription(
-        id:                   row['id'].toString(),
-        companyId:            row['company_id'].toString(),
-        plan:                 row['plan'].toString(),
-        status:               row['status'].toString(),
-        squareSubscriptionId: row['square_subscription_id']?.toString(),
-        currentPeriodStart:   row['current_period_start'] as DateTime?,
-        currentPeriodEnd:     row['current_period_end']   as DateTime?,
-        cancelledAt:          row['cancelled_at']         as DateTime?,
-        createdAt:            row['created_at']           as DateTime,
-        updatedAt:            row['updated_at']           as DateTime,
-      );
+    id: row['id'].toString(),
+    companyId: row['company_id'].toString(),
+    plan: row['plan'].toString(),
+    status: row['status'].toString(),
+    squareSubscriptionId: row['square_subscription_id']?.toString(),
+    currentPeriodStart: row['current_period_start'] as DateTime?,
+    currentPeriodEnd: row['current_period_end'] as DateTime?,
+    cancelledAt: row['cancelled_at'] as DateTime?,
+    createdAt: row['created_at'] as DateTime,
+    updatedAt: row['updated_at'] as DateTime,
+  );
 
   Map<String, dynamic> toJson() => {
-        'plan':   plan,
-        'status': status,
-        'currentPeriodStart': currentPeriodStart?.toIso8601String(),
-        'currentPeriodEnd':   currentPeriodEnd?.toIso8601String(),
-      };
+    'plan': plan,
+    'status': status,
+    'currentPeriodStart': currentPeriodStart?.toIso8601String(),
+    'currentPeriodEnd': currentPeriodEnd?.toIso8601String(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -97,8 +87,6 @@ class SubscriptionRepo {
   SubscriptionRepo(this._db);
   final Db _db;
 
-  /// Create a free subscription for a newly registered company.
-  /// Called from the signup route immediately after the company row is created.
   Future<Subscription> createFree(String companyId) async {
     final rows = await _db.query(
       '''
@@ -111,8 +99,6 @@ class SubscriptionRepo {
     return Subscription.fromRow(rows.first.toColumnMap());
   }
 
-  /// Returns the active subscription for a company, or null if none exists.
-  /// A null result should be treated as free-tier for fee calculation purposes.
   Future<Subscription?> findByCompany(String companyId) async {
     final rows = await _db.query(
       'SELECT $_cols FROM subscriptions WHERE company_id = @cid',
@@ -122,8 +108,6 @@ class SubscriptionRepo {
     return Subscription.fromRow(rows.first.toColumnMap());
   }
 
-  /// Upgrade or downgrade a company's plan.
-  /// [squareSubscriptionId] should be set for any paid plan, null for free.
   Future<Subscription?> updatePlan({
     required String companyId,
     required String plan,
@@ -144,18 +128,17 @@ class SubscriptionRepo {
       RETURNING $_cols
       ''',
       parameters: {
-        'cid':    companyId,
-        'plan':   plan,
-        'sqid':   squareSubscriptionId,
+        'cid': companyId,
+        'plan': plan,
+        'sqid': squareSubscriptionId,
         'pstart': currentPeriodStart,
-        'pend':   currentPeriodEnd,
+        'pend': currentPeriodEnd,
       },
     );
     if (rows.isEmpty) return null;
     return Subscription.fromRow(rows.first.toColumnMap());
   }
 
-  /// Mark a subscription as cancelled.
   Future<void> cancel(String companyId) async {
     await _db.query(
       '''
@@ -168,7 +151,10 @@ class SubscriptionRepo {
     );
   }
 
-  /// Mark a subscription as past_due (called from Square webhook on payment failure).
   Future<void> markPastDue(String companyId) async {
     await _db.query(
-      
+      "UPDATE subscriptions SET status = 'past_due' WHERE company_id = @cid",
+      parameters: {'cid': companyId},
+    );
+  }
+}

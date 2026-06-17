@@ -102,15 +102,15 @@ export function MarketCalculator() {
       {/* Input Rail */}
       <div className="col-span-1 space-y-4">
         <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-6">
-          <h2 className="font-mono text-slate-900 dark:text-slate-100 mb-6">Asset Details</h2>
+          <h2 className=" text-slate-900 dark:text-slate-100 mb-6">Asset Details</h2>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Brand</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Brand</label>
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="apple">Apple</option>
@@ -122,11 +122,11 @@ export function MarketCalculator() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Model</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Model</label>
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="macbook-pro">MacBook Pro 14"</option>
@@ -137,11 +137,11 @@ export function MarketCalculator() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">CPU</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">CPU</label>
               <select
                 value={cpu}
                 onChange={(e) => setCpu(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="m2">Apple M2</option>
@@ -154,11 +154,11 @@ export function MarketCalculator() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">RAM</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">RAM</label>
               <select
                 value={ram}
                 onChange={(e) => setRam(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="8gb">8 GB</option>
@@ -169,11 +169,11 @@ export function MarketCalculator() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Condition</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Condition</label>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               >
                 <option value="">Select...</option>
                 <option value="excellent">Excellent (Grade A)</option>
@@ -183,31 +183,31 @@ export function MarketCalculator() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Age (months)</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Age (months)</label>
               <input
                 type="number"
                 min="0"
                 max="240"
                 value={ageMonths}
                 onChange={(e) => setAgeMonths(parseInt(e.target.value) || 0)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Quantity</label>
+              <label className="block text-xs  text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Quantity</label>
               <input
                 type="number"
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm font-mono text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-sm  text-slate-900 dark:text-slate-200 focus:outline-none focus:border-primary"
               />
             </div>
           </div>
         </div>
 
-        <button className="w-full bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-lg font-mono text-sm transition-colors flex items-center justify-center gap-2">
+        <button className="w-full bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-lg  text-sm transition-colors flex items-center justify-center gap-2">
           <Upload className="w-4 h-4" />
           Bulk Upload (CSV/Excel)
         </button>
@@ -217,19 +217,19 @@ export function MarketCalculator() {
       <div className="col-span-2 space-y-6">
         {!showResults ? (
           <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-12 flex items-center justify-center">
-            <p className="text-slate-400 dark:text-slate-500 font-mono text-sm">Select asset details to view market valuation</p>
+            <p className="text-slate-400 dark:text-slate-500  text-sm">Select asset details to view market valuation</p>
           </div>
         ) : valuation.isPending ? (
           <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-12 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            <p className="text-slate-500 dark:text-slate-400 font-mono text-sm">Estimating market value...</p>
+            <p className="text-slate-500 dark:text-slate-400  text-sm">Estimating market value...</p>
           </div>
         ) : valuation.isError ? (
           <div className="bg-white dark:bg-slate-800/50 border border-amber-300 dark:border-amber-700/50 rounded-lg p-8 flex items-start gap-4">
             <AlertTriangle className="w-6 h-6 text-amber-500 mt-0.5" />
             <div>
-              <p className="font-mono text-slate-900 dark:text-slate-100 mb-1">Valuation service unavailable</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">
+              <p className=" text-slate-900 dark:text-slate-100 mb-1">Valuation service unavailable</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 ">
                 {valuation.error instanceof Error ? valuation.error.message : "Unable to reach the pricing model. Try again shortly."}
               </p>
             </div>
@@ -239,9 +239,9 @@ export function MarketCalculator() {
             <div className="bg-gradient-to-br from-primary/10 to-white dark:to-slate-800/50 border border-primary/30 rounded-lg p-8">
               <div className="flex items-start justify-between mb-8">
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wide">Estimated Net Recovery</p>
-                  <p className="text-5xl font-mono text-primary mt-2">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400  uppercase tracking-wide">Estimated Net Recovery</p>
+                  <p className="text-5xl  text-primary mt-2">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500  mt-2">
                     Model confidence: {(confidence * 100).toFixed(0)}%
                     {valuation.data?.model_version && ` · ${valuation.data.model_version}`}
                   </p>
@@ -251,18 +251,18 @@ export function MarketCalculator() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mb-1">Per Unit (Net)</p>
-                  <p className="text-2xl font-mono text-slate-800 dark:text-slate-200">${(netProfit / quantity).toFixed(2)}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400  mb-1">Per Unit (Net)</p>
+                  <p className="text-2xl  text-slate-800 dark:text-slate-200">${(netProfit / quantity).toFixed(2)}</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mb-1">Total Units</p>
-                  <p className="text-2xl font-mono text-slate-800 dark:text-slate-200">{quantity}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400  mb-1">Total Units</p>
+                  <p className="text-2xl  text-slate-800 dark:text-slate-200">{quantity}</p>
                 </div>
               </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg p-6">
-              <h3 className="font-mono text-slate-900 dark:text-slate-100 mb-6">Transparent Deductions</h3>
+              <h3 className=" text-slate-900 dark:text-slate-100 mb-6">Transparent Deductions</h3>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700/50">
@@ -271,11 +271,11 @@ export function MarketCalculator() {
                       <DollarSign className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-mono text-slate-800 dark:text-slate-200">Fair Market Value</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">${fmvPerUnit.toFixed(2)} × {quantity} unit{quantity === 1 ? "" : "s"}</p>
+                      <p className="text-sm  text-slate-800 dark:text-slate-200">Fair Market Value</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 ">${fmvPerUnit.toFixed(2)} × {quantity} unit{quantity === 1 ? "" : "s"}</p>
                     </div>
                   </div>
-                  <p className="text-lg font-mono text-primary">+${estimatedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className="text-lg  text-primary">+${estimatedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
 
                 <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700/50">
@@ -284,11 +284,11 @@ export function MarketCalculator() {
                       <Truck className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-mono text-slate-800 dark:text-slate-200">Estimated Shipping</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Prepaid labels included</p>
+                      <p className="text-sm  text-slate-800 dark:text-slate-200">Estimated Shipping</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 ">Prepaid labels included</p>
                     </div>
                   </div>
-                  <p className="text-lg font-mono text-slate-600 dark:text-slate-400">-${shipping.toLocaleString()}</p>
+                  <p className="text-lg  text-slate-600 dark:text-slate-400">-${shipping.toLocaleString()}</p>
                 </div>
 
                 <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700/50">
@@ -298,8 +298,8 @@ export function MarketCalculator() {
                     </div>
                     <div className="flex-1 flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-mono text-slate-800 dark:text-slate-200">Data Wipe Service</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">NIST 800-88 certified (optional)</p>
+                        <p className="text-sm  text-slate-800 dark:text-slate-200">Data Wipe Service</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 ">NIST 800-88 certified (optional)</p>
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer mr-4">
                         <input
@@ -311,7 +311,7 @@ export function MarketCalculator() {
                       </label>
                     </div>
                   </div>
-                  <p className="text-lg font-mono text-slate-600 dark:text-slate-400">
+                  <p className="text-lg  text-slate-600 dark:text-slate-400">
                     {includeDataWipe ? `-$${dataWipe.toLocaleString()}` : "$0"}
                   </p>
                 </div>
@@ -322,16 +322,16 @@ export function MarketCalculator() {
                       <Percent className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-mono text-slate-800 dark:text-slate-200">Platform Fee</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{(PLATFORM_FEE_PCT * 100).toFixed(0)}% of gross value</p>
+                      <p className="text-sm  text-slate-800 dark:text-slate-200">Platform Fee</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 ">{(PLATFORM_FEE_PCT * 100).toFixed(0)}% of gross value</p>
                     </div>
                   </div>
-                  <p className="text-lg font-mono text-slate-600 dark:text-slate-400">-${platformFee.toFixed(2)}</p>
+                  <p className="text-lg  text-slate-600 dark:text-slate-400">-${platformFee.toFixed(2)}</p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <p className="font-mono text-slate-900 dark:text-slate-100">Net Payment</p>
-                  <p className="text-2xl font-mono text-primary">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                  <p className=" text-slate-900 dark:text-slate-100">Net Payment</p>
+                  <p className="text-2xl  text-primary">${netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
               </div>
             </div>

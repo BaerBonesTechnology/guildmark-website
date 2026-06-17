@@ -1,11 +1,3 @@
-/// POST /subscriptions/cancel
-///
-/// Cancels the calling company's active subscription. If a Square subscription
-/// ID is on record, it is cancelled via the Square Subscriptions API first so
-/// that Square stops billing automatically. Our DB row is then marked as
-/// cancelled regardless of the Square API result (Square errors are logged but
-/// do not block the cancellation from the user's perspective).
-
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
@@ -24,9 +16,9 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final db     = context.read<Db>();
+  final db = context.read<Db>();
   final square = context.read<SquareService?>();
-  final repo   = SubscriptionRepo(db);
+  final repo = SubscriptionRepo(db);
 
   final currentSub = await repo.findByCompany(auth.companyId);
   if (currentSub == null) return notFound('Subscription record not found');

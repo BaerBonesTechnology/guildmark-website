@@ -1,10 +1,3 @@
-/// Tax invoices data-access. PDF generation runs in a queue and writes
-/// `pdf_storage_path` once the render completes.
-///
-/// Invoice numbers use the pattern `INV-YYYYMMDD-XXXX` where XXXX is a
-/// zero-padded daily sequence. A unique constraint on `invoice_number` in the
-/// DB backs this up if two requests race.
-
 import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
@@ -39,15 +32,6 @@ class InvoiceRepo {
     return result.map((r) => TaxInvoice.fromRow(r.toColumnMap())).toList();
   }
 
-  /// Generate the invoice metadata row. PDF rendering is asynchronous and
-  /// happens outside this repo (enqueue a job after calling this).
-  ///
-  /// `market_value_at_disposal` is sourced from the listing's `fair_market_value`
-  /// if present, falling back to `original_purchase_price`.
-  /// `write_off_amount` = original cost − market value (floor 0).
-  ///
-  /// TODO: Accept an optional `market_anchor_ebay` parameter once the eBay
-  /// data-retrieval pipeline is wired up (see training/data_retrieval.py).
   Future<TaxInvoice> generate({
     required String companyId,
     required String assetId,
@@ -86,7 +70,8 @@ class InvoiceRepo {
           : (originalCost - marketValue).clamp(0, double.infinity).toDouble();
 
       // Generate unique invoice number: INV-YYYYMMDD-<daily-seq>.
-      final datePart = '${invoiceDate.year.toString().padLeft(4, '0')}'
+      final datePart =
+          '${invoiceDate.year.toString().padLeft(4, '0')}'
           '${invoiceDate.month.toString().padLeft(2, '0')}'
           '${invoiceDate.day.toString().padLeft(2, '0')}';
 
@@ -137,4 +122,8 @@ class InvoiceRepo {
         },
       );
 
-      final row = result.first.toColumnMap
+      final row = result.first.toColumnMap()..['model_name'] = modelName;
+      return TaxInvoice.fromRow(row);
+    });
+  }
+}

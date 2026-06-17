@@ -1,8 +1,3 @@
-/// Data-access for orders.
-///
-/// An order is created from an accepted buyer_offer. It holds the escrow
-/// transaction ID and FedEx tracking number alongside financial snapshots.
-
 import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
@@ -57,23 +52,23 @@ class Order {
   final String buyerCompanyId;
   final double amount;
   final int quantity;
-  final String status;          // order_status enum value
+  final String status; // order_status enum value
   final String carrier;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   // Fee snapshot — locked at order creation from seller's subscription plan.
-  final double sellerFeePct;    // e.g. 0.0800
-  final double sellerFee;       // amount * sellerFeePct
-  final double buyerFeePct;     // always 0.0300
-  final double buyerFee;        // amount * buyerFeePct
-  final double platformFee;     // sellerFee + buyerFee
-  final double escrowAmount;    // amount - sellerFee (seller's net)
+  final double sellerFeePct; // e.g. 0.0800
+  final double sellerFee; // amount * sellerFeePct
+  final double buyerFeePct; // always 0.0300
+  final double buyerFee; // amount * buyerFeePct
+  final double platformFee; // sellerFee + buyerFee
+  final double escrowAmount; // amount - sellerFee (seller's net)
 
   // Payment terms
-  final String paymentTerms;    // immediate | net_30 | net_60
-  final double deferralFeePct;  // 0.013 if deferred, else 0
-  final double deferralFee;     // amount * deferralFeePct
+  final String paymentTerms; // immediate | net_30 | net_60
+  final double deferralFeePct; // 0.013 if deferred, else 0
+  final double deferralFee; // amount * deferralFeePct
   final DateTime? paymentDueAt;
 
   // Escrow.com
@@ -92,8 +87,8 @@ class Order {
   final String? productName;
   final String? sellerCompanyName;
   final String? buyerCompanyName;
-  final String? sellerEmail;      // admin email, used when creating escrow
-  final String? buyerEmail;       // admin email, used when creating escrow
+  final String? sellerEmail; // admin email, used when creating escrow
+  final String? buyerEmail; // admin email, used when creating escrow
 
   // Set per-viewer at query time so the front-end knows sale vs purchase.
   final String? viewerType; // "sale" | "purchase"
@@ -106,100 +101,99 @@ class Order {
     }
 
     return Order(
-      id:                   row['id']                   as String,
-      offerId:              row['offer_id']              as String,
-      sellerCompanyId:      sellerCompanyId,
-      buyerCompanyId:       row['buyer_company_id']      as String,
-      amount:               numToDoubleOrNull(row['amount'])          ?? 0.0,
-      quantity:             numToIntOrNull(row['quantity'])           ?? 1,
-      status:               row['status']               as String,
-      carrier:              row['carrier']              as String? ?? 'fedex',
-      createdAt:            row['created_at']           as DateTime,
-      updatedAt:            row['updated_at']           as DateTime,
+      id: row['id'] as String,
+      offerId: row['offer_id'] as String,
+      sellerCompanyId: sellerCompanyId,
+      buyerCompanyId: row['buyer_company_id'] as String,
+      amount: numToDoubleOrNull(row['amount']) ?? 0.0,
+      quantity: numToIntOrNull(row['quantity']) ?? 1,
+      status: row['status'] as String,
+      carrier: row['carrier'] as String? ?? 'fedex',
+      createdAt: row['created_at'] as DateTime,
+      updatedAt: row['updated_at'] as DateTime,
       // Fee snapshot
-      sellerFeePct:         numToDoubleOrNull(row['seller_fee_pct'])  ?? 0.08,
-      sellerFee:            numToDoubleOrNull(row['seller_fee'])      ?? 0.0,
-      buyerFeePct:          numToDoubleOrNull(row['buyer_fee_pct'])   ?? 0.03,
-      buyerFee:             numToDoubleOrNull(row['buyer_fee'])       ?? 0.0,
-      platformFee:          numToDoubleOrNull(row['platform_fee'])    ?? 0.0,
-      escrowAmount:         numToDoubleOrNull(row['escrow_amount'])   ?? 0.0,
+      sellerFeePct: numToDoubleOrNull(row['seller_fee_pct']) ?? 0.08,
+      sellerFee: numToDoubleOrNull(row['seller_fee']) ?? 0.0,
+      buyerFeePct: numToDoubleOrNull(row['buyer_fee_pct']) ?? 0.03,
+      buyerFee: numToDoubleOrNull(row['buyer_fee']) ?? 0.0,
+      platformFee: numToDoubleOrNull(row['platform_fee']) ?? 0.0,
+      escrowAmount: numToDoubleOrNull(row['escrow_amount']) ?? 0.0,
       // Payment terms
-      paymentTerms:         row['payment_terms']         as String? ?? 'immediate',
-      deferralFeePct:       numToDoubleOrNull(row['deferral_fee_pct']) ?? 0.0,
-      deferralFee:          numToDoubleOrNull(row['deferral_fee'])    ?? 0.0,
-      paymentDueAt:         row['payment_due_at']        as DateTime?,
+      paymentTerms: row['payment_terms'] as String? ?? 'immediate',
+      deferralFeePct: numToDoubleOrNull(row['deferral_fee_pct']) ?? 0.0,
+      deferralFee: numToDoubleOrNull(row['deferral_fee']) ?? 0.0,
+      paymentDueAt: row['payment_due_at'] as DateTime?,
       // Escrow
-      escrowTransactionId:  row['escrow_transaction_id'] as String?,
-      escrowStatus:         row['escrow_status']         as String?,
-      escrowPaymentUrl:     row['escrow_payment_url']    as String?,
+      escrowTransactionId: row['escrow_transaction_id'] as String?,
+      escrowStatus: row['escrow_status'] as String?,
+      escrowPaymentUrl: row['escrow_payment_url'] as String?,
       // Shipping
-      trackingNumber:       row['tracking_number']       as String?,
-      shippedAt:            row['shipped_at']            as DateTime?,
-      deliveredAt:          row['delivered_at']          as DateTime?,
-      inspectionEndsAt:     row['inspection_ends_at']    as DateTime?,
-      completedAt:          row['completed_at']          as DateTime?,
+      trackingNumber: row['tracking_number'] as String?,
+      shippedAt: row['shipped_at'] as DateTime?,
+      deliveredAt: row['delivered_at'] as DateTime?,
+      inspectionEndsAt: row['inspection_ends_at'] as DateTime?,
+      completedAt: row['completed_at'] as DateTime?,
       // Joined
-      productName:          row['product_name']          as String?,
-      sellerCompanyName:    row['seller_company_name']   as String?,
-      buyerCompanyName:     row['buyer_company_name']    as String?,
-      sellerEmail:          row['seller_email']          as String?,
-      buyerEmail:           row['buyer_email']           as String?,
-      viewerType:           viewerType,
+      productName: row['product_name'] as String?,
+      sellerCompanyName: row['seller_company_name'] as String?,
+      buyerCompanyName: row['buyer_company_name'] as String?,
+      sellerEmail: row['seller_email'] as String?,
+      buyerEmail: row['buyer_email'] as String?,
+      viewerType: viewerType,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        // Map to the front-end Order shape (types.ts)
-        'transactionId': escrowTransactionId ?? id,
-        'type': viewerType ?? 'sale',
-        'productName': productName ?? 'Unknown',
-        'specs': null,
-        'quantity': quantity,
-        'totalValue': amount,
-        'status': _frontendStatus(status),
-        'counterparty': viewerType == 'sale'
-            ? (buyerCompanyName ?? buyerCompanyId)
-            : (sellerCompanyName ?? sellerCompanyId),
-        'destination': null,
-        'carrier': carrier,
-        'trackingNumber': trackingNumber,
-        'createdAt': createdAt.toIso8601String(),
-        // Fee breakdown
-        'sellerFeePct':  sellerFeePct,
-        'sellerFee':     sellerFee,
-        'buyerFeePct':   buyerFeePct,
-        'buyerFee':      buyerFee,
-        'platformFee':   platformFee,
-        'escrowAmount':  escrowAmount,
-        // Payment terms
-        'paymentTerms':    paymentTerms,
-        'deferralFeePct':  deferralFeePct,
-        'deferralFee':     deferralFee,
-        'paymentDueAt':    paymentDueAt?.toIso8601String(),
-        // Extended escrow / tracking fields
-        'escrowTransactionId': escrowTransactionId,
-        'escrowPaymentUrl': escrowPaymentUrl,
-        'escrowStatus': escrowStatus,
-        'deliveredAt': deliveredAt?.toIso8601String(),
-        'inspectionEndsAt': inspectionEndsAt?.toIso8601String(),
-        'completedAt': completedAt?.toIso8601String(),
-        'shippedAt': shippedAt?.toIso8601String(),
-        'orderStatus': status, // raw DB status for detailed UI
-      };
+    'id': id,
+    // Map to the front-end Order shape (types.ts)
+    'transactionId': escrowTransactionId ?? id,
+    'type': viewerType ?? 'sale',
+    'productName': productName ?? 'Unknown',
+    'specs': null,
+    'quantity': quantity,
+    'totalValue': amount,
+    'status': _frontendStatus(status),
+    'counterparty': viewerType == 'sale'
+        ? (buyerCompanyName ?? buyerCompanyId)
+        : (sellerCompanyName ?? sellerCompanyId),
+    'destination': null,
+    'carrier': carrier,
+    'trackingNumber': trackingNumber,
+    'createdAt': createdAt.toIso8601String(),
+    // Fee breakdown
+    'sellerFeePct': sellerFeePct,
+    'sellerFee': sellerFee,
+    'buyerFeePct': buyerFeePct,
+    'buyerFee': buyerFee,
+    'platformFee': platformFee,
+    'escrowAmount': escrowAmount,
+    // Payment terms
+    'paymentTerms': paymentTerms,
+    'deferralFeePct': deferralFeePct,
+    'deferralFee': deferralFee,
+    'paymentDueAt': paymentDueAt?.toIso8601String(),
+    // Extended escrow / tracking fields
+    'escrowTransactionId': escrowTransactionId,
+    'escrowPaymentUrl': escrowPaymentUrl,
+    'escrowStatus': escrowStatus,
+    'deliveredAt': deliveredAt?.toIso8601String(),
+    'inspectionEndsAt': inspectionEndsAt?.toIso8601String(),
+    'completedAt': completedAt?.toIso8601String(),
+    'shippedAt': shippedAt?.toIso8601String(),
+    'orderStatus': status, // raw DB status for detailed UI
+  };
 
-  /// Maps internal order_status values to the OrderStatus union in types.ts.
   static String _frontendStatus(String s) => switch (s) {
-        'awaiting_payment' => 'processing',
-        'funded'           => 'processing',
-        'shipped'          => 'in_transit',
-        'delivered'        => 'delivered',
-        'inspecting'       => 'delivered',
-        'complete'         => 'delivered',
-        'disputed'         => 'processing',
-        'cancelled'        => 'cancelled',
-        _                  => 'processing',
-      };
+    'awaiting_payment' => 'processing',
+    'funded' => 'processing',
+    'shipped' => 'in_transit',
+    'delivered' => 'delivered',
+    'inspecting' => 'delivered',
+    'complete' => 'delivered',
+    'disputed' => 'processing',
+    'cancelled' => 'cancelled',
+    _ => 'processing',
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -220,11 +214,11 @@ class OrderStats {
   final double monthValue;
 
   Map<String, dynamic> toJson() => {
-        'totalOrders': totalOrders,
-        'activeOrders': activeOrders,
-        'totalValue': totalValue,
-        'monthValue': monthValue,
-      };
+    'totalOrders': totalOrders,
+    'activeOrders': activeOrders,
+    'totalValue': totalValue,
+    'monthValue': monthValue,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -278,13 +272,6 @@ class OrderRepo {
   // Create
   // ---------------------------------------------------------------------------
 
-  /// Creates an order from an accepted buyer offer.
-  ///
-  /// Validates that:
-  /// - The offer exists and has status 'accepted'.
-  /// - No order already exists for this offer.
-  ///
-  /// Throws [StateError] on validation failure.
   Future<Order> create({
     required String offerId,
     required String callerCompanyId, // must be the seller
@@ -331,12 +318,18 @@ class OrderRepo {
       }
 
       // Calculate fee snapshot from the offer amount.
-      final amount      = numToDoubleOrNull(offer['offer_price']) ?? 0.0;
-      final sellerFee   = double.parse((amount * sellerFeePct).toStringAsFixed(2));
-      final buyerFee    = double.parse((amount * buyerFeePct).toStringAsFixed(2));
-      final platformFee = double.parse((sellerFee + buyerFee).toStringAsFixed(2));
-      final escrowAmt   = double.parse((amount - sellerFee).toStringAsFixed(2));
-      final deferralFee = double.parse((amount * deferralFeePct).toStringAsFixed(2));
+      final amount = numToDoubleOrNull(offer['offer_price']) ?? 0.0;
+      final sellerFee = double.parse(
+        (amount * sellerFeePct).toStringAsFixed(2),
+      );
+      final buyerFee = double.parse((amount * buyerFeePct).toStringAsFixed(2));
+      final platformFee = double.parse(
+        (sellerFee + buyerFee).toStringAsFixed(2),
+      );
+      final escrowAmt = double.parse((amount - sellerFee).toStringAsFixed(2));
+      final deferralFee = double.parse(
+        (amount * deferralFeePct).toStringAsFixed(2),
+      );
 
       DateTime? paymentDueAt;
       if (paymentTerms == 'net_30') {
@@ -361,21 +354,21 @@ class OrderRepo {
           RETURNING id
         '''),
         parameters: {
-          'oid':      offerId,
-          'seller':   offer['seller_company_id'] as String,
-          'buyer':    offer['buyer_company_id']  as String,
-          'amount':   amount,
-          'qty':      numToIntOrNull(offer['quantity']) ?? 1,
-          'sfeepct':  sellerFeePct,
-          'sfee':     sellerFee,
-          'bfeepct':  buyerFeePct,
-          'bfee':     buyerFee,
-          'pfee':     platformFee,
+          'oid': offerId,
+          'seller': offer['seller_company_id'] as String,
+          'buyer': offer['buyer_company_id'] as String,
+          'amount': amount,
+          'qty': numToIntOrNull(offer['quantity']) ?? 1,
+          'sfeepct': sellerFeePct,
+          'sfee': sellerFee,
+          'bfeepct': buyerFeePct,
+          'bfee': buyerFee,
+          'pfee': platformFee,
           'escrowamt': escrowAmt,
-          'pterms':   paymentTerms,
-          'dfeepct':  deferralFeePct,
-          'dfee':     deferralFee,
-          'pdue':     paymentDueAt,
+          'pterms': paymentTerms,
+          'dfeepct': deferralFeePct,
+          'dfee': deferralFee,
+          'pdue': paymentDueAt,
         },
       );
 
@@ -394,7 +387,10 @@ class OrderRepo {
       parameters: {'id': id},
     );
     if (rows.isEmpty) return null;
-    return Order.fromRow(rows.first.toColumnMap(), viewerCompanyId: viewerCompanyId);
+    return Order.fromRow(
+      rows.first.toColumnMap(),
+      viewerCompanyId: viewerCompanyId,
+    );
   }
 
   Future<Order?> findByTrackingNumber(String trackingNumber) async {
@@ -406,7 +402,6 @@ class OrderRepo {
     return Order.fromRow(rows.first.toColumnMap());
   }
 
-  /// All orders where [companyId] is buyer or seller, newest first.
   Future<List<Order>> findByCompany(String companyId) async {
     final rows = await _db.query(
       '''
@@ -440,10 +435,10 @@ class OrderRepo {
     );
     final r = rows.first.toColumnMap();
     return OrderStats(
-      totalOrders:  numToIntOrNull(r['total_orders'])  ?? 0,
+      totalOrders: numToIntOrNull(r['total_orders']) ?? 0,
       activeOrders: numToIntOrNull(r['active_orders']) ?? 0,
-      totalValue:   numToDoubleOrNull(r['total_value']) ?? 0.0,
-      monthValue:   numToDoubleOrNull(r['month_value']) ?? 0.0,
+      totalValue: numToDoubleOrNull(r['total_value']) ?? 0.0,
+      monthValue: numToDoubleOrNull(r['month_value']) ?? 0.0,
     );
   }
 
@@ -451,7 +446,6 @@ class OrderRepo {
   // Updates
   // ---------------------------------------------------------------------------
 
-  /// Attach an Escrow.com transaction to an order.
   Future<Order?> setEscrow({
     required String id,
     required String escrowTransactionId,
@@ -468,16 +462,15 @@ class OrderRepo {
       WHERE id = @id
       ''',
       parameters: {
-        'id':     id,
-        'etid':   escrowTransactionId,
+        'id': id,
+        'etid': escrowTransactionId,
         'estatus': escrowStatus,
-        'eurl':   escrowPaymentUrl,
+        'eurl': escrowPaymentUrl,
       },
     );
     return findById(id);
   }
 
-  /// Seller attaches a tracking number; status → shipped.
   Future<Order?> addTracking({
     required String id,
     required String sellerCompanyId,
@@ -497,9 +490,9 @@ class OrderRepo {
       RETURNING id
       ''',
       parameters: {
-        'id':     id,
+        'id': id,
         'seller': sellerCompanyId,
-        'tn':     trackingNumber,
+        'tn': trackingNumber,
         'carrier': carrier,
       },
     );
@@ -507,7 +500,6 @@ class OrderRepo {
     return findById(id);
   }
 
-  /// Called by the FedEx webhook when delivery is confirmed.
   Future<Order?> markDelivered({
     required String id,
     required DateTime deliveredAt,
@@ -521,4 +513,44 @@ class OrderRepo {
           status             = 'delivered'
       WHERE id = @id AND status = 'shipped'
       ''',
-      para
+      parameters: {
+        'id': id,
+        'delivered': deliveredAt,
+        'inspection': inspectionEndsAt,
+      },
+    );
+    return findById(id);
+  }
+
+  Future<Order?> markComplete(String id, String buyerCompanyId) async {
+    final rows = await _db.query(
+      '''
+      UPDATE orders
+      SET status       = 'complete',
+          completed_at = now()
+      WHERE id = @id
+        AND buyer_company_id = @buyer
+        AND status IN ('delivered', 'inspecting')
+      RETURNING id
+      ''',
+      parameters: {'id': id, 'buyer': buyerCompanyId},
+    );
+    if (rows.isEmpty) return null;
+    return findById(id);
+  }
+
+  Future<Order?> markDisputed(String id) async {
+    await _db.query(
+      "UPDATE orders SET status = 'disputed' WHERE id = @id",
+      parameters: {'id': id},
+    );
+    return findById(id);
+  }
+
+  Future<void> updateEscrowStatus(String id, String escrowStatus) async {
+    await _db.query(
+      'UPDATE orders SET escrow_status = @s WHERE id = @id',
+      parameters: {'id': id, 's': escrowStatus},
+    );
+  }
+}

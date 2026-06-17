@@ -6,19 +6,18 @@ part of 'portfolio.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ValuationSnapshotImpl _$$ValuationSnapshotImplFromJson(
-        Map<String, dynamic> json) =>
-    _$ValuationSnapshotImpl(
-      snapshotDate:
-          const DateOnlyConverter().fromJson(json['snapshot_date'] as String),
+_ValuationSnapshot _$ValuationSnapshotFromJson(Map<String, dynamic> json) =>
+    _ValuationSnapshot(
+      snapshotDate: const DateOnlyConverter().fromJson(
+        json['snapshot_date'] as String,
+      ),
       totalPortfolioValue: (json['total_portfolio_value'] as num).toDouble(),
       totalBookValue: (json['total_book_value'] as num).toDouble(),
       totalDepreciation: (json['total_depreciation'] as num).toDouble(),
       totalDevices: (json['total_devices'] as num).toInt(),
     );
 
-Map<String, dynamic> _$$ValuationSnapshotImplToJson(
-        _$ValuationSnapshotImpl instance) =>
+Map<String, dynamic> _$ValuationSnapshotToJson(_ValuationSnapshot instance) =>
     <String, dynamic>{
       'snapshot_date': const DateOnlyConverter().toJson(instance.snapshotDate),
       'total_portfolio_value': instance.totalPortfolioValue,
@@ -27,23 +26,17 @@ Map<String, dynamic> _$$ValuationSnapshotImplToJson(
       'total_devices': instance.totalDevices,
     };
 
-_$PortfolioBucketImpl _$$PortfolioBucketImplFromJson(
-        Map<String, dynamic> json) =>
-    _$PortfolioBucketImpl(
+_PortfolioBucket _$PortfolioBucketFromJson(Map<String, dynamic> json) =>
+    _PortfolioBucket(
       count: (json['count'] as num).toInt(),
       value: (json['value'] as num).toDouble(),
     );
 
-Map<String, dynamic> _$$PortfolioBucketImplToJson(
-        _$PortfolioBucketImpl instance) =>
-    <String, dynamic>{
-      'count': instance.count,
-      'value': instance.value,
-    };
+Map<String, dynamic> _$PortfolioBucketToJson(_PortfolioBucket instance) =>
+    <String, dynamic>{'count': instance.count, 'value': instance.value};
 
-_$PortfolioSummaryImpl _$$PortfolioSummaryImplFromJson(
-        Map<String, dynamic> json) =>
-    _$PortfolioSummaryImpl(
+_PortfolioSummary _$PortfolioSummaryFromJson(Map<String, dynamic> json) =>
+    _PortfolioSummary(
       totalDevices: (json['total_devices'] as num).toInt(),
       totalPortfolioValue: (json['total_portfolio_value'] as num).toDouble(),
       totalBookValue: (json['total_book_value'] as num).toDouble(),
@@ -64,18 +57,17 @@ _$PortfolioSummaryImpl _$$PortfolioSummaryImplFromJson(
           .toList(),
     );
 
-Map<String, dynamic> _$$PortfolioSummaryImplToJson(
-        _$PortfolioSummaryImpl instance) =>
-    <String, dynamic>{
-      'total_devices': instance.totalDevices,
-      'total_portfolio_value': instance.totalPortfolioValue,
-      'total_book_value': instance.totalBookValue,
-      'total_depreciation': instance.totalDepreciation,
-      'depreciation_pct': instance.depreciationPct,
-      'avg_asset_age_months': instance.avgAssetAgeMonths,
-      'assets_at_risk': instance.assetsAtRisk,
-      'by_type': instance.byType.map((k, e) => MapEntry(k, e.toJson())),
-      'by_condition':
-          instance.byCondition.map((k, e) => MapEntry(k, e.toJson())),
-      'trend': instance.trend.map((e) => e.toJson()).toList(),
-    };
+Map<String, dynamic> _$PortfolioSummaryToJson(
+  _PortfolioSummary instance,
+) => <String, dynamic>{
+  'total_devices': instance.totalDevices,
+  'total_portfolio_value': instance.totalPortfolioValue,
+  'total_book_value': instance.totalBookValue,
+  'total_depreciation': instance.totalDepreciation,
+  'depreciation_pct': instance.depreciationPct,
+  'avg_asset_age_months': instance.avgAssetAgeMonths,
+  'assets_at_risk': instance.assetsAtRisk,
+  'by_type': instance.byType.map((k, e) => MapEntry(k, e.toJson())),
+  'by_condition': instance.byCondition.map((k, e) => MapEntry(k, e.toJson())),
+  'trend': instance.trend.map((e) => e.toJson()).toList(),
+};

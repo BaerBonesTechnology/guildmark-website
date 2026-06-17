@@ -1,9 +1,3 @@
-/// Resend email service — thin wrapper over the Resend HTTP API.
-///
-/// Docs: https://resend.com/docs/api-reference/emails/send-email
-/// All sends are fire-and-forget: failures are logged but never propagate
-/// to the caller, so a transient email outage never breaks the main request.
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -18,42 +12,37 @@ class EmailService {
 
   final String apiKey;
 
-  /// The RFC 5322 "From" address used for every outbound email.
   final String from;
 
-  /// Resend emails endpoint — injected from RESEND_API_URL.
   final String _endpoint;
 
   // ---------------------------------------------------------------------------
   // Public send methods
   // ---------------------------------------------------------------------------
 
-  /// Sends a waitlist confirmation to a newly-subscribed address.
   Future<bool> sendWaitlistConfirmation(String toEmail) => _send(
-        to: toEmail,
-        subject: "You're on the GuildMark waitlist 🎉",
-        html: _waitlistHtml(toEmail),
-        text: _waitlistText(toEmail),
-      );
+    to: toEmail,
+    subject: "You're on the GuildMark waitlist 🎉",
+    html: _waitlistHtml(toEmail),
+    text: _waitlistText(toEmail),
+  );
 
-  /// Notifies the buyer that escrow has been opened and they need to fund it.
   Future<bool> sendOrderEscrowCreated({
     required String toEmail,
     required String productName,
     required double amount,
     required String paymentUrl,
   }) => _send(
-        to: toEmail,
-        subject: 'Action required: Fund your GuildMark escrow for $productName',
-        html: _escrowCreatedHtml(
-          email: toEmail,
-          productName: productName,
-          amount: amount,
-          paymentUrl: paymentUrl,
-        ),
-      );
+    to: toEmail,
+    subject: 'Action required: Fund your GuildMark escrow for $productName',
+    html: _escrowCreatedHtml(
+      email: toEmail,
+      productName: productName,
+      amount: amount,
+      paymentUrl: paymentUrl,
+    ),
+  );
 
-  /// Notifies the buyer that their order has been delivered.
   Future<bool> sendDeliveryConfirmation({
     required String toEmail,
     required String productName,
@@ -61,32 +50,26 @@ class EmailService {
     required DateTime inspectionEndsAt,
     required String confirmUrl,
   }) => _send(
-        to: toEmail,
-        subject: 'Your GuildMark order has been delivered — confirm receipt',
-        html: _deliveryHtml(
-          email: toEmail,
-          productName: productName,
-          trackingNumber: trackingNumber,
-          inspectionEndsAt: inspectionEndsAt,
-          confirmUrl: confirmUrl,
-        ),
-      );
+    to: toEmail,
+    subject: 'Your GuildMark order has been delivered — confirm receipt',
+    html: _deliveryHtml(
+      email: toEmail,
+      productName: productName,
+      trackingNumber: trackingNumber,
+      inspectionEndsAt: inspectionEndsAt,
+      confirmUrl: confirmUrl,
+    ),
+  );
 
-  /// Sends a password reset link to the user.
   Future<bool> sendPasswordReset({
     required String toEmail,
     required String resetLink,
   }) => _send(
-        to: toEmail,
-        subject: 'Reset your GuildMark password',
-        html: _passwordResetHtml(email: toEmail, resetLink: resetLink),
-      );
+    to: toEmail,
+    subject: 'Reset your GuildMark password',
+    html: _passwordResetHtml(email: toEmail, resetLink: resetLink),
+  );
 
-  /// Notifies operations@guildmark.co that a new subscriber has joined.
-  ///
-  /// [source]  — 'waitlist' | 'partner' | 'contact'
-  /// [notes]   — raw notes string stored in the DB (may contain partner fields)
-  /// [message] — contact message, only set for source='contact'
   Future<bool> sendNewSubscriberNotification({
     required String subscriberEmail,
     required String source,
@@ -94,35 +77,33 @@ class EmailService {
     String? message,
     DateTime? signedUpAt,
   }) => _send(
-        to: 'operations@guildmark.co',
-        subject: '[GuildMark] New $source signup: $subscriberEmail',
-        html: _newSubscriberHtml(
-          subscriberEmail: subscriberEmail,
-          source: source,
-          notes: notes,
-          message: message,
-          signedUpAt: signedUpAt ?? DateTime.now().toUtc(),
-        ),
-      );
+    to: 'operations@guildmark.co',
+    subject: '[GuildMark] New $source signup: $subscriberEmail',
+    html: _newSubscriberHtml(
+      subscriberEmail: subscriberEmail,
+      source: source,
+      notes: notes,
+      message: message,
+      signedUpAt: signedUpAt ?? DateTime.now().toUtc(),
+    ),
+  );
 
-  /// Notifies a seller that they received a new offer on their listing.
   Future<bool> sendOfferReceived({
     required String toEmail,
     required String productName,
     required double offerPrice,
     required String listingUrl,
   }) => _send(
-        to: toEmail,
-        subject: 'New offer received on your GuildMark listing: $productName',
-        html: _offerReceivedHtml(
-          email: toEmail,
-          productName: productName,
-          offerPrice: offerPrice,
-          listingUrl: listingUrl,
-        ),
-      );
+    to: toEmail,
+    subject: 'New offer received on your GuildMark listing: $productName',
+    html: _offerReceivedHtml(
+      email: toEmail,
+      productName: productName,
+      offerPrice: offerPrice,
+      listingUrl: listingUrl,
+    ),
+  );
 
-  /// Notifies a buyer when their offer is accepted, rejected, or countered.
   Future<bool> sendOfferStatus({
     required String toEmail,
     required String productName,
@@ -130,16 +111,16 @@ class EmailService {
     double? counterPrice,
     required String offersUrl,
   }) => _send(
-        to: toEmail,
-        subject: 'Your GuildMark offer on $productName has been ${status}',
-        html: _offerStatusHtml(
-          email: toEmail,
-          productName: productName,
-          status: status,
-          counterPrice: counterPrice,
-          offersUrl: offersUrl,
-        ),
-      );
+    to: toEmail,
+    subject: 'Your GuildMark offer on $productName has been ${status}',
+    html: _offerStatusHtml(
+      email: toEmail,
+      productName: productName,
+      status: status,
+      counterPrice: counterPrice,
+      offersUrl: offersUrl,
+    ),
+  );
 
   // ---------------------------------------------------------------------------
   // Internal helpers
@@ -193,7 +174,8 @@ class EmailService {
   // Templates
   // ---------------------------------------------------------------------------
 
-  String _waitlistHtml(String email) => '''
+  String _waitlistHtml(String email) =>
+      '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -335,7 +317,8 @@ class EmailService {
 ''';
   }
 
-  String _waitlistText(String email) => '''
+  String _waitlistText(String email) =>
+      '''
 You're on the GuildMark waitlist!
 
 Thanks for signing up. We'll reach out as soon as your spot opens up.
@@ -349,7 +332,11 @@ Have questions? Reply to this email and our team will get back to you.
 You're receiving this because $email signed up at guildmark.co
 ''';
 
-  String _passwordResetHtml({required String email, required String resetLink}) => '''
+  String _passwordResetHtml({
+    required String email,
+    required String resetLink,
+  }) =>
+      '''
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><style>
   body{margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
   .wrapper{max-width:560px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
@@ -438,7 +425,9 @@ You're receiving this because $email signed up at guildmark.co
       for (final part in notes.split(' | ')) {
         final idx = part.indexOf(': ');
         if (idx != -1) {
-          fields[part.substring(0, idx).trim()] = part.substring(idx + 2).trim();
+          fields[part.substring(0, idx).trim()] = part
+              .substring(idx + 2)
+              .trim();
         }
       }
     }
@@ -446,19 +435,20 @@ You're receiving this because $email signed up at guildmark.co
     final sourceLabel = source == 'partner'
         ? '🤝 Partner'
         : source == 'contact'
-            ? '✉️ Contact'
-            : '📋 Waitlist';
+        ? '✉️ Contact'
+        : '📋 Waitlist';
 
     final sourceColor = source == 'partner'
         ? '#7c3aed'
         : source == 'contact'
-            ? '#0369a1'
-            : '#4f46e5';
+        ? '#0369a1'
+        : '#4f46e5';
 
     String rows = '';
     void row(String label, String? value) {
       if (value == null || value.isEmpty) return;
-      rows += '''
+      rows +=
+          '''
         <tr>
           <td style="padding:8px 12px;font-size:13px;color:#6b7280;font-weight:600;white-space:nowrap;vertical-align:top;">$label</td>
           <td style="padding:8px 12px;font-size:13px;color:#111827;word-break:break-all;">$value</td>
@@ -526,8 +516,8 @@ You're receiving this because $email signed up at guildmark.co
     final statusLabel = status == 'accepted'
         ? '✅ Accepted'
         : status == 'rejected'
-            ? '❌ Rejected'
-            : '↩️ Countered';
+        ? '❌ Rejected'
+        : '↩️ Countered';
     final counterLine = counterPrice != null
         ? '<p><strong>Counter offer:</strong> \$${counterPrice.toStringAsFixed(2)}</p>'
         : '';
@@ -566,5 +556,3 @@ You're receiving this because $email signed up at guildmark.co
 ''';
   }
 }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

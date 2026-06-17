@@ -1,5 +1,3 @@
-/// GET /amps/mdm/connections — list this company's MDM sources.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/context.dart';
@@ -14,6 +12,8 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final connections = await MdmRepo(context.read<Db>()).findByCompany(auth.companyId);
+  final connections = await MdmRepo(
+    context.read<Db>(),
+  ).findByCompany(auth.companyId);
   return Response.json(body: connections.map((c) => c.toJson()).toList());
 }

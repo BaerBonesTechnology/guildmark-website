@@ -19,11 +19,11 @@ import { Button } from "./ui/button";
 import { useValuationStatus, queryKeys } from "../lib/apiHooks";
 
 const navigation = [
-  { name: "Portfolio", href: "/amps", icon: LayoutDashboard },
-  { name: "Assets", href: "/amps/assets", icon: Package },
-  { name: "MDM Connections", href: "/amps/mdm", icon: Cloud },
-  { name: "Invoices", href: "/amps/invoices", icon: FileText },
-  { name: "Settings", href: "/amps/settings", icon: Settings },
+  { name: "Portfolio", href: "/pre/amps", icon: LayoutDashboard },
+  { name: "Assets", href: "/pre/amps/assets", icon: Package },
+  { name: "MDM Connections", href: "/pre/amps/mdm", icon: Cloud },
+  { name: "Invoices", href: "/pre/amps/invoices", icon: FileText },
+  { name: "Settings", href: "/pre/amps/settings", icon: Settings },
 ];
 
 const PLAN_FEATURES: Record<string, string[]> = {
@@ -40,7 +40,7 @@ function UpgradeWall({ plan }: { plan: string }) {
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amps-accent to-amps-highlight flex items-center justify-center mx-auto mb-4">
             <Lock className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-mono font-semibold mb-2">
+          <h1 className="text-2xl  font-semibold mb-2">
             GM Pro Required
           </h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
@@ -52,7 +52,7 @@ function UpgradeWall({ plan }: { plan: string }) {
         <div className="grid grid-cols-3 gap-4 mb-8">
           {(["starter", "growth", "pro"] as const).map((tier) => (
             <div key={tier} className="bg-card border border-border rounded-xl p-5 space-y-3">
-              <p className="text-sm font-mono font-semibold capitalize">{tier}</p>
+              <p className="text-sm  font-semibold capitalize">{tier}</p>
               <ul className="space-y-1.5">
                 {PLAN_FEATURES[tier].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
@@ -66,8 +66,8 @@ function UpgradeWall({ plan }: { plan: string }) {
         </div>
 
         <div className="text-center">
-          <Button asChild className="bg-amps-accent hover:bg-amps-accent/90 text-white font-mono gap-2 px-8">
-            <Link to="/amps/pro-signup">
+          <Button asChild className="bg-amps-accent hover:bg-amps-accent/90 text-white  gap-2 px-8">
+            <Link to="/pre/amps/pro-signup">
               <Sparkles className="w-4 h-4" />
               View Plans &amp; Upgrade
             </Link>
@@ -123,10 +123,10 @@ function ValuationBanner() {
       <div className="mb-6 flex items-center gap-3 rounded-lg border border-amps-accent/30 bg-amps-accent/5 px-4 py-3">
         <Loader2 className="h-4 w-4 animate-spin text-amps-accent shrink-0" />
         <div>
-          <p className="text-sm font-mono font-medium text-amps-accent">
+          <p className="text-sm  font-medium text-amps-accent">
             Valuation in progress
           </p>
-          <p className="text-xs font-mono text-muted-foreground">
+          <p className="text-xs  text-muted-foreground">
             Running AI valuations across{" "}
             {data.asset_count} asset{data.asset_count !== 1 ? "s" : ""} —
             this usually takes less than a minute. You can navigate freely while
@@ -141,7 +141,7 @@ function ValuationBanner() {
     return (
       <div className="mb-6 flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3">
         <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-        <p className="text-sm font-mono font-medium text-success">
+        <p className="text-sm  font-medium text-success">
           Portfolio valuations updated — your asset values are now current.
         </p>
       </div>
@@ -161,11 +161,11 @@ export function AMPSLayout() {
 
   // Free-tier users see the upgrade wall — /amps/pro-signup is handled
   // as a sibling route outside this layout so it bypasses this check.
-  const plan = user?.subscription_plan ?? "free";
-  if (plan === "free") return <UpgradeWall plan={plan} />;
+  const plan = /*user?.subscription_plan ?? "free" */ "pro";
+  // if (plan === "free") return <UpgradeWall plan={plan} />;
 
   return (
-    <div className="min-h-screen bg-amps-surface">
+    <div className="min-h-screen font-sans bg-amps-surface ">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card">
         <div className="flex h-full flex-col">
@@ -177,12 +177,12 @@ export function AMPSLayout() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-lg font-semibold">Guild<span className="text-amps-accent">Mark</span></span>
+                  <span className=" text-lg font-semibold">Guild<span className="text-amps-accent">Mark</span></span>
                   <span className="rounded bg-gradient-to-r from-amps-accent to-amps-highlight px-2 py-0.5 text-xs font-semibold text-white">
                     GM Pro
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground ">
                   {user?.email || "Premium Dashboard"}
                 </p>
               </div>
@@ -198,7 +198,7 @@ export function AMPSLayout() {
                   key={item.name}
                   to={item.href}
                   className={`
-                    flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono transition-colors
+                    flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm  transition-colors
                     ${
                       isActive
                         ? "bg-amps-accent text-amps-accent-foreground"
@@ -217,8 +217,8 @@ export function AMPSLayout() {
           {/* Footer */}
           <div className="border-t border-border p-4">
             <Link
-              to="/marketplace"
-              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono transition-colors hover:bg-accent"
+              to="/pre/marketplace"
+              className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm  transition-colors hover:bg-accent"
             >
               <Package className="h-4 w-4" />
               <span>View GuildMarket</span>

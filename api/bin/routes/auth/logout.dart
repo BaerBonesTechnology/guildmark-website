@@ -1,7 +1,3 @@
-/// POST /auth/logout
-///
-/// Revokes the current refresh token (best-effort) and clears the cookie.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/db/pool.dart';

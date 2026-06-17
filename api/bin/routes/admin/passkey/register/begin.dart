@@ -1,19 +1,3 @@
-/// POST /admin/passkey/register/begin
-///
-/// Starts the WebAuthn registration ceremony for an employee who has no passkey yet.
-///
-/// Auth: Bearer token with companyId == 'devdash_setup' (issued by /admin/auth
-///       when the employee has no passkeys).
-///
-/// Returns:
-///   {
-///     challenge_id:        string  — UUID of the challenge row (pass back on /complete)
-///     challenge:           string  — base64url random bytes
-///     rp:                  { id, name }
-///     user:                { id, name, display_name }
-///     pub_key_cred_params: [{ type: 'public-key', alg: -7 }]
-///   }
-
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -32,7 +16,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final db  = context.read<Db>();
+  final db = context.read<Db>();
 
   if (cfg.webauthnRpId == null) {
     return serverError('WebAuthn not configured (WEBAUTHN_RP_ID missing)');
@@ -40,8 +24,8 @@ Future<Response> onRequest(RequestContext context) async {
 
   // ── Verify setup token ───────────────────────────────────────────────────
   final authHeader = context.request.headers['Authorization'] ?? '';
-  final raw        = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
-  final claims     = jwt.verifyAccessToken(raw);
+  final raw = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
+  final claims = jwt.verifyAccessToken(raw);
 
   if (claims == null || claims.companyId != 'devdash_setup') {
     return unauthorized('Valid setup token required');
@@ -56,13 +40,13 @@ Future<Response> onRequest(RequestContext context) async {
   );
   if (empRows.isEmpty) return unauthorized('Employee not found');
 
-  final emp      = empRows.first.toColumnMap();
-  final email    = emp['email'].toString();
+  final emp = empRows.first.toColumnMap();
+  final email = emp['email'].toString();
   final fullName = emp['full_name']?.toString() ?? email;
 
   // ── Generate challenge ───────────────────────────────────────────────────
   final challengeBytes = _randomBytes(32);
-  final challengeB64   = toBase64Url(challengeBytes);
+  final challengeB64 = toBase64Url(challengeBytes);
 
   final chalRows = await db.query(
     '''
@@ -75,32 +59,36 @@ Future<Response> onRequest(RequestContext context) async {
   );
   final challengeId = chalRows.first.toColumnMap()['id'].toString();
 
-  return Response.json(body: {
-    'challenge_id': challengeId,
-    'challenge':    challengeB64,
-    'rp': {
-      'id':   cfg.webauthnRpId,
-      'name': cfg.webauthnRpName ?? 'GuildMark DevDash',
+  return Response.json(
+    body: {
+      'challenge_id': challengeId,
+      'challenge': challengeB64,
+      'rp': {
+        'id': cfg.webauthnRpId,
+        'name': cfg.webauthnRpName ?? 'GuildMark DevDash',
+      },
+      'user': {
+        'id': toBase64Url(employeeId.codeUnits),
+        'name': email,
+        'display_name': fullName,
+      },
+      'pub_key_cred_params': [
+        {'type': 'public-key', 'alg': -7}, // ES256
+      ],
+      'authenticator_selection': {
+        'resident_key': 'preferred',
+        'user_verification': 'preferred',
+        'authenticator_attachment': 'platform',
+      },
+      'timeout': 60000,
+      'attestation': 'none',
     },
-    'user': {
-      'id':           toBase64Url(employeeId.codeUnits),
-      'name':         email,
-      'display_name': fullName,
-    },
-    'pub_key_cred_params': [
-      {'type': 'public-key', 'alg': -7}, // ES256
-    ],
-    'authenticator_selection': {
-      'resident_key':        'preferred',
-      'user_verification':   'preferred',
-      'authenticator_attachment': 'platform',
-    },
-    'timeout': 60000,
-    'attestation': 'none',
-  });
+  );
 }
 
 Uint8List _randomBytes(int length) {
   final rng = Random.secure();
-  return Uint8List.fromList(List<int>.generate(length, (_) => rng.nextInt(256)));
+  return Uint8List.fromList(
+    List<int>.generate(length, (_) => rng.nextInt(256)),
+  );
 }

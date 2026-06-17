@@ -6,7 +6,7 @@
 function Section({ n, title, children }: { n?: string | number; title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold font-mono">{n !== undefined ? `${n}. ` : ""}{title}</h2>
+      <h2 className="text-base font-semibold ">{n !== undefined ? `${n}. ` : ""}{title}</h2>
       <div className="space-y-2 text-sm text-foreground/80 leading-relaxed">{children}</div>
     </div>
   );
@@ -15,7 +15,7 @@ function Section({ n, title, children }: { n?: string | number; title: string; c
 function Clause({ letter, children }: { letter: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3 pl-4">
-      <span className="font-mono text-muted-foreground shrink-0">({letter})</span>
+      <span className=" text-muted-foreground shrink-0">({letter})</span>
       <p>{children}</p>
     </div>
   );
@@ -25,9 +25,9 @@ export function PartnerGuildmarkAgreement() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-primary uppercase tracking-widest">Binding Agreement · Template</p>
-        <h1 className="text-3xl font-bold font-mono">GuildMark Partner Agreement</h1>
-        <p className="text-sm font-mono text-muted-foreground">Template Version: May 2025 · Executed copies are individually dated</p>
+        <p className="text-xs  text-primary uppercase tracking-widest">Binding Agreement · Template</p>
+        <h1 className="text-3xl font-bold ">GuildMark Partner Agreement</h1>
+        <p className="text-sm  text-muted-foreground">Template Version: May 2025 · Executed copies are individually dated</p>
         <p className="text-sm text-foreground/80 leading-relaxed">
           This GuildMark Partner Agreement ("<strong>Agreement</strong>") is entered into by and between
           Baerhous Media Group, LLC, operating as GuildMark™ ("<strong>GuildMark</strong>"), and the

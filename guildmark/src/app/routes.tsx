@@ -37,12 +37,12 @@ import { ProSignup } from "./pages/amps/ProSignup";
 
 // ── Shared compliance children ─────────────────────────────────────────────
 const complianceChildren = [
-  { path: "terms",              Component: TermsOfService },
-  { path: "privacy-policy",     Component: PrivacyPolicy },
-  { path: "seller-agreement",   Component: SellerPlatformAgreement },
-  { path: "seller-loi",         Component: SellerLetterOfIntent },
-  { path: "partner-loi",        Component: PartnerLetterOfIntent },
-  { path: "partner-agreement",  Component: PartnerGuildmarkAgreement },
+  { path: "terms", Component: TermsOfService },
+  { path: "privacy-policy", Component: PrivacyPolicy },
+  { path: "seller-agreement", Component: SellerPlatformAgreement },
+  { path: "seller-loi", Component: SellerLetterOfIntent },
+  { path: "partner-loi", Component: PartnerLetterOfIntent },
+  { path: "partner-agreement", Component: PartnerGuildmarkAgreement },
 ];
 
 export const router = createBrowserRouter([
@@ -58,7 +58,7 @@ export const router = createBrowserRouter([
       { path: "how-it-works", Component: HowItWorks },
       { path: "marketplace", Component: Marketplace },
       { path: "insights", Component: InsightPage },
-      { path: "contact",  Component: Contact },
+      { path: "contact", Component: Contact },
       {
         path: "dashboard",
         element: <ProtectedRoute />,
@@ -154,13 +154,97 @@ export const preLaunchRouter = createBrowserRouter([
       { index: true, Component: PreLaunch },
       // Redirect /insights to the bottom sheet so direct URL navigation works
       { path: "insights", element: <Navigate to="/?sheet=insights" replace /> },
-      { path: "contact",  Component: Contact },
+      { path: "contact", Component: Contact },
     ],
   },
   {
     path: "/compliance",
     Component: ComplianceLayout,
     children: complianceChildren,
+  },
+  // Add router to the pre-release section
+  {
+    path: "/pre",
+    Component: Layout,
+    children: [
+      { index: true, Component: Landing },
+      { path: "login", Component: Login },
+      { path: "signup", Component: Signup },
+      { path: "forgot-password", Component: ForgotPassword },
+      { path: "reset-password", Component: ResetPassword },
+      { path: "how-it-works", Component: HowItWorks },
+      { path: "marketplace", Component: Marketplace },
+      { path: "insights", Component: InsightPage },
+      { path: "contact", Component: Contact },
+      {
+        path: "dashboard",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: ExecutiveDashboard },
+        ],
+      },
+      {
+        path: "calculator",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: MarketCalculator },
+        ],
+      },
+      {
+        path: "offload",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: OffloadWorkflow },
+        ],
+      },
+      {
+        path: "my-listings",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: MyListings },
+        ],
+      },
+      {
+        path: "orders",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: Orders },
+          { path: ":id", Component: OrderDetail },
+        ],
+      },
+      {
+        path: "offers",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: OfferInbox },
+        ],
+      },
+      {
+        path: "amps",
+        element: <ProtectedRoute />,
+        children: [
+          // Pro signup — no sidebar, shown to free-tier users upgrading
+          { path: "pro-signup", Component: ProSignup },
+          {
+            Component: AMPSLayout,
+            children: [
+              { index: true, Component: PortfolioOverview },
+              { path: "assets", Component: AssetInventory },
+              { path: "mdm", Component: MDMConnections },
+              { path: "invoices", Component: Invoices },
+              { path: "settings", Component: Settings },
+            ],
+          },
+        ],
+      },
+      {
+        path: "settings",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: AccountSettings },
+        ],
+      },
+    ],
   },
   {
     path: "*",

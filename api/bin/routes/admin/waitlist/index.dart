@@ -1,8 +1,3 @@
-/// GET  /admin/waitlist        — paginated subscriber list
-/// POST /admin/waitlist        — (reserved for future bulk actions)
-///
-/// Admin-only. Requires a valid JWT with role = 'admin'.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -34,10 +29,12 @@ Future<Response> onRequest(RequestContext context) async {
   );
   final total = await repo.count(source: source);
 
-  return Response.json(body: {
-    'total': total,
-    'limit': limit,
-    'offset': offset,
-    'entries': entries.map((e) => e.toJson()).toList(),
-  });
+  return Response.json(
+    body: {
+      'total': total,
+      'limit': limit,
+      'offset': offset,
+      'entries': entries.map((e) => e.toJson()).toList(),
+    },
+  );
 }

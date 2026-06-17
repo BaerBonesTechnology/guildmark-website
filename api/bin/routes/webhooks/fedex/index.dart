@@ -1,19 +1,3 @@
-/// POST /webhooks/fedex
-///
-/// Receives FedEx Track Event Notifications.
-///
-/// When a "DL" (Delivered) event arrives for a known tracking number:
-///   1. Look up the order.
-///   2. Call escrow.markReceived() → starts the inspection period on Escrow.com.
-///   3. Mark the order as delivered + set inspection_ends_at.
-///   4. Notify the buyer by email.
-///
-/// HMAC-SHA256 signature verification is performed when FEDEX_WEBHOOK_SECRET
-/// is set. Requests with an invalid signature are rejected with 401.
-///
-/// FedEx sends events as JSON POST with header:
-///   x-fedex-signature: <hmac-sha256-hex>
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -29,7 +13,6 @@ import '../../../lib/repos/order_repo.dart';
 import '../../../lib/services/email_service.dart';
 import '../../../lib/services/escrow_service.dart';
 
-/// Inspection window after delivery before funds auto-release (48 hours).
 const _inspectionDuration = Duration(hours: 48);
 
 Future<Response> onRequest(RequestContext context) async {
@@ -38,7 +21,7 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   final rawBody = await context.request.body();
-  final cfg     = context.read<AppConfig>();
+  final cfg = context.read<AppConfig>();
 
   // ── Signature verification ──────────────────────────────────────────────
   if (cfg.fedexWebhookSecret != null) {
@@ -65,15 +48,17 @@ Future<Response> onRequest(RequestContext context) async {
 
   final isDelivered = _isDeliveredEvent(payload);
   if (!isDelivered) {
-    stdout.writeln('[webhook/fedex] non-delivery event for $trackingNumber — ignored');
+    stdout.writeln(
+      '[webhook/fedex] non-delivery event for $trackingNumber — ignored',
+    );
     return Response(statusCode: 200);
   }
 
   stdout.writeln('[webhook/fedex] delivery confirmed for $trackingNumber');
 
-  final repo   = OrderRepo(context.read<Db>());
+  final repo = OrderRepo(context.read<Db>());
   final escrow = context.read<EscrowService>();
-  final email  = context.read<EmailService>();
+  final email = context.read<EmailService>();
 
   final order = await repo.findByTrackingNumber(trackingNumber);
   if (order == null) {
@@ -99,8 +84,8 @@ Future<Response> onRequest(RequestContext context) async {
 
   // 2 — Update order in DB.
   await repo.markDelivered(
-    id:               order.id,
-    deliveredAt:      now,
+    id: order.id,
+    deliveredAt: now,
     inspectionEndsAt: inspectionEndsAt,
   );
 
@@ -108,11 +93,11 @@ Future<Response> onRequest(RequestContext context) async {
   if (order.buyerEmail != null) {
     unawaited(
       email.sendDeliveryConfirmation(
-        toEmail:          order.buyerEmail!,
-        productName:      order.productName ?? 'IT Asset',
-        trackingNumber:   trackingNumber,
+        toEmail: order.buyerEmail!,
+        productName: order.productName ?? 'IT Asset',
+        trackingNumber: trackingNumber,
         inspectionEndsAt: inspectionEndsAt,
-        confirmUrl:       '', // populated by email template
+        confirmUrl: '', // populated by email template
       ),
     );
   }
@@ -124,7 +109,6 @@ Future<Response> onRequest(RequestContext context) async {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Returns true if the payload contains a delivered (DL) event.
 bool _isDeliveredEvent(Map<String, dynamic> payload) {
   // FedEx sends individual track events or arrays depending on the version.
   // Check common payload shapes.
@@ -140,8 +124,8 @@ bool _isDeliveredEvent(Map<String, dynamic> payload) {
   final events = payload['events'] as List?;
   if (events != null) {
     for (final e in events) {
-      if ((e as Map)['eventType'] == 'DL' ||
-          (e)['derivedStatusCode'] == 'DL') return true;
+      if ((e as Map)['eventType'] == 'DL' || (e)['derivedStatusCode'] == 'DL')
+        return true;
     }
   }
 
@@ -152,7 +136,7 @@ bool _isDeliveredEvent(Map<String, dynamic> payload) {
   final results = payload['trackingResults'] as List?;
   if (results != null) {
     for (final r in results) {
-      final rm  = r as Map;
+      final rm = r as Map;
       final scanEvents = rm['scanEvents'] as List?;
       if (scanEvents != null) {
         for (final e in scanEvents) {
@@ -166,7 +150,6 @@ bool _isDeliveredEvent(Map<String, dynamic> payload) {
   return false;
 }
 
-/// Extracts the tracking number from the payload (handles multiple shapes).
 String? _extractTrackingNumber(Map<String, dynamic> payload) {
   // Direct field
   final direct = payload['trackingNumber'] as String?;
@@ -194,8 +177,6 @@ String? _extractTrackingNumber(Map<String, dynamic> payload) {
   return null;
 }
 
-/// HMAC-SHA256 webhook signature verification.
-/// Uses constant-time comparison to prevent timing-based bypass.
 bool _verifySignature(String body, String receivedSig, String secret) {
   if (receivedSig.isEmpty) return false;
   final mac = Hmac(sha256, utf8.encode(secret));

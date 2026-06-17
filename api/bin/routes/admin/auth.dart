@@ -1,27 +1,3 @@
-/// POST /admin/auth
-///
-/// Authenticates a GuildMark employee for DevDash access.
-///
-/// Lookup order:
-///   1. guildmark_employees table — email + bcrypt password.
-///   2. ADMIN_AUTH_USER / ADMIN_AUTH_PASS env vars — emergency fallback when
-///      no employee rows exist yet (bootstrap scenario).
-///
-/// Two-factor (passkey) flow — only active when WEBAUTHN_RP_ID is set:
-///
-///   A. Employee has registered passkeys
-///      → Returns { requires_passkey: true, challenge_id, challenge,
-///                  allow_credentials: [{id, type}] }
-///      → Client completes assertion via POST /admin/passkey/auth/complete
-///
-///   B. Employee has no passkeys yet
-///      → Issues a short-lived "setup" JWT (companyId: 'devdash_setup')
-///      → Returns { requires_passkey_setup: true, setup_token, employee: {...} }
-///      → Client redirects to /register-passkey
-///
-///   C. WEBAUTHN_RP_ID not set (or env-var fallback path)
-///      → Issues a full access JWT immediately (legacy / bootstrap)
-
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -40,9 +16,10 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
-  final body     = await context.request.json() as Map<String, dynamic>?;
-  final email    = (body?['email']    as String?)?.trim().toLowerCase()
-                ?? (body?['username'] as String?)?.trim().toLowerCase();
+  final body = await context.request.json() as Map<String, dynamic>?;
+  final email =
+      (body?['email'] as String?)?.trim().toLowerCase() ??
+      (body?['username'] as String?)?.trim().toLowerCase();
   final password = body?['password'] as String?;
 
   if (email == null || email.isEmpty || password == null || password.isEmpty) {
@@ -51,7 +28,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final db  = context.read<Db>();
+  final db = context.read<Db>();
 
   // ── 1. Employee table lookup ─────────────────────────────────────────────
   final rows = await db.query(
@@ -65,13 +42,14 @@ Future<Response> onRequest(RequestContext context) async {
   );
 
   if (rows.isNotEmpty) {
-    final row  = rows.first.toColumnMap();
+    final row = rows.first.toColumnMap();
     final hash = row['password_hash'].toString();
 
-    if (!verifyPassword(password, hash)) return unauthorized('Invalid credentials');
+    if (!verifyPassword(password, hash))
+      return unauthorized('Invalid credentials');
 
-    final id       = row['id'].toString();
-    final role     = row['full_name'] != null ? row['role'].toString() : 'admin';
+    final id = row['id'].toString();
+    final role = row['full_name'] != null ? row['role'].toString() : 'admin';
     final fullName = row['full_name']?.toString() ?? 'Employee';
 
     // Update last_login_at
@@ -96,7 +74,7 @@ Future<Response> onRequest(RequestContext context) async {
       if (pkRows.isNotEmpty) {
         // ── Path A: employee has passkeys — issue authentication challenge ──
         final challengeBytes = _randomBytes(32);
-        final challengeB64   = toBase64Url(challengeBytes);
+        final challengeB64 = toBase64Url(challengeBytes);
 
         final chalRows = await db.query(
           '''
@@ -114,27 +92,31 @@ Future<Response> onRequest(RequestContext context) async {
           return {'id': cred, 'type': 'public-key'};
         }).toList();
 
-        return Response.json(body: {
-          'requires_passkey':   true,
-          'challenge_id':       challengeId,
-          'challenge':          challengeB64,
-          'allow_credentials':  allowCredentials,
-        });
+        return Response.json(
+          body: {
+            'requires_passkey': true,
+            'challenge_id': challengeId,
+            'challenge': challengeB64,
+            'allow_credentials': allowCredentials,
+          },
+        );
       } else {
         // ── Path B: no passkeys yet — issue a setup token ───────────────────
         final setupToken = jwt.issueAccessToken(
           AccessClaims(userId: id, companyId: 'devdash_setup', role: role),
         );
-        return Response.json(body: {
-          'requires_passkey_setup': true,
-          'setup_token': setupToken,
-          'employee': {
-            'id':        id,
-            'email':     email,
-            'full_name': fullName,
-            'role':      role,
+        return Response.json(
+          body: {
+            'requires_passkey_setup': true,
+            'setup_token': setupToken,
+            'employee': {
+              'id': id,
+              'email': email,
+              'full_name': fullName,
+              'role': role,
+            },
           },
-        });
+        );
       }
     }
 
@@ -142,34 +124,38 @@ Future<Response> onRequest(RequestContext context) async {
     final token = jwt.issueAccessToken(
       AccessClaims(userId: id, companyId: 'devdash', role: 'admin'),
     );
-    return Response.json(body: {
-      'access_token': token,
-      'employee': {
-        'id':        id,
-        'email':     email,
-        'full_name': fullName,
-        'role':      role,
+    return Response.json(
+      body: {
+        'access_token': token,
+        'employee': {
+          'id': id,
+          'email': email,
+          'full_name': fullName,
+          'role': role,
+        },
       },
-    });
+    );
   }
 
   // ── 2. Env-var fallback (bootstrap / emergency access) ───────────────────
   if (cfg.adminAuthUser != null && cfg.adminAuthPass != null) {
-    final userMatch = constantTimeEquals(email,    cfg.adminAuthUser!);
+    final userMatch = constantTimeEquals(email, cfg.adminAuthUser!);
     final passMatch = constantTimeEquals(password, cfg.adminAuthPass!);
     if (userMatch && passMatch) {
       final token = jwt.issueAccessToken(
         AccessClaims(userId: 'admin', companyId: 'devdash', role: 'admin'),
       );
-      return Response.json(body: {
-        'access_token': token,
-        'employee': {
-          'id':        'admin',
-          'email':     cfg.adminAuthUser!,
-          'full_name': 'Admin',
-          'role':      'superadmin',
+      return Response.json(
+        body: {
+          'access_token': token,
+          'employee': {
+            'id': 'admin',
+            'email': cfg.adminAuthUser!,
+            'full_name': 'Admin',
+            'role': 'superadmin',
+          },
         },
-      });
+      );
     }
   }
 
@@ -177,7 +163,7 @@ Future<Response> onRequest(RequestContext context) async {
 }
 
 Uint8List _randomBytes(int length) {
-  final rng  = Random.secure();
+  final rng = Random.secure();
   return Uint8List.fromList(
     List<int>.generate(length, (_) => rng.nextInt(256)),
   );

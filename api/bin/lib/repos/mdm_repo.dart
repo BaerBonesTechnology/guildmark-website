@@ -1,14 +1,3 @@
-/// MDM connections data-access.
-///
-/// Credential blobs are stored AES-GCM encrypted. The encryption/decryption
-/// helper lives in `../mdm/credentials.dart` (not yet implemented — see TODO
-/// below). This repo stores and retrieves the raw cipher bytes; callers are
-/// responsible for the app-layer encryption.
-///
-/// TODO: Implement `lib/mdm/credentials.dart` with an AesCipher class that
-/// wraps dart:crypto's AES-GCM support. Key material should be loaded from
-/// the `MDM_ENCRYPTION_KEY` env variable (base64-encoded 256-bit key).
-
 import '../db/pool.dart';
 import '../models/mdm_connection.dart';
 
@@ -29,14 +18,6 @@ class MdmRepo {
     return result.map((r) => MdmConnection.fromRow(r.toColumnMap())).toList();
   }
 
-  /// Persist a new MDM connection.
-  ///
-  /// [encryptedCredentials] and [nonce] must come from the credentials
-  /// encryption helper (see module-level TODO). Raw plaintext credentials
-  /// must never be passed here.
-  ///
-  /// The UNIQUE (company_id, mdm_type) constraint means each company can have
-  /// at most one connection per MDM type. A conflict will throw from postgres.
   Future<MdmConnection> create({
     required String companyId,
     required String mdmType,
@@ -50,17 +31,15 @@ class MdmRepo {
       RETURNING $_mdmCols
       ''',
       parameters: {
-        'cid':     companyId,
+        'cid': companyId,
         'mdmType': mdmType,
-        'cipher':  encryptedCredentials,
-        'nonce':   nonce,
+        'cipher': encryptedCredentials,
+        'nonce': nonce,
       },
     );
     return MdmConnection.fromRow(result.first.toColumnMap());
   }
 
-  /// Remove a connection row. Validates company ownership so one company
-  /// cannot delete another's connection.
   Future<void> delete({required String id, required String companyId}) async {
     await _db.query(
       'DELETE FROM mdm_connections WHERE id = @id AND company_id = @cid',
@@ -69,9 +48,6 @@ class MdmRepo {
     // No-op if not found — idempotent deletes are fine; the resource is gone.
   }
 
-  /// Update sync status fields after a sync run completes.
-  ///
-  /// Called by the sync job worker, not from HTTP routes directly.
   Future<void> recordSyncResult({
     required String id,
     required String status,
@@ -88,6 +64,11 @@ class MdmRepo {
       WHERE id = @id
       ''',
       parameters: {
-        'id':          id,
-        'status':      status,
-      
+        'id': id,
+        'status': status,
+        'error': error,
+        'deviceCount': deviceCount,
+      },
+    );
+  }
+}

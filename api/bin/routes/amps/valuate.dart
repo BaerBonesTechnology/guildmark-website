@@ -1,21 +1,3 @@
-/// POST /amps/valuate — trigger a background ML valuation pass.
-///
-/// Checks whether the company has any assets with active/draft listings.
-/// If none exist the response is { status: "no_listings" } and nothing
-/// further happens — the user will pick up valuations the first time their
-/// assets are listed normally.
-///
-/// If listings do exist the route:
-///   1. Marks the company as valuation_status = 'running'.
-///   2. Returns 202 immediately so the UI can start polling.
-///   3. Fires a fire-and-forget Future that iterates every eligible
-///      (asset, listing) pair, calls the ML service for a fresh FMV, and
-///      updates listing.fair_market_value in place.
-///   4. On completion (or failure) sets valuation_status accordingly.
-///
-/// Called by the frontend immediately after a successful AMPS subscription
-/// checkout so returning users see current values without waiting 24 hours.
-
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
@@ -91,27 +73,29 @@ Future<Response> onRequest(RequestContext context) async {
   // The RequestContext is request-scoped and must NOT be captured by the
   // closure — only plain values and the shared Db/MlClient singletons.
   final companyId = auth.companyId;
-  final items = rows.map((r) {
-    final row = r.toColumnMap();
-    return _WorkItem(
-      assetId:        row['asset_id']     as String,
-      listingId:      row['listing_id']   as String,
-      modelName:      row['model_name']   as String,
-      assetType:      row['asset_type']   as String,
-      conditionGrade: row['condition_grade'] as String,
-      purchaseDate:   row['purchase_date']   as DateTime?,
-      cpuScore:       numToDoubleOrNull(row['cpu_score']),
-      ramGb:          numToIntOrNull(row['ram_gb']),
-      storageGb:      numToIntOrNull(row['storage_gb']),
-      originalPrice:  numToDoubleOrNull(row['original_purchase_price']),
-    );
-  }).toList(growable: false);
+  final items = rows
+      .map((r) {
+        final row = r.toColumnMap();
+        return _WorkItem(
+          assetId: row['asset_id'] as String,
+          listingId: row['listing_id'] as String,
+          modelName: row['model_name'] as String,
+          assetType: row['asset_type'] as String,
+          conditionGrade: row['condition_grade'] as String,
+          purchaseDate: row['purchase_date'] as DateTime?,
+          cpuScore: numToDoubleOrNull(row['cpu_score']),
+          ramGb: numToIntOrNull(row['ram_gb']),
+          storageGb: numToIntOrNull(row['storage_gb']),
+          originalPrice: numToDoubleOrNull(row['original_purchase_price']),
+        );
+      })
+      .toList(growable: false);
 
   _runValuationJob(
-    db:        db,
-    ml:        ml,
+    db: db,
+    ml: ml,
     companyId: companyId,
-    items:     items,
+    items: items,
   ).ignore();
 
   return Response.json(
@@ -134,20 +118,22 @@ Future<void> _runValuationJob({
   try {
     for (final item in items) {
       try {
-        final valuation = await ml.estimateFairMarketValue(ValuationRequest(
-          assetType:      item.assetType,
-          modelName:      item.modelName,
-          conditionGrade: item.conditionGrade,
-          ageMonths:      _ageMonths(item.purchaseDate),
-          cpuScore:       item.cpuScore,
-          ramGb:          item.ramGb,
-          storageGb:      item.storageGb,
-          originalPrice:  item.originalPrice,
-        ));
+        final valuation = await ml.estimateFairMarketValue(
+          ValuationRequest(
+            assetType: item.assetType,
+            modelName: item.modelName,
+            conditionGrade: item.conditionGrade,
+            ageMonths: _ageMonths(item.purchaseDate),
+            cpuScore: item.cpuScore,
+            ramGb: item.ramGb,
+            storageGb: item.storageGb,
+            originalPrice: item.originalPrice,
+          ),
+        );
         await repo.updateFmvByListingId(
           listingId: item.listingId,
           companyId: companyId,
-          fmv:       valuation.fairMarketValue,
+          fmv: valuation.fairMarketValue,
         );
       } catch (e) {
         // Non-fatal — log and continue so one bad asset doesn't abort the run.
@@ -159,7 +145,9 @@ Future<void> _runValuationJob({
       "UPDATE companies SET valuation_status = 'complete' WHERE id = @cid::uuid",
       parameters: {'cid': companyId},
     );
-    stdout.writeln('[valuate] job complete for company $companyId (${items.length} assets)');
+    stdout.writeln(
+      '[valuate] job complete for company $companyId (${items.length} assets)',
+    );
   } catch (e, st) {
     stderr.writeln('[valuate] job failed for company $companyId: $e\n$st');
     await db
@@ -195,14 +183,14 @@ class _WorkItem {
     this.originalPrice,
   });
 
-  final String    assetId;
-  final String    listingId;
-  final String    modelName;
-  final String    assetType;
-  final String    conditionGrade;
+  final String assetId;
+  final String listingId;
+  final String modelName;
+  final String assetType;
+  final String conditionGrade;
   final DateTime? purchaseDate;
-  final double?   cpuScore;
-  final int?      ramGb;
-  final int?      storageGb;
-  final double?   originalPrice;
+  final double? cpuScore;
+  final int? ramGb;
+  final int? storageGb;
+  final double? originalPrice;
 }

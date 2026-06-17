@@ -1,8 +1,3 @@
-/// GET /amps/assets — paginated, filterable AMPS asset inventory.
-///
-/// Query params: asset_type, condition_grade, search, filter (e.g. "aging"),
-///               page, page_size.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -19,16 +14,17 @@ Future<Response> onRequest(RequestContext context) async {
 
   final q = context.request.uri.queryParameters;
   final filters = AmpsAssetFilters(
-    assetType:      q['asset_type'],
+    assetType: q['asset_type'],
     conditionGrade: q['condition_grade'],
-    search:         q['search'],
-    filter:         q['filter'],
-    page:           int.tryParse(q['page'] ?? '1')         ?? 1,
-    pageSize:       int.tryParse(q['page_size'] ?? '50')   ?? 50,
+    search: q['search'],
+    filter: q['filter'],
+    page: int.tryParse(q['page'] ?? '1') ?? 1,
+    pageSize: int.tryParse(q['page_size'] ?? '50') ?? 50,
   );
 
   final result = await AssetRepo(context.read<Db>()).searchAmps(
     companyId: auth.companyId,
-    filters:   filters,
+    filters: filters,
   );
-  return Response.j
+  return Response.json(body: result.toJson());
+}

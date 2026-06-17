@@ -94,7 +94,7 @@ declare global {
 // ---------------------------------------------------------------------------
 
 const inputCls =
-  "w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm font-mono " +
+  "w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm  " +
   "placeholder:text-black focus:outline-none focus:ring-1 focus:ring-ring " +
   "disabled:opacity-50";
 
@@ -287,7 +287,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-mono flex items-center gap-2">
+          <DialogTitle className=" flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amps-accent" />
             {step === "success"
               ? "You're all set!"
@@ -295,7 +295,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
               ? `Upgrade to ${meta.label}`
               : `Switch to ${meta.label}`}
           </DialogTitle>
-          <DialogDescription className="font-mono">
+          <DialogDescription className="">
             {step === "confirm" && `$${meta.price}/month, billed monthly. Cancel any time.`}
             {step === "card"    && "Enter your payment details to complete the subscription."}
             {step === "success" && `Your ${meta.label} plan is now active.`}
@@ -307,15 +307,15 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
           <div className="space-y-5 py-2">
             <div className="rounded-lg border bg-muted p-4 space-y-3">
               <div className="flex items-baseline justify-between">
-                <span className={`font-mono font-semibold text-lg ${meta.color}`}>
+                <span className={` font-semibold text-lg ${meta.color}`}>
                   {meta.label}
                 </span>
-                <span className="font-mono font-bold text-xl">
+                <span className=" font-bold text-xl">
                   ${meta.price}
                   <span className="text-sm text-muted-foreground font-normal">/mo</span>
                 </span>
               </div>
-              <ul className="space-y-1.5 text-sm font-mono text-muted-foreground">
+              <ul className="space-y-1.5 text-sm  text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                   {meta.devices}
@@ -336,14 +336,14 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
             </div>
             <div className="flex gap-2 pt-1">
               <Button
-                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white font-mono"
+                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white "
                 onClick={() => setStep("card")}
               >
                 Continue to payment
               </Button>
               <Button
                 variant="outline"
-                className="font-mono"
+                className=""
                 onClick={() => onOpenChange(false)}
               >
                 Cancel
@@ -358,13 +358,13 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
             {/* ── Card Details section ── */}
             <div className="space-y-3">
-              <p className="text-xs font-mono font-semibold uppercase tracking-wider text-foreground">
+              <p className="text-xs  font-semibold uppercase tracking-wider text-foreground">
                 Card Details
               </p>
 
               {/* Cardholder Name */}
               <div className="space-y-1 text-black ">
-                <label className="text-xs font-mono text-foreground/70">Cardholder Name *</label>
+                <label className="text-xs  text-foreground/70">Cardholder Name *</label>
                 <input
                   className={inputCls}
                   placeholder="Jane Smith"
@@ -377,7 +377,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
               {/* Square card form — Card Number, Expiry, CVV hosted by Square */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-foreground/70">
+                <label className="text-xs  text-foreground/70">
                   Card Number · Expiry · CVV
                 </label>
                 {/* Square Web Payments SDK mounts its iframe here.
@@ -388,13 +388,13 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
             {/* ── Billing Address section ── */}
             <div className="space-y-3 border-t pt-4">
-              <p className="text-xs font-mono font-semibold uppercase tracking-wider text-foreground">
+              <p className="text-xs  font-semibold uppercase tracking-wider text-foreground">
                 Billing Address
               </p>
 
               {/* Business Name */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-foreground/70">Business Name</label>
+                <label className="text-xs  text-foreground/70">Business Name</label>
                 <input
                   className={inputCls}
                   placeholder="Acme Corp"
@@ -407,7 +407,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
               {/* Address Line 1 */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-foreground/70">Address Line 1 *</label>
+                <label className="text-xs  text-foreground/70">Address Line 1 *</label>
                 <input
                   className={inputCls}
                   placeholder="123 Main St"
@@ -420,7 +420,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
               {/* Address Line 2 */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-foreground/70">Address Line 2</label>
+                <label className="text-xs  text-foreground/70">Address Line 2</label>
                 <input
                   className={inputCls}
                   placeholder="Suite 400"
@@ -434,7 +434,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
               {/* City + State */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-foreground/70">City *</label>
+                  <label className="text-xs  text-foreground/70">City *</label>
                   <input
                     className={inputCls}
                     placeholder="New York"
@@ -445,7 +445,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-foreground/70">State *</label>
+                  <label className="text-xs  text-foreground/70">State *</label>
                   <input
                     className={inputCls}
                     placeholder="NY"
@@ -460,7 +460,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
               {/* ZIP */}
               <div className="space-y-1">
-                <label className="text-xs font-mono text-foreground/70">ZIP Code *</label>
+                <label className="text-xs  text-foreground/70">ZIP Code *</label>
                 <input
                   className={`${inputCls} max-w-[160px]`}
                   placeholder="10001"
@@ -482,8 +482,8 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
                 disabled={isLoading}
               />
               <div>
-                <p className="text-sm font-mono">Save card for future payments</p>
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-sm ">Save card for future payments</p>
+                <p className="text-xs text-muted-foreground ">
                   Your card is stored securely by Square — we never see or store your card number.
                 </p>
               </div>
@@ -491,7 +491,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
 
             {/* Error */}
             {cardError && (
-              <div className="flex items-start gap-2 text-sm text-destructive font-mono">
+              <div className="flex items-start gap-2 text-sm text-destructive ">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 {cardError}
               </div>
@@ -500,7 +500,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
             {/* Action buttons */}
             <div className="flex gap-2">
               <Button
-                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white font-mono gap-2"
+                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white  gap-2"
                 onClick={handlePay}
                 disabled={isLoading}
               >
@@ -511,7 +511,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
               </Button>
               <Button
                 variant="outline"
-                className="font-mono"
+                className=""
                 onClick={() => setStep("confirm")}
                 disabled={isLoading}
               >
@@ -519,7 +519,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground font-mono text-center">
+            <p className="text-xs text-muted-foreground  text-center">
               Secured by Square · Your card is encrypted and never stored on our servers.
             </p>
           </div>
@@ -532,13 +532,13 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
               <CheckCircle2 className="w-7 h-7 text-primary" />
             </div>
             <div className="space-y-1">
-              <p className="font-mono font-semibold">{meta.label} plan activated</p>
-              <p className="text-sm text-muted-foreground font-mono">
+              <p className=" font-semibold">{meta.label} plan activated</p>
+              <p className="text-sm text-muted-foreground ">
                 Your new features are available immediately. A receipt has been sent to your email.
               </p>
             </div>
             <Button
-              className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-white font-mono"
+              className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-white "
               onClick={async () => {
                 // Refresh the access token so the in-memory user picks up the
                 // new subscription_plan before TierGate checks it.

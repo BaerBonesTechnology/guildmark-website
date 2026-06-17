@@ -1,8 +1,3 @@
-/// GET /subscriptions/current
-///
-/// Returns the calling company's current subscription plan + status,
-/// along with recent billing invoices.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/context.dart';
@@ -18,7 +13,7 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final db   = context.read<Db>();
+  final db = context.read<Db>();
   final repo = SubscriptionRepo(db);
 
   final sub = await repo.findByCompany(auth.companyId);
@@ -43,22 +38,24 @@ Future<Response> onRequest(RequestContext context) async {
   final invoices = invoiceRows.map((r) {
     final row = r.toColumnMap();
     return {
-      'id':          row['id'].toString(),
-      'plan':        row['plan'].toString(),
+      'id': row['id'].toString(),
+      'plan': row['plan'].toString(),
       'amount_cents': row['amount_cents'] as int,
-      'currency':    row['currency'].toString(),
-      'status':      row['status'].toString(),
+      'currency': row['currency'].toString(),
+      'status': row['status'].toString(),
       'receipt_url': row['receipt_url']?.toString(),
       'period_start': (row['period_start'] as DateTime?)?.toIso8601String(),
-      'period_end':   (row['period_end']   as DateTime?)?.toIso8601String(),
-      'created_at':   (row['created_at']   as DateTime).toIso8601String(),
+      'period_end': (row['period_end'] as DateTime?)?.toIso8601String(),
+      'created_at': (row['created_at'] as DateTime).toIso8601String(),
     };
   }).toList();
 
-  return Response.json(body: {
-    ...sub.toJson(),
-    'id':         sub.id,
-    'company_id': sub.companyId,
-    'invoices':   invoices,
-  });
+  return Response.json(
+    body: {
+      ...sub.toJson(),
+      'id': sub.id,
+      'company_id': sub.companyId,
+      'invoices': invoices,
+    },
+  );
 }

@@ -40,28 +40,28 @@ export function MyListings() {
     <div className="space-y-6 pb-20">
       {/* Header Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="font-mono">
+        <Card className="">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Active Listings</p>
-            <p className="text-2xl font-mono text-foreground mt-1">{activeListings.length}</p>
+            <p className="text-2xl  text-foreground mt-1">{activeListings.length}</p>
           </CardContent>
         </Card>
-        <Card className="font-mono">
+        <Card className="">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Value</p>
-            <p className="text-2xl font-mono text-primary mt-1">${totalValue.toLocaleString()}</p>
+            <p className="text-2xl  text-primary mt-1">${totalValue.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card className="font-mono">
+        <Card className="">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Listings</p>
-            <p className="text-2xl font-mono text-foreground mt-1">{myListings.length}</p>
+            <p className="text-2xl  text-foreground mt-1">{myListings.length}</p>
           </CardContent>
         </Card>
-        <Card className="font-mono">
+        <Card className="">
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Valuation Flags</p>
-            <p className="text-2xl font-mono text-warning mt-1">
+            <p className="text-2xl  text-warning mt-1">
               {myListings.filter((l) => l.valuation_flag === "seller_overpriced").length}
             </p>
           </CardContent>
@@ -70,11 +70,11 @@ export function MyListings() {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="font-mono">
+        <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="">
           <Upload />
           Import CSV
         </Button>
-        <Button onClick={() => setCreateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-white font-mono">
+        <Button onClick={() => setCreateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-white ">
           <Plus />
           Create New Listing
         </Button>
@@ -99,7 +99,7 @@ export function MyListings() {
       <div className="flex gap-2 border-b">
         <button
           onClick={() => setActiveTab("listings")}
-          className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 ${
+          className={`px-4 py-2  text-sm transition-colors border-b-2 ${
             activeTab === "listings"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -109,7 +109,7 @@ export function MyListings() {
         </button>
         <button
           onClick={() => setActiveTab("offers")}
-          className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 relative ${
+          className={`px-4 py-2  text-sm transition-colors border-b-2 relative ${
             activeTab === "offers"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -126,7 +126,7 @@ export function MyListings() {
 
       {/* Listings Table */}
       {activeTab === "listings" && (
-        <Card className="font-mono">
+        <Card className="">
           <CardHeader className="border-b">
             <CardTitle>Your Active Listings</CardTitle>
             <CardDescription>Manage your marketplace listings and track performance</CardDescription>
@@ -135,21 +135,21 @@ export function MyListings() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-mono text-xs uppercase">Listing ID</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Item</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Quantity</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Price/Unit</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Total Value</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Views</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Offers</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Status</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Actions</TableHead>
+                  <TableHead className=" text-xs uppercase">Listing ID</TableHead>
+                  <TableHead className=" text-xs uppercase">Item</TableHead>
+                  <TableHead className=" text-xs uppercase">Quantity</TableHead>
+                  <TableHead className=" text-xs uppercase">Price/Unit</TableHead>
+                  <TableHead className=" text-xs uppercase">Total Value</TableHead>
+                  <TableHead className=" text-xs uppercase">Views</TableHead>
+                  <TableHead className=" text-xs uppercase">Offers</TableHead>
+                  <TableHead className=" text-xs uppercase">Status</TableHead>
+                  <TableHead className=" text-xs uppercase">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-40 text-center text-muted-foreground font-mono text-sm">
+                    <TableCell colSpan={9} className="h-40 text-center text-muted-foreground  text-sm">
                       Loading listings…
                     </TableCell>
                   </TableRow>
@@ -159,8 +159,8 @@ export function MyListings() {
                     <TableCell colSpan={9} className="h-40 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Package className="w-8 h-8 opacity-30" />
-                        <p className="text-sm font-mono">No listings yet</p>
-                        <Button variant="outline" size="sm" className="font-mono mt-1" onClick={() => setCreateDialogOpen(true)}>
+                        <p className="text-sm ">No listings yet</p>
+                        <Button variant="outline" size="sm" className=" mt-1" onClick={() => setCreateDialogOpen(true)}>
                           <Plus className="w-3 h-3 mr-1" /> Create your first listing
                         </Button>
                       </div>
@@ -170,11 +170,11 @@ export function MyListings() {
                 {myListings.map((listing) => (
                   <TableRow key={listing.id}>
                     <TableCell>
-                      <span className="font-mono text-sm">{listing.id.slice(0, 8)}</span>
+                      <span className=" text-sm">{listing.id.slice(0, 8)}</span>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-mono text-sm">{listing.model_name}</p>
+                        <p className=" text-sm">{listing.model_name}</p>
                         <div className="flex gap-1 mt-1 flex-wrap">
                           {listing.asset_type && <SpecPill>{listing.asset_type}</SpecPill>}
                           {listing.condition_grade && <SpecPill>Grade {listing.condition_grade}</SpecPill>}
@@ -183,28 +183,28 @@ export function MyListings() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm">{listing.quantity ?? 1}</span>
+                      <span className=" text-sm">{listing.quantity ?? 1}</span>
                     </TableCell>
                     <TableCell>
-                      <span className={`font-mono text-sm ${priceColor(listing.valuation_flag)}`}>
+                      <span className={` text-sm ${priceColor(listing.valuation_flag)}`}>
                         ${listing.listed_price?.toLocaleString() ?? "—"}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm">
+                      <span className=" text-sm">
                         ${((listing.listed_price ?? 0) * (listing.quantity ?? 1)).toLocaleString()}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Eye className="w-3 h-3 text-muted-foreground" />
-                        <span className="font-mono text-sm text-muted-foreground">—</span>
+                        <span className=" text-sm text-muted-foreground">—</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <MessageSquare className="w-3 h-3 text-muted-foreground" />
-                        <span className="font-mono text-sm text-muted-foreground">—</span>
+                        <span className=" text-sm text-muted-foreground">—</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -263,7 +263,7 @@ export function MyListings() {
 
       {/* Offers Table */}
       {activeTab === "offers" && (
-        <Card className="font-mono">
+        <Card className="">
           <CardHeader className="border-b">
             <CardTitle>Offers Received</CardTitle>
             <CardDescription>Review and respond to buyer offers</CardDescription>
@@ -272,14 +272,14 @@ export function MyListings() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-mono text-xs uppercase">Buyer</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Item</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Quantity</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Their Offer</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Your Price</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Difference</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Timestamp</TableHead>
-                  <TableHead className="font-mono text-xs uppercase">Actions</TableHead>
+                  <TableHead className=" text-xs uppercase">Buyer</TableHead>
+                  <TableHead className=" text-xs uppercase">Item</TableHead>
+                  <TableHead className=" text-xs uppercase">Quantity</TableHead>
+                  <TableHead className=" text-xs uppercase">Their Offer</TableHead>
+                  <TableHead className=" text-xs uppercase">Your Price</TableHead>
+                  <TableHead className=" text-xs uppercase">Difference</TableHead>
+                  <TableHead className=" text-xs uppercase">Timestamp</TableHead>
+                  <TableHead className=" text-xs uppercase">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -291,23 +291,23 @@ export function MyListings() {
                   return (
                     <TableRow key={offer.id}>
                       <TableCell>
-                        <span className="font-mono text-sm">{offer.buyer}</span>
+                        <span className=" text-sm">{offer.buyer}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-mono text-sm">{offer.item}</span>
+                        <span className=" text-sm">{offer.item}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-mono text-sm">{offer.quantity} units</span>
+                        <span className=" text-sm">{offer.quantity} units</span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-mono text-sm text-foreground">${offer.offerPrice}/unit</span>
+                        <span className=" text-sm text-foreground">${offer.offerPrice}/unit</span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-mono text-sm text-muted-foreground">${offer.yourPrice}/unit</span>
+                        <span className=" text-sm text-muted-foreground">${offer.yourPrice}/unit</span>
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`font-mono text-sm ${
+                          className={` text-sm ${
                             isHigher ? "text-primary" : "text-red-500"
                           }`}
                         >
@@ -315,17 +315,17 @@ export function MyListings() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-mono text-xs text-muted-foreground">{offer.timestamp}</span>
+                        <span className=" text-xs text-muted-foreground">{offer.timestamp}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-mono">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-white ">
                             Accept
                           </Button>
-                          <Button variant="outline" size="sm" className="font-mono">
+                          <Button variant="outline" size="sm" className="">
                             Counter
                           </Button>
-                          <Button variant="ghost" size="sm" className="font-mono text-red-500">
+                          <Button variant="ghost" size="sm" className=" text-red-500">
                             Decline
                           </Button>
                         </div>

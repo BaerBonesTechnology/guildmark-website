@@ -1,5 +1,3 @@
-/// Data-access for users + companies + refresh tokens.
-
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -16,7 +14,7 @@ class UserRecord {
     required this.fullName,
     required this.role,
     required this.companyName,
-    this.subscriptionPlan   = 'free',
+    this.subscriptionPlan = 'free',
     this.subscriptionStatus = 'active',
   });
 
@@ -27,21 +25,21 @@ class UserRecord {
   final String fullName;
   final String role;
   final String companyName;
-  /// Current subscription plan: 'free' | 'starter' | 'growth' | 'pro'
+
   final String subscriptionPlan;
-  /// 'active' | 'cancelled' | 'past_due'
+
   final String subscriptionStatus;
 
   Map<String, dynamic> toAuthUser() => {
-        'id':                  id,
-        'email':               email,
-        'full_name':           fullName,
-        'role':                role,
-        'company_id':          companyId,
-        'company':             companyName,
-        'subscription_plan':   subscriptionPlan,
-        'subscription_status': subscriptionStatus,
-      };
+    'id': id,
+    'email': email,
+    'full_name': fullName,
+    'role': role,
+    'company_id': companyId,
+    'company': companyName,
+    'subscription_plan': subscriptionPlan,
+    'subscription_status': subscriptionStatus,
+  };
 }
 
 class UserRepo {
@@ -84,14 +82,14 @@ class UserRepo {
           'VALUES (@name, @size, @industry) RETURNING id::text, name',
         ),
         parameters: {
-          'name':     companyName,
-          'size':     companySize,
+          'name': companyName,
+          'size': companySize,
           'industry': industry,
         },
       );
       final companyRow = companyResult.first.toColumnMap();
-      final companyId  = companyRow['id'].toString();
-      final compName   = companyRow['name'].toString();
+      final companyId = companyRow['id'].toString();
+      final compName = companyRow['name'].toString();
 
       final userResult = await tx.execute(
         Sql.named(
@@ -100,23 +98,23 @@ class UserRepo {
           'RETURNING id::text, email::text, password_hash, full_name, role::text',
         ),
         parameters: {
-          'cid':   companyId,
+          'cid': companyId,
           'email': email,
-          'hash':  passwordHash,
-          'name':  fullName,
+          'hash': passwordHash,
+          'name': fullName,
         },
       );
       final userRow = userResult.first.toColumnMap();
 
       return UserRecord(
-        id:                 userRow['id'].toString(),
-        companyId:          companyId,
-        email:              userRow['email'].toString(),
-        passwordHash:       userRow['password_hash'].toString(),
-        fullName:           userRow['full_name'].toString(),
-        role:               userRow['role'].toString(),
-        companyName:        compName,
-        subscriptionPlan:   'free',
+        id: userRow['id'].toString(),
+        companyId: companyId,
+        email: userRow['email'].toString(),
+        passwordHash: userRow['password_hash'].toString(),
+        fullName: userRow['full_name'].toString(),
+        role: userRow['role'].toString(),
+        companyName: compName,
+        subscriptionPlan: 'free',
         subscriptionStatus: 'active',
       );
     });
@@ -135,8 +133,6 @@ class UserRepo {
     );
   }
 
-  /// Atomically validate + rotate a refresh token. Returns the user the
-  /// token belongs to, or null if invalid/expired/revoked.
   Future<UserRecord?> rotateRefreshToken({
     required String plaintextToken,
     required String newPlaintextToken,
@@ -159,7 +155,8 @@ class UserRepo {
 
       await tx.execute(
         Sql.named(
-            'UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = @h'),
+          'UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = @h',
+        ),
         parameters: {'h': oldHash},
       );
       await tx.execute(
@@ -197,11 +194,17 @@ class UserRepo {
   }
 
   static UserRecord _fromRow(Map<String, dynamic> row) => UserRecord(
-    id:                 row['id'].toString(),
-    companyId:          row['company_id'].toString(),
-    email:              row['email'].toString(),
-    passwordHash:       row['password_hash'].toString(),
-    fullName:           row['full_name'].toString(),
-    role:               row['role'].toString(),
-    companyName:        row['company_name'].toString(),
- 
+    id: row['id'].toString(),
+    companyId: row['company_id'].toString(),
+    email: row['email'].toString(),
+    passwordHash: row['password_hash'].toString(),
+    fullName: row['full_name'].toString(),
+    role: row['role'].toString(),
+    companyName: row['company_name'].toString(),
+    subscriptionPlan: row['subscription_plan']?.toString() ?? 'free',
+    subscriptionStatus: row['subscription_status']?.toString() ?? 'active',
+  );
+
+  static String _hash(String plaintext) =>
+      sha256.convert(utf8.encode(plaintext)).toString();
+}

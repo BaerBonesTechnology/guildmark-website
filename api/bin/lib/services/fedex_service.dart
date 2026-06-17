@@ -1,11 +1,3 @@
-/// FedEx Track API wrapper.
-///
-/// Docs: https://developer.fedex.com/api/en-us/catalog/track/docs.html
-///
-/// Authentication: OAuth 2.0 client-credentials flow.
-/// Tokens are cached in-memory (expiry = issued_at + expires_in − 60s buffer).
-/// Failures are logged but never thrown — callers check for null returns.
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -35,13 +27,13 @@ class FedexTrackEvent {
   bool get isDelivered => eventType == 'DL';
 
   Map<String, dynamic> toJson() => {
-        'event_type': eventType,
-        'event_description': eventDescription,
-        'timestamp': timestamp.toIso8601String(),
-        if (city != null) 'city': city,
-        if (stateOrProvinceCode != null) 'state': stateOrProvinceCode,
-        if (countryCode != null) 'country': countryCode,
-      };
+    'event_type': eventType,
+    'event_description': eventDescription,
+    'timestamp': timestamp.toIso8601String(),
+    if (city != null) 'city': city,
+    if (stateOrProvinceCode != null) 'state': stateOrProvinceCode,
+    if (countryCode != null) 'country': countryCode,
+  };
 }
 
 class FedexTrackResult {
@@ -63,13 +55,16 @@ class FedexTrackResult {
 
   bool get isDelivered => statusCode == 'DL';
 
-  /// The delivery timestamp, present only when status is DL.
-  DateTime? get deliveredAt =>
-      isDelivered ? (actualDelivery ?? events.where((e) => e.isDelivered).firstOrNull?.timestamp) : null;
+  DateTime? get deliveredAt => isDelivered
+      ? (actualDelivery ??
+            events.where((e) => e.isDelivered).firstOrNull?.timestamp)
+      : null;
 
   // FedEx Track API wraps results under output.completeTrackResults[].trackResults[]
   static FedexTrackResult? fromApiJson(
-      Map<String, dynamic> json, String trackingNumber) {
+    Map<String, dynamic> json,
+    String trackingNumber,
+  ) {
     try {
       final output = json['output'] as Map?;
       final completeResults = output?['completeTrackResults'] as List?;
@@ -81,12 +76,12 @@ class FedexTrackResult {
 
       final tr = trackResults.first as Map<String, dynamic>;
 
-      final trackingInfo =
-          tr['trackingNumberInfo'] as Map? ?? {};
+      final trackingInfo = tr['trackingNumberInfo'] as Map? ?? {};
       final tn = (trackingInfo['trackingNumber'] as String?) ?? trackingNumber;
 
       final latestStatus = tr['latestStatusDetail'] as Map? ?? {};
-      final statusCode = latestStatus['statusByLocale'] as String? ??
+      final statusCode =
+          latestStatus['statusByLocale'] as String? ??
           latestStatus['code'] as String? ??
           '';
       final status = latestStatus['description'] as String? ?? statusCode;
@@ -97,7 +92,8 @@ class FedexTrackResult {
         final ev = e as Map<String, dynamic>;
         final loc = ev['scanLocation'] as Map? ?? {};
         return FedexTrackEvent(
-          eventType: ev['derivedStatusCode'] as String? ??
+          eventType:
+              ev['derivedStatusCode'] as String? ??
               ev['eventType'] as String? ??
               '',
           eventDescription: ev['eventDescription'] as String? ?? '',
@@ -156,10 +152,11 @@ class FedexService {
     required this.clientSecret,
     bool sandbox = true,
     String? apiUrl,
-  }) : _baseUrl = apiUrl ??
-            (sandbox
-                ? 'https://apis-sandbox.fedex.com'
-                : 'https://apis.fedex.com');
+  }) : _baseUrl =
+           apiUrl ??
+           (sandbox
+               ? 'https://apis-sandbox.fedex.com'
+               : 'https://apis.fedex.com');
 
   final String clientId;
   final String clientSecret;
@@ -175,8 +172,6 @@ class FedexService {
   // Public API
   // ---------------------------------------------------------------------------
 
-  /// Look up a shipment by tracking number.
-  /// Returns null when the service is not configured or the API call fails.
   Future<FedexTrackResult?> track(String trackingNumber) async {
     if (!isConfigured) {
       stderr.writeln('[fedex] not configured — skipping track');
@@ -201,7 +196,7 @@ class FedexService {
               'trackingInfo': [
                 {
                   'trackingNumberInfo': {'trackingNumber': trackingNumber},
-                }
+                },
               ],
             }),
           )
@@ -253,4 +248,12 @@ class FedexService {
       _token = json['access_token'] as String;
       final expiresIn = (json['expires_in'] as num).toInt();
       // Subtract 60 s buffer so we refresh before actual expiry.
-      _tokenExpiry = D
+      _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn - 60));
+      stdout.writeln('[fedex] token refreshed (expires in ${expiresIn}s)');
+      return _token;
+    } catch (e) {
+      stderr.writeln('[fedex] token error: $e');
+      return null;
+    }
+  }
+}

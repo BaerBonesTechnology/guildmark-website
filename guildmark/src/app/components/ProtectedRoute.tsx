@@ -9,7 +9,7 @@ export function ProtectedRoute() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm font-mono text-muted-foreground">Restoring session...</p>
+          <p className="text-sm  text-muted-foreground">Restoring session...</p>
         </div>
       </div>
     );

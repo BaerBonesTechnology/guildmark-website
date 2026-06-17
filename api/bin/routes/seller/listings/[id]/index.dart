@@ -1,5 +1,3 @@
-/// PATCH /seller/listings/:id  — update listed price (re-evaluates flag vs FMV).
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/context.dart';
@@ -29,9 +27,9 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   try {
     final listing = await ListingRepo(context.read<Db>()).updatePrice(
-      id:           id,
-      companyId:    auth.companyId,
-      listedPrice:  listedPrice,
+      id: id,
+      companyId: auth.companyId,
+      listedPrice: listedPrice,
     );
     return Response.json(body: listing.toJson());
   } on StateError {

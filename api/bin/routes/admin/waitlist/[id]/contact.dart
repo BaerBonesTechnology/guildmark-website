@@ -1,8 +1,3 @@
-/// POST /admin/waitlist/:id/contact
-///
-/// Marks a subscriber as contacted and optionally records a note.
-/// Admin-only.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/context.dart';

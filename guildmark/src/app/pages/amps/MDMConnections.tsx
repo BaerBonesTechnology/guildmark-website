@@ -107,7 +107,7 @@ export function MDMConnections() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-mono font-semibold mb-2">MDM Connections</h1>
+          <h1 className="text-3xl  font-semibold mb-2">MDM Connections</h1>
           <p className="text-muted-foreground text-sm">
             Manage device management platform integrations
           </p>
@@ -148,12 +148,12 @@ export function MDMConnections() {
                     </div>
                     <div>
                       <CardTitle>{connection.type}</CardTitle>
-                      <p className="text-sm text-muted-foreground font-mono mt-0.5">
+                      <p className="text-sm text-muted-foreground  mt-0.5">
                         {connection.server}
                       </p>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-semibold ${
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs  font-semibold ${
                     connection.status === "connected"
                       ? "bg-success/10 text-success"
                       : "bg-danger/10 text-danger"
@@ -169,12 +169,12 @@ export function MDMConnections() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                   <div>
-                    <p className="text-xs text-muted-foreground font-mono mb-1">Device count</p>
-                    <p className="text-2xl font-mono font-semibold">{connection.deviceCount}</p>
+                    <p className="text-xs text-muted-foreground  mb-1">Device count</p>
+                    <p className="text-2xl  font-semibold">{connection.deviceCount}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground font-mono mb-1">Last sync</p>
-                    <p className="text-sm font-mono">{connection.lastSync}</p>
+                    <p className="text-xs text-muted-foreground  mb-1">Last sync</p>
+                    <p className="text-sm ">{connection.lastSync}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -220,33 +220,33 @@ export function MDMConnections() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-mono">Timestamp</TableHead>
-                  <TableHead className="font-mono">Source</TableHead>
-                  <TableHead className="font-mono text-right">Devices synced</TableHead>
-                  <TableHead className="font-mono">Status</TableHead>
-                  <TableHead className="font-mono text-right">Duration</TableHead>
+                  <TableHead className="">Timestamp</TableHead>
+                  <TableHead className="">Source</TableHead>
+                  <TableHead className=" text-right">Devices synced</TableHead>
+                  <TableHead className="">Status</TableHead>
+                  <TableHead className=" text-right">Duration</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {syncHistory.map((sync, i) => (
                   <TableRow key={i}>
-                    <TableCell className="font-mono text-sm">{sync.timestamp}</TableCell>
-                    <TableCell className="font-mono">{sync.source}</TableCell>
-                    <TableCell className="font-mono text-right">{sync.devices}</TableCell>
+                    <TableCell className=" text-sm">{sync.timestamp}</TableCell>
+                    <TableCell className="">{sync.source}</TableCell>
+                    <TableCell className=" text-right">{sync.devices}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         {sync.status === "success"
                           ? <CheckCircle2 className="h-4 w-4 text-success" />
                           : <AlertCircle className="h-4 w-4 text-danger" />
                         }
-                        <span className={`text-sm font-mono ${
+                        <span className={`text-sm  ${
                           sync.status === "success" ? "text-success" : "text-danger"
                         }`}>
                           {sync.status === "success" ? "Success" : "Failed"}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-right text-muted-foreground text-sm">
+                    <TableCell className=" text-right text-muted-foreground text-sm">
                       {sync.duration}
                     </TableCell>
                   </TableRow>
@@ -290,7 +290,7 @@ export function MDMConnections() {
                     placeholder="https://yourcompany.jamfcloud.com"
                     value={formData.serverUrl}
                     onChange={(e) => setFormData({ ...formData, serverUrl: e.target.value })}
-                    className="font-mono"
+                    className=""
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -299,7 +299,7 @@ export function MDMConnections() {
                     placeholder="api-user"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    className="font-mono"
+                    className=""
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -309,7 +309,7 @@ export function MDMConnections() {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="font-mono"
+                    className=""
                   />
                 </div>
               </>
@@ -323,7 +323,7 @@ export function MDMConnections() {
                     placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     value={formData.tenantId}
                     onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
-                    className="font-mono"
+                    className=""
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -332,7 +332,7 @@ export function MDMConnections() {
                     placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     value={formData.clientId}
                     onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                    className="font-mono"
+                    className=""
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -342,7 +342,7 @@ export function MDMConnections() {
                     placeholder="••••••••"
                     value={formData.clientSecret}
                     onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
-                    className="font-mono"
+                    className=""
                   />
                 </div>
               </>

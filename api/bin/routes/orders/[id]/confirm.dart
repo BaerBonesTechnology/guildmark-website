@@ -1,8 +1,3 @@
-/// PATCH /orders/:id/confirm
-///
-/// Buyer confirms delivery — releases funds from escrow to the seller.
-/// Status transitions: delivered | inspecting  →  complete
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -19,7 +14,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final repo   = OrderRepo(context.read<Db>());
+  final repo = OrderRepo(context.read<Db>());
   final escrow = context.read<EscrowService>();
 
   // Verify the caller is the buyer for this order.

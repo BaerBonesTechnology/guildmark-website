@@ -217,7 +217,7 @@ export function AddAssetDialog({ open, onOpenChange, onAdd }: AddAssetDialogProp
           {depPreview !== null && !isNaN(depPreview) && (
             <div className="col-span-2 flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-sm">
               <span className="text-muted-foreground">Calculated depreciation:</span>
-              <span className={`font-mono font-medium ${
+              <span className={` font-medium ${
                 depPreview < 20 ? "text-success" :
                 depPreview < 30 ? "text-warning" : "text-danger"
               }`}>

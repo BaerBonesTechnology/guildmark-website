@@ -1,7 +1,3 @@
-/// GET /marketplace/listings/:id
-///
-/// Public single-listing detail. Returns 404 if the listing isn't active.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/db/pool.dart';
@@ -14,6 +10,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   }
 
   final listing = await ListingRepo(context.read<Db>()).findActiveById(id);
-  if (listing == null) return notFound('Listing $id not found or no longer active');
+  if (listing == null)
+    return notFound('Listing $id not found or no longer active');
   return Response.json(body: listing.toJson());
 }

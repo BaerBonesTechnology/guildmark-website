@@ -1,9 +1,3 @@
-/// POST /auth/reset-password
-///
-/// Body:    { token, new_password }
-/// Returns: 200 on success, 400/422 on failure
-/// Side:    Marks token used, writes new bcrypt hash to users table.
-
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -19,8 +13,8 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
-  final body        = await context.request.json() as Map<String, dynamic>?;
-  final token       = (body?['token'] as String?)?.trim();
+  final body = await context.request.json() as Map<String, dynamic>?;
+  final token = (body?['token'] as String?)?.trim();
   final newPassword = (body?['new_password'] as String?)?.trim();
 
   if (token == null || token.isEmpty) return badRequest('token is required');
@@ -28,7 +22,7 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('new_password must be at least 8 characters');
   }
 
-  final db   = context.read<Db>();
+  final db = context.read<Db>();
   final hash = sha256.convert(utf8.encode(token)).toString();
 
   // Validate and mark the token used atomically.
@@ -45,12 +39,14 @@ Future<Response> onRequest(RequestContext context) async {
     );
     if (rows.isEmpty) return null;
 
-    final row     = rows.first.toColumnMap();
+    final row = rows.first.toColumnMap();
     final tokenId = row['id'] as String;
-    final uid     = row['user_id'] as String;
+    final uid = row['user_id'] as String;
 
     await tx.execute(
-      Sql.named('UPDATE password_reset_tokens SET used_at = now() WHERE id = @id'),
+      Sql.named(
+        'UPDATE password_reset_tokens SET used_at = now() WHERE id = @id',
+      ),
       parameters: {'id': tokenId},
     );
 
@@ -58,7 +54,11 @@ Future<Response> onRequest(RequestContext context) async {
   });
 
   if (userId == null) {
-    return jsonError(422, 'TOKEN_INVALID', 'Reset token is invalid or has expired');
+    return jsonError(
+      422,
+      'TOKEN_INVALID',
+      'Reset token is invalid or has expired',
+    );
   }
 
   final newHash = hashPassword(newPassword);
@@ -73,4 +73,5 @@ Future<Response> onRequest(RequestContext context) async {
     parameters: {'uid': userId},
   );
 
-  return Response.json(body: {'messa
+  return Response.json(body: {'message': 'Password updated successfully'});
+}

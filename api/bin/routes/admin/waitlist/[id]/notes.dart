@@ -1,8 +1,3 @@
-/// PATCH /admin/waitlist/:id/notes
-///
-/// Updates the admin notes on a subscriber without marking them as contacted.
-/// Admin-only.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/context.dart';

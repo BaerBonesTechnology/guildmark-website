@@ -36,12 +36,12 @@ const PLANS = [
   {
     key:      "starter" as PaidPlan,
     label:    "Starter",
-    price:    49,
+    price:    39,
     color:    "from-blue-500 to-blue-600",
     ring:     "ring-blue-500/30",
     badge:    "text-blue-400",
     features: [
-      "Up to 100 devices",
+      "Up to 350 devices",
       "2 team members",
       "Full asset inventory",
       "MDM integrations (Jamf + Intune)",
@@ -52,13 +52,13 @@ const PLANS = [
   {
     key:      "growth" as PaidPlan,
     label:    "Growth",
-    price:    149,
+    price:    79,
     color:    "from-violet-500 to-violet-600",
     ring:     "ring-violet-500/30",
     badge:    "text-violet-400",
     highlight: true,
     features: [
-      "Up to 500 devices",
+      "Up to 700 devices",
       "5 team members",
       "Everything in Starter",
       "Bulk quick-list to GuildMarket",
@@ -69,7 +69,7 @@ const PLANS = [
   {
     key:      "pro" as PaidPlan,
     label:    "Pro",
-    price:    349,
+    price:    149,
     color:    "from-amber-500 to-amber-600",
     ring:     "ring-amber-500/30",
     badge:    "text-amber-400",
@@ -137,7 +137,7 @@ export function ProSignup() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amps-accent to-amps-highlight">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
-          <span className="font-mono font-semibold">
+          <span className=" font-semibold">
             Guild<span className="text-amps-accent">Mark</span>
           </span>
           <span className="ml-1 rounded bg-gradient-to-r from-amps-accent to-amps-highlight px-1.5 py-0.5 text-xs font-semibold text-white">
@@ -145,8 +145,8 @@ export function ProSignup() {
           </span>
         </div>
         <Link
-          to="/marketplace"
-          className="flex items-center gap-1.5 text-sm font-mono text-muted-foreground hover:text-foreground transition-colors"
+          to="/pre/marketplace"
+          className="flex items-center gap-1.5 text-sm  text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to Marketplace
@@ -157,14 +157,14 @@ export function ProSignup() {
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amps-accent/30 bg-amps-accent/5 text-amps-accent text-xs font-mono mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amps-accent/30 bg-amps-accent/5 text-amps-accent text-xs  mb-2">
             <Sparkles className="w-3.5 h-3.5" />
             GM Pro — Fleet Intelligence Platform
           </div>
-          <h1 className="text-4xl font-mono font-bold tracking-tight">
+          <h1 className="text-4xl  font-bold tracking-tight">
             Stop guessing what your IT assets are worth
           </h1>
-          <p className="text-lg text-muted-foreground font-mono max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground  max-w-2xl mx-auto">
             GM Pro connects your MDM, values every device with live market data,
             and puts your surplus hardware in front of verified B2B buyers —
             all from one dashboard.
@@ -184,26 +184,26 @@ export function ProSignup() {
             >
               {plan.highlight && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-gradient-to-r ${plan.color} text-white text-xs font-semibold font-mono`}>
+                  <span className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-gradient-to-r ${plan.color} text-white text-xs font-semibold `}>
                     Most popular
                   </span>
                 </div>
               )}
 
               <div className="space-y-1">
-                <p className={`font-mono font-semibold ${plan.badge}`}>{plan.label}</p>
+                <p className={` font-semibold ${plan.badge}`}>{plan.label}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-mono font-bold">${plan.price}</span>
-                  <span className="text-sm text-muted-foreground font-mono">/month</span>
+                  <span className="text-3xl  font-bold">${plan.price}</span>
+                  <span className="text-sm text-muted-foreground ">/month</span>
                 </div>
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-muted-foreground ">
                   {sellerFeeLabel(plan.key, fees)} marketplace seller fee
                 </p>
               </div>
 
               <ul className="space-y-2">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm font-mono text-muted-foreground">
+                  <li key={f} className="flex items-start gap-2 text-sm  text-muted-foreground">
                     <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     {f}
                   </li>
@@ -211,7 +211,7 @@ export function ProSignup() {
               </ul>
 
               <Button
-                className={`w-full font-mono bg-gradient-to-r ${plan.color} text-white hover:opacity-90 transition-opacity`}
+                className={`w-full  bg-gradient-to-r ${plan.color} text-white hover:opacity-90 transition-opacity`}
                 onClick={() => setCheckoutPlan(plan.key)}
               >
                 Get {plan.label}
@@ -222,7 +222,7 @@ export function ProSignup() {
 
         {/* ── Value props ──────────────────────────────────────────────── */}
         <div className="space-y-6">
-          <h2 className="text-xl font-mono font-semibold text-center">
+          <h2 className="text-xl  font-semibold text-center">
             Why finance and IT ops teams choose GM Pro
           </h2>
           <div className="grid grid-cols-3 gap-5">
@@ -236,9 +236,9 @@ export function ProSignup() {
                     <div className="h-8 w-8 rounded-lg bg-amps-accent/10 flex items-center justify-center shrink-0">
                       <Icon className="w-4 h-4 text-amps-accent" />
                     </div>
-                    <p className="font-mono font-semibold text-sm">{title}</p>
+                    <p className=" font-semibold text-sm">{title}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground font-mono leading-relaxed">{resolvedBody}</p>
+                  <p className="text-xs text-muted-foreground  leading-relaxed">{resolvedBody}</p>
                 </div>
               );
             })}
@@ -247,7 +247,7 @@ export function ProSignup() {
 
         {/* ── CTA footer ───────────────────────────────────────────────── */}
         <div className="text-center space-y-3 pb-8">
-          <p className="text-sm text-muted-foreground font-mono">
+          <p className="text-sm text-muted-foreground ">
             No long-term contracts · Cancel any time · Instant access after payment
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -255,7 +255,7 @@ export function ProSignup() {
               <Button
                 key={plan.key}
                 variant="outline"
-                className="font-mono"
+                className=""
                 onClick={() => setCheckoutPlan(plan.key)}
               >
                 Start with {plan.label} — ${plan.price}/mo
@@ -271,7 +271,7 @@ export function ProSignup() {
           onOpenChange={(open) => { if (!open) setCheckoutPlan(null); }}
           plan={checkoutPlan}
           currentPlan={currentPlan}
-          onSuccess={() => navigate("/amps")}
+          onSuccess={() => navigate("/pre/amps")}
         />
       )}
     </div>

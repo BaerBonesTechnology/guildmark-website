@@ -43,7 +43,7 @@ export function ExecutiveDashboard() {
     <div className="space-y-6 pb-20">
       {/* Loading / error banner */}
       {isPending && (
-        <div className="flex items-center gap-2 text-muted-foreground font-mono text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground  text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading dashboard data…
         </div>
@@ -51,7 +51,7 @@ export function ExecutiveDashboard() {
       {isError && (
         <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-4 py-3">
           <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="font-mono text-sm text-amber-700 dark:text-amber-300">
+          <p className=" text-sm text-amber-700 dark:text-amber-300">
             {error instanceof Error ? error.message : "Failed to load dashboard. Showing placeholder values."}
           </p>
         </div>
@@ -63,22 +63,22 @@ export function ExecutiveDashboard() {
         <div className="relative group bg-card border border-border rounded-lg p-6 cursor-default">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Total Fleet Value</p>
-              <p className="text-3xl font-mono text-primary mt-2">
+              <p className="text-xs text-muted-foreground  uppercase tracking-wide">Total Fleet Value</p>
+              <p className="text-3xl  text-primary mt-2">
                 {isPending ? "—" : `$${totalFleetValue.toLocaleString()}`}
               </p>
               {/* Breakdown row */}
               <div className="flex gap-3 mt-2 flex-wrap">
-                <span className="text-xs font-mono text-muted-foreground">
+                <span className="text-xs  text-muted-foreground">
                   <span className="text-foreground">${inMarketValue.toLocaleString()}</span> in market
                 </span>
                 {stagedValue > 0 && (
-                  <span className="text-xs font-mono text-muted-foreground">
+                  <span className="text-xs  text-muted-foreground">
                     <span className="text-foreground">${stagedValue.toLocaleString()}</span> staged
                   </span>
                 )}
                 {ampsPortfolioValue > 0 && (
-                  <span className="text-xs font-mono text-muted-foreground">
+                  <span className="text-xs  text-muted-foreground">
                     <span className="text-amps-accent">${ampsPortfolioValue.toLocaleString()}</span> AMPS
                   </span>
                 )}
@@ -94,7 +94,7 @@ export function ExecutiveDashboard() {
             group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0
             transition-all duration-150
           ">
-            <div className="bg-popover border border-border rounded-lg shadow-lg p-4 font-mono text-xs space-y-2">
+            <div className="bg-popover border border-border rounded-lg shadow-lg p-4  text-xs space-y-2">
               <p className="text-muted-foreground uppercase tracking-wide text-[10px] mb-3">Value Breakdown</p>
               <div className="flex items-center justify-between gap-6">
                 <span className="text-muted-foreground">Listed value</span>
@@ -129,11 +129,11 @@ export function ExecutiveDashboard() {
         <div className="bg-card border border-border rounded-lg p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Projected Loss (6-Mo)</p>
-              <p className="text-3xl font-mono text-red-500 dark:text-red-400 mt-2">
+              <p className="text-xs text-muted-foreground  uppercase tracking-wide">Projected Loss (6-Mo)</p>
+              <p className="text-3xl  text-red-500 dark:text-red-400 mt-2">
                 {isPending ? "—" : projectedLoss > 0 ? `-$${Math.abs(projectedLoss).toLocaleString()}` : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 font-mono">
+              <p className="text-xs text-muted-foreground mt-1 ">
                 {projectedLoss > 0 ? "If held without action" : "Upgrade to AMPS for forecast"}
               </p>
             </div>
@@ -145,11 +145,11 @@ export function ExecutiveDashboard() {
         <div className="bg-card border border-border rounded-lg p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">"Zero-Loss" Opportunity</p>
-              <p className="text-3xl font-mono text-primary mt-2">
+              <p className="text-xs text-muted-foreground  uppercase tracking-wide">"Zero-Loss" Opportunity</p>
+              <p className="text-3xl  text-primary mt-2">
                 {isPending ? "—" : `${recoveryOpportunity} listing${recoveryOpportunity !== 1 ? "s" : ""}`}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 font-mono">
+              <p className="text-xs text-muted-foreground mt-1 ">
                 Priced to sell · {overpricedCount} overpriced
               </p>
             </div>
@@ -161,23 +161,23 @@ export function ExecutiveDashboard() {
       {/* ── Secondary stats row ──────────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Active Listings</p>
-          <p className="text-2xl font-mono text-foreground mt-1">{isPending ? "—" : activeListings}</p>
+          <p className="text-xs text-muted-foreground  uppercase tracking-wide">Active Listings</p>
+          <p className="text-2xl  text-foreground mt-1">{isPending ? "—" : activeListings}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Pending Offers</p>
-          <p className="text-2xl font-mono text-foreground mt-1">{isPending ? "—" : pendingOffers}</p>
+          <p className="text-xs text-muted-foreground  uppercase tracking-wide">Pending Offers</p>
+          <p className="text-2xl  text-foreground mt-1">{isPending ? "—" : pendingOffers}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Fleet Efficiency</p>
-          <p className="text-2xl font-mono text-foreground mt-1">
+          <p className="text-xs text-muted-foreground  uppercase tracking-wide">Fleet Efficiency</p>
+          <p className="text-2xl  text-foreground mt-1">
             {isPending ? "—" : `${efficiencyPct.toFixed(0)}%`}
           </p>
-          <p className="text-xs text-muted-foreground font-mono">Not overpriced</p>
+          <p className="text-xs text-muted-foreground ">Not overpriced</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">Total Recovered</p>
-          <p className="text-2xl font-mono text-primary mt-1">
+          <p className="text-xs text-muted-foreground  uppercase tracking-wide">Total Recovered</p>
+          <p className="text-2xl  text-primary mt-1">
             {isPending ? "—" : `$${totalRecovered.toLocaleString()}`}
           </p>
         </div>
@@ -186,8 +186,8 @@ export function ExecutiveDashboard() {
       {/* ── Resale Cliff Chart ────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-6">
         <div className="mb-6">
-          <h2 className="font-mono text-foreground">Resale Value Cliff Analysis</h2>
-          <p className="text-sm text-muted-foreground mt-1 font-mono">
+          <h2 className=" text-foreground">Resale Value Cliff Analysis</h2>
+          <p className="text-sm text-muted-foreground mt-1 ">
             12-month depreciation forecast vs. new upgrade cost
             {chartData.length === 0 && (
               <span className="ml-2 text-xs text-muted-foreground/70">(available on AMPS)</span>
@@ -230,7 +230,7 @@ export function ExecutiveDashboard() {
         ) : (
           <div className="h-[300px] flex flex-col items-center justify-center gap-3 bg-muted/30 rounded-lg border border-dashed border-border">
             <TrendingDown className="w-8 h-8 text-muted-foreground/50" />
-            <p className="font-mono text-sm text-muted-foreground">ML depreciation forecast requires AMPS</p>
+            <p className=" text-sm text-muted-foreground">ML depreciation forecast requires AMPS</p>
           </div>
         )}
       </div>
@@ -238,26 +238,26 @@ export function ExecutiveDashboard() {
       {/* ── High-Intent Asset Table ───────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg">
         <div className="p-6 border-b border-border">
-          <h2 className="font-mono text-foreground">High-Intent Assets</h2>
-          <p className="text-sm text-muted-foreground mt-1 font-mono">Active listings recommended for immediate offload</p>
+          <h2 className=" text-foreground">High-Intent Assets</h2>
+          <p className="text-sm text-muted-foreground mt-1 ">Active listings recommended for immediate offload</p>
         </div>
 
         {highDemandAssets.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3 text-muted-foreground">
             <Package className="w-8 h-8 text-muted-foreground/40" />
-            <p className="font-mono text-sm">No active listings yet</p>
-            <p className="font-mono text-xs text-muted-foreground/70">Publish listings from My Listings to see fleet recommendations here</p>
+            <p className=" text-sm">No active listings yet</p>
+            <p className=" text-xs text-muted-foreground/70">Publish listings from My Listings to see fleet recommendations here</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left p-4 text-xs font-mono text-muted-foreground uppercase tracking-wide">Model</th>
-                  <th className="text-left p-4 text-xs font-mono text-muted-foreground uppercase tracking-wide">Specs</th>
-                  <th className="text-left p-4 text-xs font-mono text-muted-foreground uppercase tracking-wide">Market Demand</th>
-                  <th className="text-left p-4 text-xs font-mono text-muted-foreground uppercase tracking-wide">Optimal Sell By</th>
-                  <th className="text-left p-4 text-xs font-mono text-muted-foreground uppercase tracking-wide">Action</th>
+                  <th className="text-left p-4 text-xs  text-muted-foreground uppercase tracking-wide">Model</th>
+                  <th className="text-left p-4 text-xs  text-muted-foreground uppercase tracking-wide">Specs</th>
+                  <th className="text-left p-4 text-xs  text-muted-foreground uppercase tracking-wide">Market Demand</th>
+                  <th className="text-left p-4 text-xs  text-muted-foreground uppercase tracking-wide">Optimal Sell By</th>
+                  <th className="text-left p-4 text-xs  text-muted-foreground uppercase tracking-wide">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -267,7 +267,7 @@ export function ExecutiveDashboard() {
                     className={idx !== highDemandAssets.length - 1 ? "border-b border-border/50" : ""}
                   >
                     <td className="p-4">
-                      <span className="font-mono text-sm text-foreground">{asset.model_name}</span>
+                      <span className=" text-sm text-foreground">{asset.model_name}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1.5 flex-wrap">
@@ -280,10 +280,10 @@ export function ExecutiveDashboard() {
                       <MarketSignal strength={Math.min(5, Math.max(1, asset.demand_score)) as 1 | 2 | 3 | 4 | 5} />
                     </td>
                     <td className="p-4">
-                      <span className="font-mono text-sm text-muted-foreground">{asset.peak_date}</span>
+                      <span className=" text-sm text-muted-foreground">{asset.peak_date}</span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-3 py-1 rounded text-xs font-mono ${
+                      <span className={`px-3 py-1 rounded text-xs  ${
                         asset.status === "ready"
                           ? "bg-primary/10 text-primary border border-primary/20"
                           : "bg-muted text-muted-foreground border border-border"

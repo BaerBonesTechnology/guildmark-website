@@ -24,15 +24,17 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (asset == null) return notFound('Asset $id not found');
 
   final params = context.request.uri.queryParameters;
-  final limit  = int.tryParse(params['limit'] ?? '50')?.clamp(1, 200) ?? 50;
+  final limit = int.tryParse(params['limit'] ?? '50')?.clamp(1, 200) ?? 50;
 
   final history = await AssetValuationRepo(db).findByAsset(id, limit: limit);
 
-  return Response.json(body: {
-    'asset_id':   id,
-    'model_name': asset.modelName,
-    'asset_type': asset.assetType,
-    'count':      history.length,
-    'valuations': history.map((v) => v.toJson()).toList(),
-  });
+  return Response.json(
+    body: {
+      'asset_id': id,
+      'model_name': asset.modelName,
+      'asset_type': asset.assetType,
+      'count': history.length,
+      'valuations': history.map((v) => v.toJson()).toList(),
+    },
+  );
 }

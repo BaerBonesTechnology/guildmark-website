@@ -76,10 +76,10 @@ export function OfferInbox() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-mono font-semibold text-foreground">
+          <h1 className="text-2xl  font-semibold text-foreground">
             Offer Inbox
           </h1>
-          <p className="text-sm text-muted-foreground font-mono mt-1">
+          <p className="text-sm text-muted-foreground  mt-1">
             Track offers you've placed on marketplace listings.
           </p>
         </div>
@@ -87,13 +87,13 @@ export function OfferInbox() {
           {pendingCount > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
               <Clock className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-xs font-mono text-amber-500">{pendingCount} pending</span>
+              <span className="text-xs  text-amber-500">{pendingCount} pending</span>
             </div>
           )}
           {counterCount > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30">
               <DollarSign className="h-3.5 w-3.5 text-violet-500" />
-              <span className="text-xs font-mono text-violet-500">{counterCount} counter{counterCount !== 1 ? "s" : ""}</span>
+              <span className="text-xs  text-violet-500">{counterCount} counter{counterCount !== 1 ? "s" : ""}</span>
             </div>
           )}
         </div>
@@ -109,8 +109,8 @@ export function OfferInbox() {
         ].map(({ label, value, color }) => (
           <Card key={label}>
             <CardContent className="pt-5">
-              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
-              <p className={`text-2xl font-mono ${color}`}>{isLoading ? "—" : value}</p>
+              <p className="text-xs  text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
+              <p className={`text-2xl  ${color}`}>{isLoading ? "—" : value}</p>
             </CardContent>
           </Card>
         ))}
@@ -122,7 +122,7 @@ export function OfferInbox() {
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2  text-sm transition-colors border-b-2 -mb-px ${
               activeTab === key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -148,12 +148,12 @@ export function OfferInbox() {
             <Inbox className="h-7 w-7 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-mono font-semibold text-foreground">No offers yet</p>
-            <p className="text-sm text-muted-foreground font-mono mt-1">
+            <p className=" font-semibold text-foreground">No offers yet</p>
+            <p className="text-sm text-muted-foreground  mt-1">
               Offers you place on marketplace listings will appear here.
             </p>
           </div>
-          <Button asChild variant="outline" className="font-mono text-sm mt-1">
+          <Button asChild variant="outline" className=" text-sm mt-1">
             <a href="/marketplace">Browse Marketplace</a>
           </Button>
         </div>
@@ -164,7 +164,7 @@ export function OfferInbox() {
               statusConfig(offer.status as OfferStatus);
 
             return (
-              <Card key={offer.id} className="font-mono">
+              <Card key={offer.id} className="">
                 <CardContent className="pt-5 pb-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
@@ -174,7 +174,7 @@ export function OfferInbox() {
                           <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <div>
-                          <p className="text-sm font-mono font-semibold text-foreground">
+                          <p className="text-sm  font-semibold text-foreground">
                             Listing {offer.listingId.slice(0, 8)}…
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -213,7 +213,7 @@ export function OfferInbox() {
                     </div>
 
                     <div className="flex flex-col items-end gap-2 shrink-0">
-                      <Badge className={`flex items-center gap-1 border font-mono text-xs ${statusClass}`}>
+                      <Badge className={`flex items-center gap-1 border  text-xs ${statusClass}`}>
                         <StatusIcon className="h-3 w-3" />
                         {statusLabel}
                       </Badge>
@@ -221,7 +221,7 @@ export function OfferInbox() {
                       {offer.status === "accepted" && (
                         <Button
                           size="sm"
-                          className="font-mono text-xs bg-primary hover:bg-primary/90 text-white"
+                          className=" text-xs bg-primary hover:bg-primary/90 text-white"
                         >
                           <Package className="h-3.5 w-3.5 mr-1" />
                           Place Order
@@ -232,14 +232,14 @@ export function OfferInbox() {
                         <div className="flex gap-1.5">
                           <Button
                             size="sm"
-                            className="font-mono text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
+                            className=" text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
                           >
                             Accept ${offer.counterPrice.toLocaleString()}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="font-mono text-xs border-red-500/40 text-red-500 hover:bg-red-500/10"
+                            className=" text-xs border-red-500/40 text-red-500 hover:bg-red-500/10"
                           >
                             Decline
                           </Button>

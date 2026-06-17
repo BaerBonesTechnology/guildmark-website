@@ -1,6 +1,3 @@
-/// DELETE /admin/waitlist/:id — permanently remove a mailing-list subscriber.
-/// Admin-only.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../../lib/context.dart';

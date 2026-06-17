@@ -1,9 +1,3 @@
-/// Thin HTTP client for the Python FastAPI ML service.
-///
-/// The Dart layer never trains or stores models — it only forwards inference
-/// requests. Keeping this surface tiny means the Python service can swap
-/// implementations (sklearn, XGBoost, ONNX runtime) without Dart changes.
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -30,15 +24,15 @@ class ValuationRequest {
   final double? originalPrice;
 
   Map<String, dynamic> toJson() => {
-        'asset_type': assetType,
-        'model_name': modelName,
-        'condition_grade': conditionGrade,
-        'age_months': ageMonths,
-        if (cpuScore != null) 'cpu_score': cpuScore,
-        if (ramGb != null) 'ram_gb': ramGb,
-        if (storageGb != null) 'storage_gb': storageGb,
-        if (originalPrice != null) 'original_price': originalPrice,
-      };
+    'asset_type': assetType,
+    'model_name': modelName,
+    'condition_grade': conditionGrade,
+    'age_months': ageMonths,
+    if (cpuScore != null) 'cpu_score': cpuScore,
+    if (ramGb != null) 'ram_gb': ramGb,
+    if (storageGb != null) 'storage_gb': storageGb,
+    if (originalPrice != null) 'original_price': originalPrice,
+  };
 }
 
 class ValuationResponse {
@@ -63,13 +57,14 @@ class ValuationResponse {
 
 class MlClient {
   MlClient({required this.baseUrl, http.Client? client})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
   final String baseUrl;
   final http.Client _client;
 
   Future<ValuationResponse> estimateFairMarketValue(
-      ValuationRequest req) async {
+    ValuationRequest req,
+  ) async {
     final resp = await _client.post(
       Uri.parse('$baseUrl/predict/valuation'),
       headers: const {'Content-Type': 'application/json'},
@@ -79,7 +74,8 @@ class MlClient {
       throw MlServiceException(resp.statusCode, resp.body);
     }
     return ValuationResponse.fromJson(
-        jsonDecode(resp.body) as Map<String, dynamic>);
+      jsonDecode(resp.body) as Map<String, dynamic>,
+    );
   }
 
   Future<List<DepreciationPoint>> forecastDepreciation({
@@ -102,11 +98,6 @@ class MlClient {
     return pts.map(DepreciationPoint.fromJson).toList();
   }
 
-  /// Notify the ML service that a new model has been listed so it can be
-  /// included in the next eBay training query set.
-  ///
-  /// Fire-and-forget — call with `.ignore()` at the listing creation site.
-  /// Swallows all errors so a downed ML service never blocks listing creation.
   Future<void> trackModel({
     required String modelName,
     required String assetType,
@@ -139,4 +130,10 @@ class DepreciationPoint {
 }
 
 class MlServiceException implements Exception {
-  MlServiceException(this.statusCode, th
+  MlServiceException(this.statusCode, this.body);
+  final int statusCode;
+  final String body;
+
+  @override
+  String toString() => 'MlServiceException($statusCode): $body';
+}

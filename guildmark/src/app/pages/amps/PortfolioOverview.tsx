@@ -33,8 +33,8 @@ export function PortfolioOverview() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-2">
           <AlertCircle className="h-8 w-8 text-danger mx-auto" />
-          <p className="font-mono text-muted-foreground">Failed to load portfolio data</p>
-          <Button variant="outline" onClick={() => window.location.reload()} className="font-mono">Retry</Button>
+          <p className=" text-muted-foreground">Failed to load portfolio data</p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="">Retry</Button>
         </div>
       </div>
     );
@@ -65,8 +65,8 @@ export function PortfolioOverview() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-mono font-semibold mb-2">Portfolio Overview</h1>
-        <p className="text-muted-foreground font-mono text-sm">
+        <h1 className="text-3xl  font-semibold mb-2">Portfolio Overview</h1>
+        <p className="text-muted-foreground  text-sm">
           Real-time insights into your asset portfolio value and health
         </p>
       </div>
@@ -77,12 +77,12 @@ export function PortfolioOverview() {
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-mono text-muted-foreground mb-1">Total Portfolio Value</p>
-                <p className="text-3xl font-mono font-semibold">{fmt(portfolio?.total_portfolio_value ?? 0)}</p>
+                <p className="text-sm  text-muted-foreground mb-1">Total Portfolio Value</p>
+                <p className="text-3xl  font-semibold">{fmt(portfolio?.total_portfolio_value ?? 0)}</p>
                 <div className="flex items-center gap-1 mt-2 text-sm">
                   <TrendingDown className="h-4 w-4 text-danger" />
-                  <span className="text-danger font-mono">-{depPct}%</span>
-                  <span className="text-muted-foreground font-mono text-xs">vs book value</span>
+                  <span className="text-danger ">-{depPct}%</span>
+                  <span className="text-muted-foreground  text-xs">vs book value</span>
                 </div>
               </div>
               <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-amps-accent to-amps-highlight flex items-center justify-center">
@@ -96,10 +96,10 @@ export function PortfolioOverview() {
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-mono text-muted-foreground mb-1">Total Devices</p>
-                <p className="text-3xl font-mono font-semibold">{portfolio?.total_devices ?? 0}</p>
+                <p className="text-sm  text-muted-foreground mb-1">Total Devices</p>
+                <p className="text-3xl  font-semibold">{portfolio?.total_devices ?? 0}</p>
                 <div className="flex items-center gap-1 mt-2 text-sm">
-                  <span className="text-muted-foreground font-mono text-xs">Across {Object.keys(portfolio?.by_type ?? {}).length} types</span>
+                  <span className="text-muted-foreground  text-xs">Across {Object.keys(portfolio?.by_type ?? {}).length} types</span>
                 </div>
               </div>
               <div className="h-12 w-12 rounded-lg bg-amps-accent/10 flex items-center justify-center">
@@ -113,10 +113,10 @@ export function PortfolioOverview() {
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-mono text-muted-foreground mb-1">Avg Depreciation</p>
-                <p className="text-3xl font-mono font-semibold">{depPct}%</p>
+                <p className="text-sm  text-muted-foreground mb-1">Avg Depreciation</p>
+                <p className="text-3xl  font-semibold">{depPct}%</p>
                 <div className="flex items-center gap-1 mt-2 text-sm">
-                  <span className="text-success font-mono">
+                  <span className="text-success ">
                     {parseFloat(depPct) < 30 ? "Within target" : "Above target"}
                   </span>
                 </div>
@@ -132,11 +132,11 @@ export function PortfolioOverview() {
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-mono text-muted-foreground mb-1">Assets at Risk</p>
-                <p className="text-3xl font-mono font-semibold">{portfolio?.assets_at_risk ?? 0}</p>
+                <p className="text-sm  text-muted-foreground mb-1">Assets at Risk</p>
+                <p className="text-3xl  font-semibold">{portfolio?.assets_at_risk ?? 0}</p>
                 <div className="flex items-center gap-1 mt-2 text-sm">
                   <AlertCircle className="h-4 w-4 text-warning" />
-                  <span className="text-warning font-mono">Needs attention</span>
+                  <span className="text-warning ">Needs attention</span>
                 </div>
               </div>
               <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">
@@ -150,8 +150,8 @@ export function PortfolioOverview() {
       {/* Value Over Time Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="font-mono">Portfolio Value Over Time</CardTitle>
-          <p className="text-sm text-muted-foreground font-mono">
+          <CardTitle className="">Portfolio Value Over Time</CardTitle>
+          <p className="text-sm text-muted-foreground ">
             Market value vs book value (last 6 months)
           </p>
         </CardHeader>
@@ -170,8 +170,8 @@ export function PortfolioOverview() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid key="grid-portfolio" strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis key="xaxis-portfolio" dataKey="month" className="text-xs font-mono" />
-                <YAxis key="yaxis-portfolio" className="text-xs font-mono" />
+                <XAxis key="xaxis-portfolio" dataKey="month" className="text-xs " />
+                <YAxis key="yaxis-portfolio" className="text-xs " />
                 <Tooltip
                   key="tooltip-portfolio"
                   contentStyle={{
@@ -179,7 +179,7 @@ export function PortfolioOverview() {
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "0.5rem",
                   }}
-                  labelClassName="font-mono"
+                  labelClassName=""
                   formatter={(value: number) => `$${value.toLocaleString()}`}
                 />
                 <Legend key="legend-portfolio" />
@@ -211,7 +211,7 @@ export function PortfolioOverview() {
       <div className="grid grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="font-mono">Fleet by Asset Type</CardTitle>
+            <CardTitle className="">Fleet by Asset Type</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -248,7 +248,7 @@ export function PortfolioOverview() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-mono">Fleet by Condition</CardTitle>
+            <CardTitle className="">Fleet by Condition</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -289,13 +289,13 @@ export function PortfolioOverview() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="font-mono">Top Assets by Type</CardTitle>
-              <p className="text-sm text-muted-foreground font-mono mt-1">
+              <CardTitle className="">Top Assets by Type</CardTitle>
+              <p className="text-sm text-muted-foreground  mt-1">
                 Fleet composition by asset category
               </p>
             </div>
-            <Button asChild variant="outline" className="font-mono">
-              <Link to="/amps/assets">View All Assets</Link>
+            <Button asChild variant="outline" className="">
+              <Link to="/pre/amps/assets">View All Assets</Link>
             </Button>
           </div>
         </CardHeader>
@@ -303,24 +303,24 @@ export function PortfolioOverview() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-mono">Asset Type</TableHead>
-                <TableHead className="font-mono text-right">Devices</TableHead>
-                <TableHead className="font-mono text-right">Total Value</TableHead>
+                <TableHead className="">Asset Type</TableHead>
+                <TableHead className=" text-right">Devices</TableHead>
+                <TableHead className=" text-right">Total Value</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {Object.entries(portfolio?.by_type ?? {}).map(([type, data]) => (
                 <TableRow key={type}>
-                  <TableCell className="font-mono capitalize">{type}</TableCell>
-                  <TableCell className="font-mono text-right">{data.count}</TableCell>
-                  <TableCell className="font-mono text-right font-semibold">
+                  <TableCell className=" capitalize">{type}</TableCell>
+                  <TableCell className=" text-right">{data.count}</TableCell>
+                  <TableCell className=" text-right font-semibold">
                     {fmt(data.value)}
                   </TableCell>
                 </TableRow>
               ))}
               {Object.keys(portfolio?.by_type ?? {}).length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center font-mono text-muted-foreground py-8">
+                  <TableCell colSpan={3} className="text-center  text-muted-foreground py-8">
                     No assets yet — connect your MDM or add assets manually
                   </TableCell>
                 </TableRow>
@@ -333,26 +333,26 @@ export function PortfolioOverview() {
       {/* Quick Actions */}
       <Card className="border-amps-accent/30 bg-gradient-to-br from-amps-accent/5 to-transparent">
         <CardHeader>
-          <CardTitle className="font-mono">Quick Actions</CardTitle>
+          <CardTitle className="">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4 font-mono">
-              <Link to="/amps/assets?filter=aging">
+            <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4 ">
+              <Link to="/pre/amps/assets?filter=aging">
                 <AlertCircle className="h-5 w-5" />
                 <span>List Aging Assets</span>
                 <span className="text-xs text-muted-foreground">Assets &gt; 36 months</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4 font-mono">
-              <Link to="/amps/invoices?action=generate">
+            <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4 ">
+              <Link to="/pre/amps/invoices?action=generate">
                 <FileText className="h-5 w-5" />
                 <span>Generate Report</span>
                 <span className="text-xs text-muted-foreground">Portfolio PDF</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4 font-mono">
-              <Link to="/amps/mdm">
+            <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4 ">
+              <Link to="/pre/amps/mdm">
                 <Cloud className="h-5 w-5" />
                 <span>Connect MDM</span>
                 <span className="text-xs text-muted-foreground">Sync devices</span>

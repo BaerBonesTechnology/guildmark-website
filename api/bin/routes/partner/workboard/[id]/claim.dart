@@ -1,12 +1,3 @@
-/// POST /partner/workboard/:id/claim
-///
-/// Atomically claims an available assignment for the authenticated partner.
-/// - Verifies the assignment is still `available` (race-safe via FOR UPDATE).
-/// - Sets partner_id, status → 'claimed', claimed_at → now().
-/// - Returns the updated assignment.
-///
-/// Requires: valid partner JWT.
-
 import 'package:dart_frog/dart_frog.dart';
 import 'package:postgres/postgres.dart';
 
@@ -80,23 +71,26 @@ Future<Response> onRequest(RequestContext context, String id) async {
     if (updated.isEmpty) return null;
     final r = updated.first.toColumnMap();
     return {
-      'id':                   r['id'].toString(),
-      'partner_id':           r['partner_id'].toString(),
-      'order_ref':            r['order_ref'].toString(),
-      'buyer_name':           r['buyer_name'].toString(),
-      'buyer_city':           r['buyer_city'].toString(),
-      'service_type':         r['service_type'].toString(),
-      'item_count':           (r['item_count'] as num?)?.toInt() ?? 0,
-      'wipe_payout_cents':    (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
+      'id': r['id'].toString(),
+      'partner_id': r['partner_id'].toString(),
+      'order_ref': r['order_ref'].toString(),
+      'buyer_name': r['buyer_name'].toString(),
+      'buyer_city': r['buyer_city'].toString(),
+      'service_type': r['service_type'].toString(),
+      'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
+      'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
       'reimage_payout_cents': (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
-      'status':               r['status'].toString(),
-      'claimed_at':           r['claimed_at'].toString(),
+      'status': r['status'].toString(),
+      'claimed_at': r['claimed_at'].toString(),
     };
   });
 
   if (assignment == null) {
-    return jsonError(409, 'ALREADY_CLAIMED',
-        'This order has already been claimed by another partner.');
+    return jsonError(
+      409,
+      'ALREADY_CLAIMED',
+      'This order has already been claimed by another partner.',
+    );
   }
 
   return Response.json(body: {'assignment': assignment});

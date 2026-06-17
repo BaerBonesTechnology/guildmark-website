@@ -84,10 +84,10 @@ function EmptyState({ tab }: { tab: OrderTab }) {
         <Inbox className="h-7 w-7 text-muted-foreground" />
       </div>
       <div>
-        <p className="font-mono font-semibold text-foreground">
+        <p className=" font-semibold text-foreground">
           No {labels[tab]} yet
         </p>
-        <p className="text-sm text-muted-foreground font-mono mt-1">
+        <p className="text-sm text-muted-foreground  mt-1">
           {tab === "purchases"
             ? "Items you buy from the marketplace will appear here."
             : tab === "sales"
@@ -118,10 +118,10 @@ export function Orders() {
     <div className="space-y-6 pb-20">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-mono font-semibold text-foreground">
+        <h1 className="text-2xl  font-semibold text-foreground">
           Orders &amp; Transactions
         </h1>
-        <p className="text-sm text-muted-foreground font-mono mt-1">
+        <p className="text-sm text-muted-foreground  mt-1">
           Track your purchases, sales, and shipment activity in one place.
         </p>
       </div>
@@ -132,11 +132,11 @@ export function Orders() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <Package className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide ">
                 Total Orders
               </p>
             </div>
-            <p className="text-2xl font-mono text-foreground">
+            <p className="text-2xl  text-foreground">
               {isLoading ? "—" : (stats?.totalOrders ?? 0)}
             </p>
           </CardContent>
@@ -146,11 +146,11 @@ export function Orders() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <Truck className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide ">
                 Active Orders
               </p>
             </div>
-            <p className="text-2xl font-mono text-primary">
+            <p className="text-2xl  text-primary">
               {isLoading ? "—" : (stats?.activeOrders ?? 0)}
             </p>
           </CardContent>
@@ -160,11 +160,11 @@ export function Orders() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide ">
                 Total Value
               </p>
             </div>
-            <p className="text-2xl font-mono text-emerald-500">
+            <p className="text-2xl  text-emerald-500">
               {isLoading
                 ? "—"
                 : `$${(stats?.totalValue ?? 0).toLocaleString()}`}
@@ -176,11 +176,11 @@ export function Orders() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide ">
                 This Month
               </p>
             </div>
-            <p className="text-2xl font-mono text-foreground">
+            <p className="text-2xl  text-foreground">
               {isLoading
                 ? "—"
                 : `$${(stats?.monthValue ?? 0).toLocaleString()}`}
@@ -195,7 +195,7 @@ export function Orders() {
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`px-4 py-2 font-mono text-sm transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2  text-sm transition-colors border-b-2 -mb-px ${
               activeTab === key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -225,7 +225,7 @@ export function Orders() {
             const isSale = order.type === "sale";
 
             return (
-              <Card key={order.id} className="font-mono">
+              <Card key={order.id} className="">
                 <CardContent className="pt-5 pb-5">
                   <div className="flex items-start justify-between gap-4">
                     {/* Left — product & counterparty */}
@@ -240,7 +240,7 @@ export function Orders() {
                           )}
                         </div>
                         <div>
-                          <p className="font-mono font-semibold text-sm text-foreground">
+                          <p className=" font-semibold text-sm text-foreground">
                             {order.productName}
                           </p>
                           {order.specs && (
@@ -276,7 +276,7 @@ export function Orders() {
                       {order.trackingNumber && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted border border-border w-fit">
                           <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs font-mono text-foreground">
+                          <span className="text-xs  text-foreground">
                             {order.carrier ?? "Carrier"} · {order.trackingNumber}
                           </span>
                         </div>
@@ -286,14 +286,14 @@ export function Orders() {
                     {/* Right — status & financials */}
                     <div className="flex flex-col items-end gap-3 shrink-0">
                       <Badge
-                        className={`flex items-center gap-1 border font-mono text-xs ${status.className}`}
+                        className={`flex items-center gap-1 border  text-xs ${status.className}`}
                       >
                         <StatusIcon className="h-3 w-3" />
                         {status.label}
                       </Badge>
 
                       <div className="text-right">
-                        <p className="text-lg font-mono font-semibold text-foreground">
+                        <p className="text-lg  font-semibold text-foreground">
                           ${order.totalValue.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -305,7 +305,7 @@ export function Orders() {
                         asChild
                         variant="outline"
                         size="sm"
-                        className="font-mono text-xs"
+                        className=" text-xs"
                       >
                         <Link to={`/orders/${order.id}`}>View Details</Link>
                       </Button>

@@ -1,11 +1,3 @@
-/// GET /partner/workboard
-///
-/// Returns all service assignments currently available for partners to claim
-/// (status = 'available', partner_id IS NULL). The list is ordered by
-/// creation date descending so the newest jobs appear first.
-///
-/// Requires: valid partner JWT (PartnerPrincipal must not be null).
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -20,7 +12,7 @@ Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<PartnerPrincipal?>();
   if (principal == null) return unauthorized();
 
-  final db   = context.read<Db>();
+  final db = context.read<Db>();
   final rows = await db.query(
     '''
     SELECT id::text,
@@ -42,15 +34,15 @@ Future<Response> onRequest(RequestContext context) async {
   final items = rows.map((row) {
     final r = row.toColumnMap();
     return {
-      'id':                   r['id'].toString(),
-      'order_ref':            r['order_ref'].toString(),
-      'buyer_name':           r['buyer_name'].toString(),
-      'buyer_city':           r['buyer_city'].toString(),
-      'service_type':         r['service_type'].toString(),
-      'item_count':           (r['item_count'] as num?)?.toInt() ?? 0,
-      'wipe_payout_cents':    (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
+      'id': r['id'].toString(),
+      'order_ref': r['order_ref'].toString(),
+      'buyer_name': r['buyer_name'].toString(),
+      'buyer_city': r['buyer_city'].toString(),
+      'service_type': r['service_type'].toString(),
+      'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
+      'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
       'reimage_payout_cents': (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
-      'created_at':           r['created_at'].toString(),
+      'created_at': r['created_at'].toString(),
     };
   }).toList();
 

@@ -1,5 +1,3 @@
-/// GET /amps/invoices — list write-off / disposal invoices for this company.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -14,6 +12,8 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final invoices = await InvoiceRepo(context.read<Db>()).findByCompany(auth.companyId);
+  final invoices = await InvoiceRepo(
+    context.read<Db>(),
+  ).findByCompany(auth.companyId);
   return Response.json(body: invoices.map((i) => i.toJson()).toList());
 }

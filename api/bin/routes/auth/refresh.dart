@@ -1,8 +1,3 @@
-/// POST /auth/refresh
-///
-/// Reads the `astech_refresh` httpOnly cookie, rotates it (single-use refresh
-/// tokens), and returns a fresh access token.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/auth/jwt.dart';
@@ -31,11 +26,13 @@ Future<Response> onRequest(RequestContext context) async {
   );
   if (user == null) return unauthorized('Refresh token invalid or expired');
 
-  final accessToken = context.read<JwtService>().issueAccessToken(AccessClaims(
-        userId: user.id,
-        companyId: user.companyId,
-        role: user.role,
-      ));
+  final accessToken = context.read<JwtService>().issueAccessToken(
+    AccessClaims(
+      userId: user.id,
+      companyId: user.companyId,
+      role: user.role,
+    ),
+  );
 
   return Response.json(
     body: {

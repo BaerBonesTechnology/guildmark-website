@@ -1,5 +1,3 @@
-/// Assets data-access. Handles both manual entries and MDM-synced records.
-
 import '../db/pool.dart';
 import '../models/asset.dart';
 import '../models/json_helpers.dart';
@@ -27,7 +25,6 @@ class AssetRepo {
   AssetRepo(this._db);
   final Db _db;
 
-  /// Shared SELECT columns for the assets table.
   static const _cols = '''
     id, company_id, mdm_source, serial_number, model_name, asset_type,
     condition_grade, quantity, reason_for_offload, purchase_date,
@@ -36,7 +33,6 @@ class AssetRepo {
     cpu_score, ram_gb, storage_gb, created_at, updated_at
   ''';
 
-  /// Manual /assets endpoint: a flat list for one company.
   Future<List<Asset>> findByCompany(String companyId) async {
     final result = await _db.query(
       'SELECT $_cols FROM assets WHERE company_id = @cid ORDER BY created_at DESC',
@@ -45,11 +41,6 @@ class AssetRepo {
     return result.map((r) => Asset.fromRow(r.toColumnMap())).toList();
   }
 
-  /// AMPS inventory: paginated, filterable, searchable.
-  ///
-  /// Builds the WHERE clause dynamically so that unset filters add no
-  /// predicates, which keeps the query plan simple and avoids COALESCE tricks
-  /// that confuse the planner.
   Future<PaginatedResponse<Asset>> searchAmps({
     required String companyId,
     required AmpsAssetFilters filters,
@@ -88,7 +79,7 @@ class AssetRepo {
     final total = numToIntOrNull(countResult.first.toColumnMap()['n']) ?? 0;
 
     final offset = (filters.page - 1) * filters.pageSize;
-    params['limit']  = filters.pageSize;
+    params['limit'] = filters.pageSize;
     params['offset'] = offset;
 
     final rows = await _db.query(
@@ -97,24 +88,23 @@ class AssetRepo {
     );
 
     return PaginatedResponse.paginate(
-      data:     rows.map((r) => Asset.fromRow(r.toColumnMap())).toList(),
-      total:    total,
-      page:     filters.page,
+      data: rows.map((r) => Asset.fromRow(r.toColumnMap())).toList(),
+      total: total,
+      page: filters.page,
       pageSize: filters.pageSize,
     );
   }
 
-  /// Create a new manual asset record and return the persisted row.
   Future<Asset> create({
     required String companyId,
     required String modelName,
     required String assetType,
     required String conditionGrade,
-    required int    quantity,
+    required int quantity,
     String? reasonForOffload,
     double? ramGb,
     double? storageGb,
-    int?    cpuScore,
+    int? cpuScore,
     String? serialNumber,
     String? department,
   }) async {
@@ -136,20 +126,27 @@ class AssetRepo {
         'modelName': modelName,
         'assetType': assetType,
         'condGrade': conditionGrade,
-        'quantity':  quantity,
-        'reason':    reasonForOffload,
-        'ramGb':     ramGb,
+        'quantity': quantity,
+        'reason': reasonForOffload,
+        'ramGb': ramGb,
         'storageGb': storageGb,
-        'cpuScore':  cpuScore,
-        'serial':    serialNumber,
-        'dept':      department,
+        'cpuScore': cpuScore,
+        'serial': serialNumber,
+        'dept': department,
       },
     );
     return Asset.fromRow(result.first.toColumnMap());
   }
 
-  /// Single asset detail (validates company ownership).
-  Future<Asset?> findById({required String id, required String companyId}) async {
+  Future<Asset?> findById({
+    required String id,
+    required String companyId,
+  }) async {
     final result = await _db.query(
       'SELECT $_cols FROM assets WHERE id = @id AND company_id = @cid LIMIT 1',
-      parameters: {'id': id, 'cid': companyId}
+      parameters: {'id': id, 'cid': companyId},
+    );
+    if (result.isEmpty) return null;
+    return Asset.fromRow(result.first.toColumnMap());
+  }
+}

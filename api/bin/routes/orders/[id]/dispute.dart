@@ -1,5 +1,3 @@
-/// POST /orders/:id/dispute — buyer raises a dispute during inspection window.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -16,7 +14,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final repo   = OrderRepo(context.read<Db>());
+  final repo = OrderRepo(context.read<Db>());
   final escrow = context.read<EscrowService>();
 
   final order = await repo.findById(id, viewerCompanyId: auth.companyId);

@@ -85,7 +85,7 @@ import '../routes/amps/_middleware.dart' as amps_middleware;
 
 void main() async {
   final address = InternetAddress.tryParse('') ?? InternetAddress.anyIPv6;
-  final port = int.tryParse(Platform.environment['PORT'] ?? '8080') ?? 8080;
+  final port = int.tryParse(Platform.environment['PORT'] ?? '8443') ?? 8443;
   hotReload(() => createServer(address, port));
 }
 

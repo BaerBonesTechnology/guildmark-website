@@ -1,14 +1,3 @@
-/// AMPS portfolio aggregates.
-///
-/// Hero stats and bucket breakdowns are computed live by joining `assets` with
-/// the most recent non-sold listing per asset (which carries fair_market_value
-/// and est_book_value from the ML valuation pipeline).
-///
-/// The trend series is sourced from `valuation_snapshots`. To keep the trend
-/// populated without a separate nightly cron, `summarize` upserts today's
-/// computed values at the end of every call — the snapshot table then acts as
-/// a rolling daily history that the chart can plot.
-
 import '../db/pool.dart';
 import '../models/json_helpers.dart';
 import '../models/portfolio.dart';
@@ -17,11 +6,6 @@ class PortfolioRepo {
   PortfolioRepo(this._db);
   final Db _db;
 
-  /// Hero stats + bucket breakdowns + N-month trend.
-  ///
-  /// Values are computed live from assets + their most recent active/draft
-  /// listing. Assets without a listing still count toward device totals but
-  /// contribute 0 to value aggregates.
   Future<PortfolioSummary> summarize({
     required String companyId,
     int trendMonths = 12,
@@ -67,13 +51,15 @@ class PortfolioRepo {
     );
     final hero = heroRows.first.toColumnMap();
 
-    final totalPortfolioValue = numToDoubleOrNull(hero['total_portfolio_value']) ?? 0.0;
-    final totalBookValue      = numToDoubleOrNull(hero['total_book_value'])      ?? 0.0;
-    final totalDepreciation   = numToDoubleOrNull(hero['total_depreciation'])    ?? 0.0;
-    final totalDevices        = numToIntOrNull(hero['total_devices'])            ?? 0;
-    final avgAgeMonths        = numToDoubleOrNull(hero['avg_age_months'])        ?? 0.0;
-    final assetsAtRisk        = numToIntOrNull(hero['assets_at_risk'])           ?? 0;
-    final depreciationPct     = totalBookValue > 0
+    final totalPortfolioValue =
+        numToDoubleOrNull(hero['total_portfolio_value']) ?? 0.0;
+    final totalBookValue = numToDoubleOrNull(hero['total_book_value']) ?? 0.0;
+    final totalDepreciation =
+        numToDoubleOrNull(hero['total_depreciation']) ?? 0.0;
+    final totalDevices = numToIntOrNull(hero['total_devices']) ?? 0;
+    final avgAgeMonths = numToDoubleOrNull(hero['avg_age_months']) ?? 0.0;
+    final assetsAtRisk = numToIntOrNull(hero['assets_at_risk']) ?? 0;
+    final depreciationPct = totalBookValue > 0
         ? totalDepreciation / totalBookValue
         : 0.0;
 
@@ -110,12 +96,12 @@ class PortfolioRepo {
       parameters: {'cid': companyId},
     );
 
-    final Map<String, PortfolioBucket> byType      = {};
+    final Map<String, PortfolioBucket> byType = {};
     final Map<String, PortfolioBucket> byCondition = {};
     for (final r in bucketRows) {
-      final row    = r.toColumnMap();
+      final row = r.toColumnMap();
       final bucket = PortfolioBucket(
-        count: numToIntOrNull(row['cnt'])    ?? 0,
+        count: numToIntOrNull(row['cnt']) ?? 0,
         value: numToDoubleOrNull(row['value']) ?? 0.0,
       );
       if (row['bucket'] == 'type') {
@@ -146,12 +132,12 @@ class PortfolioRepo {
         total_devices         = EXCLUDED.total_devices
       ''',
       parameters: {
-        'cid':     companyId,
-        'date':    todayStr,
+        'cid': companyId,
+        'date': todayStr,
         'portVal': totalPortfolioValue,
         'bookVal': totalBookValue,
-        'dep':     totalDepreciation,
-        'devs':    totalDevices,
+        'dep': totalDepreciation,
+        'devs': totalDevices,
       },
     );
 
@@ -171,7 +157,16 @@ class PortfolioRepo {
         .toList();
 
     return PortfolioSummary(
-      totalDevices:        totalDevices,
+      totalDevices: totalDevices,
       totalPortfolioValue: totalPortfolioValue,
-      totalBookValue:      totalBookValue,
- 
+      totalBookValue: totalBookValue,
+      totalDepreciation: totalDepreciation,
+      depreciationPct: depreciationPct,
+      avgAssetAgeMonths: avgAgeMonths,
+      assetsAtRisk: assetsAtRisk,
+      byType: byType,
+      byCondition: byCondition,
+      trend: trend,
+    );
+  }
+}

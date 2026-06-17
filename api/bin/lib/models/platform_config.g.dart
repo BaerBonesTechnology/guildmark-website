@@ -15,7 +15,7 @@ PlatformConfig _$PlatformConfigFromJson(Map<String, dynamic> json) =>
       buyerFee: (json['buyer_fee'] as num).toDouble(),
       deferralFee: (json['deferral_fee'] as num).toDouble(),
       dataWipePrice: (json['data_wipe_price'] as num).toDouble(),
-      updatedAt: (json['updated_at'] as String?) ?? DateTime.now().toUtc().toIso8601String(),
+      updatedAt: json['updated_at'] as String,
       updatedBy: json['updated_by'] as String?,
     );
 
@@ -29,5 +29,5 @@ Map<String, dynamic> _$PlatformConfigToJson(PlatformConfig instance) =>
       'deferral_fee': instance.deferralFee,
       'data_wipe_price': instance.dataWipePrice,
       'updated_at': instance.updatedAt,
-      if (instance.updatedBy case final value?) 'updated_by': value,
+      'updated_by': ?instance.updatedBy,
     };

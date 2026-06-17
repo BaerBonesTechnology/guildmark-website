@@ -1,17 +1,3 @@
-/// WebAuthn / Passkey helpers for DevDash employee 2FA.
-///
-/// Implements the subset of the WebAuthn Level 2 spec needed for:
-///   - ES256 (ECDSA P-256 with SHA-256) credential registration
-///   - ES256 assertion verification
-///
-/// External dependencies used:
-///   - package:crypto      (SHA-256 hashing)
-///   - package:cryptography (ECDSA P-256 signature verification)
-///
-/// References:
-///   https://www.w3.org/TR/webauthn-2/
-///   https://www.iana.org/assignments/cose/cose.xhtml (COSE key parameters)
-
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -49,7 +35,7 @@ class _CborReader {
   dynamic decode() {
     final byte = _data[_pos++];
     final major = byte >> 5;
-    final info  = byte & 0x1f;
+    final info = byte & 0x1f;
 
     switch (major) {
       case 0: // unsigned int
@@ -59,13 +45,13 @@ class _CborReader {
         return -1 - _readCount(info);
 
       case 2: // byte string
-        final len   = _readCount(info);
+        final len = _readCount(info);
         final bytes = Uint8List.fromList(_data.sublist(_pos, _pos + len));
         _pos += len;
         return bytes;
 
       case 3: // text string
-        final len   = _readCount(info);
+        final len = _readCount(info);
         final bytes = _data.sublist(_pos, _pos + len);
         _pos += len;
         return utf8.decode(bytes);
@@ -84,7 +70,9 @@ class _CborReader {
         return map;
 
       default:
-        throw FormatException('Unsupported CBOR major type $major at pos ${_pos - 1}');
+        throw FormatException(
+          'Unsupported CBOR major type $major at pos ${_pos - 1}',
+        );
     }
   }
 
@@ -97,8 +85,11 @@ class _CborReader {
       return v;
     }
     if (info == 26) {
-      final v = (_data[_pos] << 24) | (_data[_pos + 1] << 16) |
-                (_data[_pos + 2] << 8)  |  _data[_pos + 3];
+      final v =
+          (_data[_pos] << 24) |
+          (_data[_pos + 1] << 16) |
+          (_data[_pos + 2] << 8) |
+          _data[_pos + 3];
       _pos += 4;
       return v;
     }
@@ -116,7 +107,6 @@ class _CborReader {
 // "none" format (which all passkey platforms use by default).
 // ---------------------------------------------------------------------------
 
-/// Parses the CBOR-encoded attestation object and returns the raw authData bytes.
 Uint8List parseAttestationObject(Uint8List attObj) {
   final map = decodeCbor(attObj) as Map<dynamic, dynamic>;
   final authData = map['authData'];
@@ -150,10 +140,10 @@ class ParsedCredential {
   });
 
   final Uint8List credentialId;
-  final Uint8List publicKeyX;  // 32 bytes, P-256 x coordinate
-  final Uint8List publicKeyY;  // 32 bytes, P-256 y coordinate
-  final int       signCount;
-  final String    aaguid;      // hex string
+  final Uint8List publicKeyX; // 32 bytes, P-256 x coordinate
+  final Uint8List publicKeyY; // 32 bytes, P-256 y coordinate
+  final int signCount;
+  final String aaguid; // hex string
 }
 
 ParsedCredential parseAuthData(Uint8List authData) {
@@ -161,18 +151,25 @@ ParsedCredential parseAuthData(Uint8List authData) {
     throw FormatException('authData too short: ${authData.length}');
   }
 
-  final flags     = authData[32];
-  final signCount = (authData[33] << 24) | (authData[34] << 16) |
-                    (authData[35] << 8)  |  authData[36];
+  final flags = authData[32];
+  final signCount =
+      (authData[33] << 24) |
+      (authData[34] << 16) |
+      (authData[35] << 8) |
+      authData[36];
 
   final hasAttestedCredData = (flags & 0x40) != 0;
   if (!hasAttestedCredData) {
-    throw FormatException('authData has no attestedCredentialData (AT flag not set)');
+    throw FormatException(
+      'authData has no attestedCredentialData (AT flag not set)',
+    );
   }
 
   // aaguid: bytes 37–52
   final aaguidBytes = authData.sublist(37, 53);
-  final aaguid = aaguidBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  final aaguid = aaguidBytes
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join();
 
   // credentialIdLength: bytes 53–54 (big-endian uint16)
   final credIdLen = (authData[53] << 8) | authData[54];
@@ -181,8 +178,8 @@ ParsedCredential parseAuthData(Uint8List authData) {
   final credentialId = authData.sublist(55, 55 + credIdLen);
 
   // credentialPublicKey: remaining bytes (CBOR COSE key)
-  final coseBytes    = authData.sublist(55 + credIdLen);
-  final coseKey      = decodeCbor(coseBytes) as Map<dynamic, dynamic>;
+  final coseBytes = authData.sublist(55 + credIdLen);
+  final coseKey = decodeCbor(coseBytes) as Map<dynamic, dynamic>;
 
   // COSE key parameters for EC2 / ES256:
   //   1: kty  = 2 (EC2)
@@ -192,22 +189,23 @@ ParsedCredential parseAuthData(Uint8List authData) {
   //  -3: y    = <32 bytes>
   final kty = coseKey[1] as int?;
   final alg = coseKey[3] as int?;
-  if (kty != 2)  throw FormatException('Unsupported COSE kty: $kty (expected 2 = EC2)');
-  if (alg != -7) throw FormatException('Unsupported COSE alg: $alg (expected -7 = ES256)');
+  if (kty != 2)
+    throw FormatException('Unsupported COSE kty: $kty (expected 2 = EC2)');
+  if (alg != -7)
+    throw FormatException('Unsupported COSE alg: $alg (expected -7 = ES256)');
 
   final x = coseKey[-2] as Uint8List;
   final y = coseKey[-3] as Uint8List;
 
   return ParsedCredential(
     credentialId: credentialId,
-    publicKeyX:   _pad32(x),
-    publicKeyY:   _pad32(y),
-    signCount:    signCount,
-    aaguid:       aaguid,
+    publicKeyX: _pad32(x),
+    publicKeyY: _pad32(y),
+    signCount: signCount,
+    aaguid: aaguid,
   );
 }
 
-/// Trims leading 0x00 bytes (DER sign padding) then pads back to exactly 32 bytes.
 Uint8List _pad32(Uint8List bytes) {
   var start = 0;
   while (start < bytes.length - 1 && bytes[start] == 0x00) {
@@ -230,14 +228,17 @@ Uint8List _pad32(Uint8List bytes) {
 // ---------------------------------------------------------------------------
 
 Uint8List derToP1363(Uint8List der) {
-  if (der[0] != 0x30) throw FormatException('Not a DER SEQUENCE (got ${der[0]})');
+  if (der[0] != 0x30)
+    throw FormatException('Not a DER SEQUENCE (got ${der[0]})');
   var i = 2; // skip 0x30 and length byte
-  if (der[i] != 0x02) throw FormatException('Expected INTEGER tag (got ${der[i]})');
+  if (der[i] != 0x02)
+    throw FormatException('Expected INTEGER tag (got ${der[i]})');
   i++;
   final rLen = der[i++];
   final r = der.sublist(i, i + rLen);
   i += rLen;
-  if (der[i] != 0x02) throw FormatException('Expected INTEGER tag for s (got ${der[i]})');
+  if (der[i] != 0x02)
+    throw FormatException('Expected INTEGER tag for s (got ${der[i]})');
   i++;
   final sLen = der[i++];
   final s = der.sublist(i, i + sLen);
@@ -294,15 +295,11 @@ Future<bool> verifyAssertion({
 // clientDataJSON verification helpers
 // ---------------------------------------------------------------------------
 
-/// Verifies that the clientDataJSON returned by the browser matches the
-/// challenge we issued and the expected type / origin.
-///
-/// Returns the parsed JSON map on success, throws [FormatException] on mismatch.
 Map<String, dynamic> verifyClientData({
   required Uint8List clientDataJson,
-  required String    expectedChallenge,    // base64url
-  required String    expectedType,         // 'webauthn.create' or 'webauthn.get'
-  required String    expectedOrigin,
+  required String expectedChallenge, // base64url
+  required String expectedType, // 'webauthn.create' or 'webauthn.get'
+  required String expectedOrigin,
 }) {
   final Map<String, dynamic> data;
   try {
@@ -311,14 +308,28 @@ Map<String, dynamic> verifyClientData({
     throw FormatException('clientDataJSON is not valid UTF-8 JSON: $e');
   }
 
-  final type      = data['type']      as String?;
+  final type = data['type'] as String?;
   final challenge = data['challenge'] as String?;
-  final origin    = data['origin']    as String?;
+  final origin = data['origin'] as String?;
 
   if (type != expectedType) {
-    throw FormatException('clientData type mismatch: got $type, want $expectedType');
+    throw FormatException(
+      'clientData type mismatch: got $type, want $expectedType',
+    );
   }
 
   // Challenges may differ in padding; normalise before comparing.
-  final normalise = (String? s) =>
-      s?.replaceAll('=', '') ?? ''
+  final normalise = (String? s) => s?.replaceAll('=', '') ?? '';
+
+  if (normalise(challenge) != normalise(expectedChallenge)) {
+    throw FormatException('clientData challenge mismatch');
+  }
+
+  if (origin != expectedOrigin) {
+    throw FormatException(
+      'clientData origin mismatch: got $origin, want $expectedOrigin',
+    );
+  }
+
+  return data;
+}

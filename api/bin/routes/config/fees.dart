@@ -1,9 +1,3 @@
-/// GET /config/fees
-///
-/// Public endpoint — returns the current platform fee rates so the frontend
-/// can display accurate fee previews before a seller submits a listing.
-/// No auth required (rates are not sensitive).
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/db/pool.dart';

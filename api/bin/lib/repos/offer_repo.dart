@@ -1,12 +1,9 @@
-/// Buyer offers data-access. Covers both buyer-create and seller-respond.
-
 import 'package:postgres/postgres.dart';
 
 import '../db/pool.dart';
 import '../models/json_helpers.dart';
 import '../models/offer.dart';
 
-/// Offers expire in 72 hours by default. The frontend can display a countdown.
 const _offerTtl = Duration(hours: 72);
 
 const _offerCols = '''
@@ -19,7 +16,6 @@ class OfferRepo {
 
   final Db _db;
 
-  /// Buyer-side: every offer placed by a company.
   Future<List<BuyerOffer>> findByBuyerCompany(String buyerCompanyId) async {
     final result = await _db.query(
       'SELECT $_offerCols FROM buyer_offers WHERE buyer_company_id = @bid ORDER BY created_at DESC',
@@ -28,15 +24,6 @@ class OfferRepo {
     return result.map((r) => BuyerOffer.fromRow(r.toColumnMap())).toList();
   }
 
-  /// Place a new offer on a listing.
-  ///
-  /// Validates that:
-  /// - the listing exists and is active
-  /// - the buyer is not the listing's seller (no self-offers)
-  /// - the offer price is positive
-  ///
-  /// Returns the persisted offer or throws [ArgumentError] on validation
-  /// failure and [StateError] if the listing is not active.
   Future<BuyerOffer> create({
     required String listingId,
     required String buyerCompanyId,
@@ -60,7 +47,8 @@ class OfferRepo {
       final listingStatus = enumStr(listing['status']);
       if (listingStatus != 'active') {
         throw StateError(
-            'Listing $listingId is not active (status: $listingStatus)');
+          'Listing $listingId is not active (status: $listingStatus)',
+        );
       }
       if (listing['company_id'].toString() == buyerCompanyId) {
         throw ArgumentError('Buyer cannot place an offer on their own listing');
@@ -89,11 +77,6 @@ class OfferRepo {
     });
   }
 
-  /// Seller-side action — accept / reject / counter.
-  ///
-  /// [sellerCompanyId] is validated against the offer's listing so a seller
-  /// cannot respond to someone else's offer.
-  /// [counterPrice] is required when action == 'counter'.
   Future<BuyerOffer> respond({
     required String offerId,
     required String sellerCompanyId,
@@ -102,7 +85,8 @@ class OfferRepo {
   }) async {
     if (action == 'counter' && (counterPrice == null || counterPrice <= 0)) {
       throw ArgumentError(
-          'counter_price required and must be positive for counter action');
+        'counter_price required and must be positive for counter action',
+      );
     }
 
     return _db.tx<BuyerOffer>((tx) async {
@@ -146,4 +130,9 @@ class OfferRepo {
           'oid': offerId,
           'status': newStatus,
           'counterPrice': counterPrice,
-    
+        },
+      );
+      return BuyerOffer.fromRow(result.first.toColumnMap());
+    });
+  }
+}

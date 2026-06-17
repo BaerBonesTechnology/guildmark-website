@@ -1,5 +1,3 @@
-/// Data access for the platform_config singleton row.
-
 import '../db/pool.dart';
 import '../models/platform_config.dart';
 
@@ -9,7 +7,8 @@ class ConfigRepo {
 
   Future<PlatformConfig> get() async {
     final rows = await _db.query('SELECT * FROM platform_config WHERE id = 1');
-    if (rows.isEmpty) throw StateError('platform_config row missing — run migration 0009');
+    if (rows.isEmpty)
+      throw StateError('platform_config row missing — run migration 0009');
     return PlatformConfig.fromRow(rows.first.toColumnMap());
   }
 
@@ -23,8 +22,9 @@ class ConfigRepo {
     required double dataWipePrice,
     String? updatedBy,
   }) async {
-
-    print('Updating platform_config with sellerFeeFree=$sellerFeeFree, sellerFeeStarter=$sellerFeeStarter, sellerFeeGrowth=$sellerFeeGrowth, sellerFeePro=$sellerFeePro, buyerFee=$buyerFee, deferralFee=$deferralFee, dataWipePrice=$dataWipePrice, updatedBy=$updatedBy');
+    print(
+      'Updating platform_config with sellerFeeFree=$sellerFeeFree, sellerFeeStarter=$sellerFeeStarter, sellerFeeGrowth=$sellerFeeGrowth, sellerFeePro=$sellerFeePro, buyerFee=$buyerFee, deferralFee=$deferralFee, dataWipePrice=$dataWipePrice, updatedBy=$updatedBy',
+    );
 
     final rows = await _db.query(
       '''
@@ -42,6 +42,18 @@ class ConfigRepo {
       RETURNING *
       ''',
       parameters: {
-        'sellerFeeFree':    sellerFeeFree,
+        'sellerFeeFree': sellerFeeFree,
         'sellerFeeStarter': sellerFeeStarter,
-        'sellerFeeGrowth':  sellerFe
+        'sellerFeeGrowth': sellerFeeGrowth,
+        'sellerFeePro': sellerFeePro,
+        'buyerFee': buyerFee,
+        'deferralFee': deferralFee,
+        'dataWipePrice': dataWipePrice,
+        'updatedBy': updatedBy,
+      },
+    );
+
+    print('Updated platform_config: ${rows.first.toColumnMap()}');
+    return PlatformConfig.fromRow(rows.first.toColumnMap());
+  }
+}

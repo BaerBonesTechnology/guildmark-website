@@ -1,10 +1,3 @@
-/// PATCH /orders/:id/ship
-///
-/// Seller attaches a tracking number.
-/// Status transitions: funded | awaiting_payment  →  shipped
-///
-/// Body: { tracking_number: string, carrier?: string }
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../../lib/context.dart';
@@ -20,20 +13,20 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final body           = await context.request.json() as Map<String, dynamic>?;
+  final body = await context.request.json() as Map<String, dynamic>?;
   final trackingNumber = (body?['tracking_number'] as String?)?.trim();
-  final carrier        = (body?['carrier'] as String?)?.trim() ?? 'fedex';
+  final carrier = (body?['carrier'] as String?)?.trim() ?? 'fedex';
 
   if (trackingNumber == null || trackingNumber.isEmpty) {
     return badRequest('tracking_number is required');
   }
 
-  final repo  = OrderRepo(context.read<Db>());
+  final repo = OrderRepo(context.read<Db>());
   final order = await repo.addTracking(
-    id:             id,
+    id: id,
     sellerCompanyId: auth.companyId,
     trackingNumber: trackingNumber,
-    carrier:        carrier,
+    carrier: carrier,
   );
 
   if (order == null) {

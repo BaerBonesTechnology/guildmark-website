@@ -1,7 +1,3 @@
-/// GET /dashboard — top-level seller dashboard summary.
-///
-/// Aggregates active listings count, pending offers, recent valuation flags.
-
 import 'package:dart_frog/dart_frog.dart';
 
 import '../../lib/context.dart';
@@ -16,6 +12,8 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final summary = await DashboardRepo(context.read<Db>()).summarize(auth.companyId);
+  final summary = await DashboardRepo(
+    context.read<Db>(),
+  ).summarize(auth.companyId);
   return Response.json(body: summary.toJson());
 }

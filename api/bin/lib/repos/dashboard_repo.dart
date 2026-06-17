@@ -1,6 +1,3 @@
-/// Seller dashboard aggregate. Lightweight summary the landing dashboard
-/// page hits on every navigation.
-
 import '../db/pool.dart';
 import '../models/json_helpers.dart';
 
@@ -21,18 +18,18 @@ class HighDemandAsset {
   final String assetId;
   final String modelName;
   final String specs;
-  final int    demandScore; // 1–5
-  final String peakDate;   // YYYY-MM-DD — estimated optimal sell date
-  final String status;     // "ready" | "hold"
+  final int demandScore; // 1–5
+  final String peakDate; // YYYY-MM-DD — estimated optimal sell date
+  final String status; // "ready" | "hold"
 
   Map<String, dynamic> toJson() => {
-        'asset_id':     assetId,
-        'model_name':   modelName,
-        'specs':        specs,
-        'demand_score': demandScore,
-        'peak_date':    peakDate,
-        'status':       status,
-      };
+    'asset_id': assetId,
+    'model_name': modelName,
+    'specs': specs,
+    'demand_score': demandScore,
+    'peak_date': peakDate,
+    'status': status,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -58,40 +55,45 @@ class DashboardSummary {
     required this.highDemandAssets,
   });
 
-  final double totalFleetValue;     // inMarketValue + stagedValue + ampsPortfolioValue
-  final double inMarketValue;       // active listings only
-  final double stagedValue;         // draft / expired / withdrawn listings
-  final double ampsPortfolioValue;  // latest valuation_snapshots row (0 if no AMPS data)
-  final double totalListedValue;    // SUM(listed_price) across all non-sold listings
-  final double totalMarketValue;    // SUM(fair_market_value) across all non-sold listings
-  final double projectedLoss6mo;    // 0.0 until ML depreciation endpoint is built
-  final int    recoveryOpportunity; // non-overpriced active listing count
-  final int    idleUnits;           // total quantity across active listings
-  final double fleetEfficiencyPct;  // % of active listings that are not overpriced
-  final int    activeListings;
-  final int    pendingOffers;
+  final double
+  totalFleetValue; // inMarketValue + stagedValue + ampsPortfolioValue
+  final double inMarketValue; // active listings only
+  final double stagedValue; // draft / expired / withdrawn listings
+  final double
+  ampsPortfolioValue; // latest valuation_snapshots row (0 if no AMPS data)
+  final double
+  totalListedValue; // SUM(listed_price) across all non-sold listings
+  final double
+  totalMarketValue; // SUM(fair_market_value) across all non-sold listings
+  final double projectedLoss6mo; // 0.0 until ML depreciation endpoint is built
+  final int recoveryOpportunity; // non-overpriced active listing count
+  final int idleUnits; // total quantity across active listings
+  final double
+  fleetEfficiencyPct; // % of active listings that are not overpriced
+  final int activeListings;
+  final int pendingOffers;
   final double totalRecovered;
-  final int    overpricedCount;
+  final int overpricedCount;
   final List<HighDemandAsset> highDemandAssets;
 
   Map<String, dynamic> toJson() => {
-        'total_fleet_value':    totalFleetValue,
-        'in_market_value':      inMarketValue,
-        'staged_value':         stagedValue,
-        'amps_portfolio_value': ampsPortfolioValue,
-        'total_listed_value':   totalListedValue,
-        'total_market_value':   totalMarketValue,
-        'projected_loss_6mo':   projectedLoss6mo,
-        'recovery_opportunity': recoveryOpportunity,
-        'idle_units':           idleUnits,
-        'fleet_efficiency_pct': fleetEfficiencyPct,
-        'active_listings':      activeListings,
-        'pending_offers':       pendingOffers,
-        'total_recovered':      totalRecovered,
-        'overpriced_count':     overpricedCount,
-        'high_demand_assets':   highDemandAssets.map((a) => a.toJson()).toList(),
-        'value_trend':          <Map<String, dynamic>>[],  // populated by ML tier
-      };
+    'total_fleet_value': totalFleetValue,
+    'in_market_value': inMarketValue,
+    'staged_value': stagedValue,
+    'amps_portfolio_value': ampsPortfolioValue,
+    'total_listed_value': totalListedValue,
+    'total_market_value': totalMarketValue,
+    'projected_loss_6mo': projectedLoss6mo,
+    'recovery_opportunity': recoveryOpportunity,
+    'idle_units': idleUnits,
+    'fleet_efficiency_pct': fleetEfficiencyPct,
+    'active_listings': activeListings,
+    'pending_offers': pendingOffers,
+    'total_recovered': totalRecovered,
+    'overpriced_count': overpricedCount,
+    'high_demand_assets': highDemandAssets.map((a) => a.toJson()).toList(),
+    'value_trend': <Map<String, dynamic>>[], // populated by ML tier
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -102,13 +104,6 @@ class DashboardRepo {
   DashboardRepo(this._db);
   final Db _db;
 
-  /// Aggregate seller dashboard stats for a single company.
-  ///
-  /// Derives fleet KPIs directly from the listings + assets tables so that
-  /// free-tier accounts see real data without needing AMPS features.
-  ///
-  /// [projected_loss_6mo] and [value_trend] remain 0 / empty until the ML
-  /// depreciation forecast endpoint is integrated.
   Future<DashboardSummary> summarize(String companyId) async {
     // ── Main aggregate ───────────────────────────────────────────────────────
     final aggResult = await _db.query(
@@ -190,21 +185,26 @@ class DashboardRepo {
     );
 
     // ── Assemble ─────────────────────────────────────────────────────────────
-    final aggRow  = aggResult.first.toColumnMap();
-    final oRow    = offerResult.first.toColumnMap();
-    final snapRow = snapResult.isEmpty ? <String, Object?>{} : snapResult.first.toColumnMap();
+    final aggRow = aggResult.first.toColumnMap();
+    final oRow = offerResult.first.toColumnMap();
+    final snapRow = snapResult.isEmpty
+        ? <String, Object?>{}
+        : snapResult.first.toColumnMap();
 
-    final activeListings     = numToIntOrNull(aggRow['active_listings'])    ?? 0;
-    final goodListings       = numToIntOrNull(aggRow['good_listings'])      ?? 0;
-    final overpricedCount    = numToIntOrNull(aggRow['overpriced_count'])   ?? 0;
-    final inMarketValue      = numToDoubleOrNull(aggRow['in_market_value']) ?? 0.0;
-    final stagedValue        = numToDoubleOrNull(aggRow['staged_value'])    ?? 0.0;
-    final totalRecovered     = numToDoubleOrNull(aggRow['total_recovered']) ?? 0.0;
-    final totalListedValue   = numToDoubleOrNull(aggRow['total_listed_value'])  ?? 0.0;
-    final totalMarketValue   = numToDoubleOrNull(aggRow['total_market_value'])  ?? 0.0;
-    final idleUnits          = numToIntOrNull(aggRow['idle_units'])         ?? 0;
-    final pendingOffers      = numToIntOrNull(oRow['pending_offers'])       ?? 0;
-    final ampsPortfolioValue = numToDoubleOrNull(snapRow['amps_portfolio_value']) ?? 0.0;
+    final activeListings = numToIntOrNull(aggRow['active_listings']) ?? 0;
+    final goodListings = numToIntOrNull(aggRow['good_listings']) ?? 0;
+    final overpricedCount = numToIntOrNull(aggRow['overpriced_count']) ?? 0;
+    final inMarketValue = numToDoubleOrNull(aggRow['in_market_value']) ?? 0.0;
+    final stagedValue = numToDoubleOrNull(aggRow['staged_value']) ?? 0.0;
+    final totalRecovered = numToDoubleOrNull(aggRow['total_recovered']) ?? 0.0;
+    final totalListedValue =
+        numToDoubleOrNull(aggRow['total_listed_value']) ?? 0.0;
+    final totalMarketValue =
+        numToDoubleOrNull(aggRow['total_market_value']) ?? 0.0;
+    final idleUnits = numToIntOrNull(aggRow['idle_units']) ?? 0;
+    final pendingOffers = numToIntOrNull(oRow['pending_offers']) ?? 0;
+    final ampsPortfolioValue =
+        numToDoubleOrNull(snapRow['amps_portfolio_value']) ?? 0.0;
 
     final totalFleetValue = inMarketValue + stagedValue + ampsPortfolioValue;
 
@@ -213,36 +213,50 @@ class DashboardRepo {
         : 0.0;
 
     final highDemandAssets = assetResult.map((row) {
-      final r       = row.toColumnMap();
-      final flag    = r['valuation_flag']?.toString() ?? '';
-      final ramGb   = numToIntOrNull(r['ram_gb'])     ?? 0;
-      final stoGb   = numToIntOrNull(r['storage_gb']) ?? 0;
-      final cpu     = numToIntOrNull(r['cpu_score'])  ?? 0;
+      final r = row.toColumnMap();
+      final flag = r['valuation_flag']?.toString() ?? '';
+      final ramGb = numToIntOrNull(r['ram_gb']) ?? 0;
+      final stoGb = numToIntOrNull(r['storage_gb']) ?? 0;
+      final cpu = numToIntOrNull(r['cpu_score']) ?? 0;
       final specParts = <String>[
         if (ramGb > 0) '$ramGb GB RAM',
         if (stoGb > 0) '$stoGb GB SSD',
-        if (cpu   > 0) 'CPU $cpu',
+        if (cpu > 0) 'CPU $cpu',
       ];
 
       final demandScore = switch (flag) {
-        'distressed'        => 5,
-        'standard'          => 3,
+        'distressed' => 5,
+        'standard' => 3,
         'insufficient_data' => 2,
-        _                   => 1,
+        _ => 1,
       };
 
       return HighDemandAsset(
-        assetId:     r['asset_id']?.toString() ?? '',
-        modelName:   r['model_name']?.toString() ?? 'Unknown',
-        specs:       specParts.isEmpty ? '—' : specParts.join(' / '),
+        assetId: r['asset_id']?.toString() ?? '',
+        modelName: r['model_name']?.toString() ?? 'Unknown',
+        specs: specParts.isEmpty ? '—' : specParts.join(' / '),
         demandScore: demandScore,
-        peakDate:    r['peak_date']?.toString().split(' ').first ?? '',
-        status:      (flag == 'distressed' || flag == 'standard') ? 'ready' : 'hold',
+        peakDate: r['peak_date']?.toString().split(' ').first ?? '',
+        status: (flag == 'distressed' || flag == 'standard') ? 'ready' : 'hold',
       );
     }).toList();
 
     return DashboardSummary(
-      totalFleetValue:     totalFleetValue,
-      inMarketValue:       inMarketValue,
-      stagedValue:         stagedValue,
-      ampsPortfolioValue:  ampsPo
+      totalFleetValue: totalFleetValue,
+      inMarketValue: inMarketValue,
+      stagedValue: stagedValue,
+      ampsPortfolioValue: ampsPortfolioValue,
+      totalListedValue: totalListedValue,
+      totalMarketValue: totalMarketValue,
+      projectedLoss6mo: 0.0, // ML feature — not yet built
+      recoveryOpportunity: goodListings,
+      idleUnits: idleUnits,
+      fleetEfficiencyPct: efficiencyPct,
+      activeListings: activeListings,
+      pendingOffers: pendingOffers,
+      totalRecovered: totalRecovered,
+      overpricedCount: overpricedCount,
+      highDemandAssets: highDemandAssets,
+    );
+  }
+}
