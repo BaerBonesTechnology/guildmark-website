@@ -1,11 +1,3 @@
-/// POST /auth/forgot-password
-///
-/// Body:    { email }
-/// Returns: 200 always (don't leak whether the email exists)
-/// Side:    If a user with that email exists, sends a password-reset link via Resend.
-///          Token is a 48-byte random plaintext; SHA-256 hash stored in DB.
-///          Link: {FRONTEND_URL}/reset-password?token={plaintext}
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -15,32 +7,32 @@ import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:postgres/postgres.dart';
 
-import '../../lib/config.dart';
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/repos/user_repo.dart';
-import '../../lib/services/email_service.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/user_repo.dart';
+import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
-  final body  = await context.request.json() as Map<String, dynamic>?;
+  final body = await context.request.json() as Map<String, dynamic>?;
   final email = (body?['email'] as String?)?.toLowerCase().trim();
   if (email == null || email.isEmpty) {
     return badRequest('email is required');
   }
 
-  final db    = context.read<Db>();
-  final mail  = context.read<EmailService>();
-  final cfg   = context.read<AppConfig>();
+  final db = context.read<Db>();
+  final mail = context.read<EmailService>();
+  final cfg = context.read<AppConfig>();
 
   // Always return 200 — never disclose whether the address exists.
   final user = await UserRepo(db).findByEmail(email);
   if (user != null) {
     final plaintext = _randomToken();
-    final hash      = _hash(plaintext);
+    final hash = _hash(plaintext);
     final expiresAt = DateTime.now().toUtc().add(const Duration(hours: 1));
 
     // Revoke any existing unused tokens for this user before issuing a new one.
@@ -72,13 +64,15 @@ Future<Response> onRequest(RequestContext context) async {
     unawaited(mail.sendPasswordReset(toEmail: email, resetLink: resetLink));
   }
 
-  return Response.json(body: {
-    'message': 'If that email is registered, a reset link has been sent.',
-  });
+  return Response.json(
+    body: {
+      'message': 'If that email is registered, a reset link has been sent.',
+    },
+  );
 }
 
 String _randomToken({int byteLength = 48}) {
-  final rng   = Random.secure();
+  final rng = Random.secure();
   final bytes = List<int>.generate(byteLength, (_) => rng.nextInt(256));
   return base64Url.encode(bytes).replaceAll('=', '');
 }

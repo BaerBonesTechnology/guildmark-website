@@ -48,11 +48,11 @@ export function ResetPassword() {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center space-y-3">
           <AlertCircle className="h-10 w-10 text-red-500 mx-auto" />
-          <p className="font-mono text-foreground font-semibold">Invalid reset link</p>
-          <p className="text-sm font-mono text-muted-foreground">
+          <p className=" text-foreground font-semibold">Invalid reset link</p>
+          <p className="text-sm  text-muted-foreground">
             This link is missing a token. Please request a new one.
           </p>
-          <Button asChild variant="outline" className="font-mono">
+          <Button asChild variant="outline" className="">
             <Link to="/forgot-password">Request New Link</Link>
           </Button>
         </div>
@@ -64,10 +64,10 @@ export function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-xl font-mono font-semibold text-foreground">
+          <h1 className="text-xl  font-semibold text-foreground">
             Guild<span className="text-primary">Mark</span>
           </h1>
-          <p className="text-sm text-muted-foreground font-mono mt-1">
+          <p className="text-sm text-muted-foreground  mt-1">
             Set a new password
           </p>
         </div>
@@ -75,15 +75,15 @@ export function ResetPassword() {
         {done ? (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 text-center space-y-3">
             <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
-            <p className="font-mono font-semibold text-foreground">Password updated!</p>
-            <p className="text-sm font-mono text-muted-foreground">
+            <p className=" font-semibold text-foreground">Password updated!</p>
+            <p className="text-sm  text-muted-foreground">
               Redirecting you to sign in…
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-border bg-card p-6">
             <div className="space-y-2">
-              <Label htmlFor="new-password" className="font-mono text-sm">
+              <Label htmlFor="new-password" className=" text-sm">
                 New password
               </Label>
               <div className="relative">
@@ -94,7 +94,7 @@ export function ResetPassword() {
                   placeholder="Min. 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 pr-9 font-mono"
+                  className="pl-9 pr-9 "
                   required
                   autoFocus
                 />
@@ -109,7 +109,7 @@ export function ResetPassword() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm-password" className="font-mono text-sm">
+              <Label htmlFor="confirm-password" className=" text-sm">
                 Confirm password
               </Label>
               <div className="relative">
@@ -120,19 +120,19 @@ export function ResetPassword() {
                   placeholder="Re-enter password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="pl-9 font-mono"
+                  className="pl-9 "
                   required
                 />
               </div>
             </div>
 
             {error && (
-              <p className="text-sm text-red-500 font-mono">{error}</p>
+              <p className="text-sm text-red-500 ">{error}</p>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-white font-mono"
+              className="w-full bg-primary hover:bg-primary/90 text-white "
               disabled={isLoading}
             >
               {isLoading ? "Updating…" : "Update Password"}
@@ -141,7 +141,7 @@ export function ResetPassword() {
             <div className="text-center">
               <Link
                 to="/login"
-                className="text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs  text-muted-foreground hover:text-foreground transition-colors"
               >
                 Back to Sign In
               </Link>

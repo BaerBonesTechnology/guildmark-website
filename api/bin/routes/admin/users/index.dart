@@ -1,16 +1,8 @@
-/// GET /admin/users — paginated list of signed-up users with company + plan.
-///
-/// Query params:
-///   limit   (default 50, max 200)
-///   offset  (default 0)
-///   q       — search by email, full name, or company name (ILIKE)
-///   plan    — filter by subscription plan (free | starter | growth | pro)
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
@@ -22,10 +14,10 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   final params = context.request.uri.queryParameters;
-  final limit  = (int.tryParse(params['limit']  ?? '50') ?? 50).clamp(1, 200);
+  final limit = (int.tryParse(params['limit'] ?? '50') ?? 50).clamp(1, 200);
   final offset = int.tryParse(params['offset'] ?? '0') ?? 0;
   final search = (params['q'] ?? '').trim();
-  final plan   = (params['plan'] ?? '').trim();
+  final plan = (params['plan'] ?? '').trim();
 
   final db = context.read<Db>();
 
@@ -83,25 +75,27 @@ Future<Response> onRequest(RequestContext context) async {
 
   final total = countRows.first.toColumnMap()['total'] as int? ?? 0;
 
-  return Response.json(body: {
-    'total':  total,
-    'limit':  limit,
-    'offset': offset,
-    'users': rows.map((r) {
-      final row = r.toColumnMap();
-      return {
-        'id':                  row['id'].toString(),
-        'email':               row['email'].toString(),
-        'full_name':           row['full_name'].toString(),
-        'role':                row['role'].toString(),
-        'created_at':          (row['created_at'] as DateTime).toIso8601String(),
-        'company_id':          row['company_id'].toString(),
-        'company_name':        row['company_name'].toString(),
-        'size_band':           row['size_band']?.toString(),
-        'industry':            row['industry']?.toString(),
-        'plan':                row['plan'].toString(),
-        'subscription_status': row['subscription_status'].toString(),
-      };
-    }).toList(),
-  });
+  return Response.json(
+    body: {
+      'total': total,
+      'limit': limit,
+      'offset': offset,
+      'users': rows.map((r) {
+        final row = r.toColumnMap();
+        return {
+          'id': row['id'].toString(),
+          'email': row['email'].toString(),
+          'full_name': row['full_name'].toString(),
+          'role': row['role'].toString(),
+          'created_at': (row['created_at'] as DateTime).toIso8601String(),
+          'company_id': row['company_id'].toString(),
+          'company_name': row['company_name'].toString(),
+          'size_band': row['size_band']?.toString(),
+          'industry': row['industry']?.toString(),
+          'plan': row['plan'].toString(),
+          'subscription_status': row['subscription_status'].toString(),
+        };
+      }).toList(),
+    },
+  );
 }

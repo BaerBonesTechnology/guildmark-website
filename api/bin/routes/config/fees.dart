@@ -1,14 +1,8 @@
-/// GET /config/fees
-///
-/// Public endpoint — returns the current platform fee rates so the frontend
-/// can display accurate fee previews before a seller submits a listing.
-/// No auth required (rates are not sensitive).
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/repos/config_repo.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/config_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {

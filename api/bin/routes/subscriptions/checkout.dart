@@ -1,47 +1,19 @@
-/// POST /subscriptions/checkout
-///
-/// Upgrades or switches a company's subscription plan using Square's native
-/// Subscriptions API, which handles all future recurring billing automatically.
-///
-/// Flow:
-///   1. Save the card nonce to the Square customer vault (POST /v2/cards)
-///   2. Create a Square subscription against the plan variation (POST /v2/subscriptions)
-///   3. Update our subscriptions row with the new plan + square_subscription_id
-///   4. Record a subscription_invoices row for audit trail
-///
-/// If the company already has an active Square subscription, it is cancelled
-/// before the new one is created (plan switch).
-///
-/// When no plan variation IDs are configured (e.g. local sandbox without test
-/// plans), the route falls back to a one-time direct charge so development
-/// remains unblocked.
-///
-/// Body:
-///   plan             string  — "starter" | "growth" | "pro"
-///   source_id        string  — Square Web Payments nonce (cnon:...)
-///   save_card        bool?   — always true when using Subscriptions API; kept
-///                              for API compatibility
-///   cardholder_name  string? — forwarded to Square card vault
-///   billing_address  object? — forwarded to Square for AVS
-///
-/// Returns: updated subscription + the new invoice row.
-
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/config.dart';
-import '../../lib/context.dart';
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/repos/subscription_repo.dart';
-import '../../lib/services/square_service.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/subscription_repo.dart';
+import 'package:guildmark_api/services/square_service.dart';
 
 // Fallback prices (cents) used when Square plan variation IDs are not configured.
 const _fallbackPrices = {
   'starter': 4900,
-  'growth':  14900,
-  'pro':     34900,
+  'growth': 14900,
+  'pro': 34900,
 };
 
 Future<Response> onRequest(RequestContext context) async {
@@ -52,11 +24,11 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final body            = await context.request.json() as Map<String, dynamic>?;
-  final plan            = (body?['plan']            as String?)?.trim().toLowerCase();
-  final sourceId        = (body?['source_id']       as String?)?.trim();
-  final cardholderName  = (body?['cardholder_name'] as String?)?.trim();
-  final billingRaw      = body?['billing_address']  as Map<String, dynamic>?;
+  final body = await context.request.json() as Map<String, dynamic>?;
+  final plan = (body?['plan'] as String?)?.trim().toLowerCase();
+  final sourceId = (body?['source_id'] as String?)?.trim();
+  final cardholderName = (body?['cardholder_name'] as String?)?.trim();
+  final billingRaw = body?['billing_address'] as Map<String, dynamic>?;
 
   if (plan == null || !_fallbackPrices.containsKey(plan)) {
     return badRequest('plan must be one of: starter, growth, pro');
@@ -70,20 +42,23 @@ Future<Response> onRequest(RequestContext context) async {
           businessName: billingRaw['business_name'] as String?,
           addressLine1: (billingRaw['address_line_1'] as String?) ?? '',
           addressLine2: billingRaw['address_line_2'] as String?,
-          city:         (billingRaw['city']           as String?) ?? '',
-          state:        (billingRaw['state']          as String?) ?? '',
-          postalCode:   (billingRaw['postal_code']    as String?) ?? '',
+          city: (billingRaw['city'] as String?) ?? '',
+          state: (billingRaw['state'] as String?) ?? '',
+          postalCode: (billingRaw['postal_code'] as String?) ?? '',
         )
       : null;
 
-  final db     = context.read<Db>();
+  final db = context.read<Db>();
   final square = context.read<SquareService?>();
-  final cfg    = context.read<AppConfig>();
-  final repo   = SubscriptionRepo(db);
+  final cfg = context.read<AppConfig>();
+  final repo = SubscriptionRepo(db);
 
   if (square == null) {
-    return jsonError(503, 'SQUARE_NOT_CONFIGURED',
-        'Payment processing is not configured on this server.');
+    return jsonError(
+      503,
+      'SQUARE_NOT_CONFIGURED',
+      'Payment processing is not configured on this server.',
+    );
   }
 
   // Fetch current subscription.
@@ -99,11 +74,13 @@ Future<Response> onRequest(RequestContext context) async {
       ? null
       : companyRows.first.toColumnMap()['square_customer_id']?.toString();
 
-  final planLabel       = plan[0].toUpperCase() + plan.substring(1);
+  final planLabel = plan[0].toUpperCase() + plan.substring(1);
   final planVariationId = cfg.monthlyVariationId(plan);
 
-  stdout.writeln('[checkout] plan=$plan path=${planVariationId != null && squareCustomerId != null ? "A-subscriptions" : "B-direct"} '
-      'squareCustomerId=${squareCustomerId ?? "(none)"} planVariationId=${planVariationId ?? "(none)"}');
+  stdout.writeln(
+    '[checkout] plan=$plan path=${planVariationId != null && squareCustomerId != null ? "A-subscriptions" : "B-direct"} '
+    'squareCustomerId=${squareCustomerId ?? "(none)"} planVariationId=${planVariationId ?? "(none)"}',
+  );
 
   // ── Path A: Square Subscriptions API (production / fully configured) ────────
   if (planVariationId != null && squareCustomerId != null) {
@@ -112,8 +89,8 @@ Future<Response> onRequest(RequestContext context) async {
     try {
       // Step 1 — save card to customer vault so Square can charge on renewal.
       final cardId = await square.createCard(
-        sourceId:       sourceId,
-        customerId:     squareCustomerId,
+        sourceId: sourceId,
+        customerId: squareCustomerId,
         cardholderName: cardholderName,
         billingAddress: billing,
       );
@@ -124,16 +101,18 @@ Future<Response> onRequest(RequestContext context) async {
         try {
           await square.cancelSubscription(existingSquareSubId);
         } catch (e) {
-          stderr.writeln('[checkout] cancel old subscription error (ignored): $e');
+          stderr.writeln(
+            '[checkout] cancel old subscription error (ignored): $e',
+          );
         }
       }
 
       // Step 3 — create the new Square subscription.
       subscription = await square.createSubscription(
         planVariationId: planVariationId,
-        customerId:      squareCustomerId,
-        cardId:          cardId,
-        locationId:      square.locationId,
+        customerId: squareCustomerId,
+        cardId: cardId,
+        locationId: square.locationId,
       );
     } on SquareException catch (e) {
       return jsonError(402, 'PAYMENT_FAILED', e.detail);
@@ -141,18 +120,18 @@ Future<Response> onRequest(RequestContext context) async {
 
     // Step 4 — update DB subscription row.
     final periodStart = DateTime.now().toUtc();
-    final periodEnd   = DateTime(
+    final periodEnd = DateTime(
       periodStart.year,
       periodStart.month + 1,
       periodStart.day,
     ).toUtc();
 
     final updated = await repo.updatePlan(
-      companyId:            auth.companyId,
-      plan:                 plan,
+      companyId: auth.companyId,
+      plan: plan,
       squareSubscriptionId: subscription.id,
-      currentPeriodStart:   periodStart,
-      currentPeriodEnd:     periodEnd,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
     );
 
     // Record an invoice row for audit trail.
@@ -165,13 +144,13 @@ Future<Response> onRequest(RequestContext context) async {
         (@cid, @sub_id::uuid, @plan, @amount, @sqid, 'paid', @pstart, @pend)
       ''',
       parameters: {
-        'cid':    auth.companyId,
+        'cid': auth.companyId,
         'sub_id': updated?.id,
-        'plan':   plan,
+        'plan': plan,
         'amount': _fallbackPrices[plan],
-        'sqid':   subscription.id,
+        'sqid': subscription.id,
         'pstart': periodStart,
-        'pend':   periodEnd,
+        'pend': periodEnd,
       },
     );
 
@@ -179,9 +158,9 @@ Future<Response> onRequest(RequestContext context) async {
       body: {
         'subscription': updated?.toJson(),
         'invoice': {
-          'plan':         plan,
+          'plan': plan,
           'amount_cents': _fallbackPrices[plan],
-          'status':       'paid',
+          'status': 'paid',
         },
       },
     );
@@ -191,28 +170,28 @@ Future<Response> onRequest(RequestContext context) async {
   try {
     final amountCents = _fallbackPrices[plan]!;
     final payment = await square.createPayment(
-      sourceId:      sourceId,
-      amountCents:   amountCents,
-      note:          'GuildMark $planLabel subscription',
-      referenceId:   auth.companyId,
-      customerId:    squareCustomerId,
-      saveCard:      true,
+      sourceId: sourceId,
+      amountCents: amountCents,
+      note: 'GuildMark $planLabel subscription',
+      referenceId: auth.companyId,
+      customerId: squareCustomerId,
+      saveCard: true,
       cardholderName: cardholderName,
       billingAddress: billing,
     );
 
     final periodStart = DateTime.now().toUtc();
-    final periodEnd   = DateTime(
+    final periodEnd = DateTime(
       periodStart.year,
       periodStart.month + 1,
       periodStart.day,
     ).toUtc();
 
     final updated = await repo.updatePlan(
-      companyId:          auth.companyId,
-      plan:               plan,
+      companyId: auth.companyId,
+      plan: plan,
       currentPeriodStart: periodStart,
-      currentPeriodEnd:   periodEnd,
+      currentPeriodEnd: periodEnd,
     );
 
     await db.query(
@@ -224,13 +203,13 @@ Future<Response> onRequest(RequestContext context) async {
         (@cid, @sub_id::uuid, @plan, @amount, @sqid, 'paid', @pstart, @pend)
       ''',
       parameters: {
-        'cid':    auth.companyId,
+        'cid': auth.companyId,
         'sub_id': updated?.id,
-        'plan':   plan,
+        'plan': plan,
         'amount': payment.amountCents,
-        'sqid':   payment.id,
+        'sqid': payment.id,
         'pstart': periodStart,
-        'pend':   periodEnd,
+        'pend': periodEnd,
       },
     );
 
@@ -238,9 +217,9 @@ Future<Response> onRequest(RequestContext context) async {
       body: {
         'subscription': updated?.toJson(),
         'invoice': {
-          'plan':         plan,
+          'plan': plan,
           'amount_cents': payment.amountCents,
-          'status':       'paid',
+          'status': 'paid',
         },
       },
     );

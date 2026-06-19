@@ -44,21 +44,21 @@ export function EditListingDialog({ listing, onOpenChange }: Props) {
 
   return (
     <Dialog open={!!listing} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm font-mono">
+      <DialogContent className="max-w-sm ">
         <DialogHeader>
-          <DialogTitle className="font-mono">Edit Listing Price</DialogTitle>
-          <DialogDescription className="font-mono text-xs truncate">
+          <DialogTitle className="">Edit Listing Price</DialogTitle>
+          <DialogDescription className=" text-xs truncate">
             {listing?.model_name}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-1">
-            <Label className="font-mono text-xs uppercase tracking-wide">Listed Price (USD)</Label>
+            <Label className=" text-xs uppercase tracking-wide">Listed Price (USD)</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
               <Input
-                className="pl-6 font-mono"
+                className="pl-6 "
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -69,31 +69,31 @@ export function EditListingDialog({ listing, onOpenChange }: Props) {
               />
             </div>
             {fmv && (
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-xs text-muted-foreground ">
                 FMV: ${fmv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             )}
             {flagHint && (
-              <p className={`text-xs font-mono ${
+              <p className={`text-xs  ${
                 flagHint.startsWith("✓") ? "text-primary" : "text-warning"
               }`}>
                 {flagHint}
               </p>
             )}
-            {error && <p className="text-xs text-red-500 font-mono">{error}</p>}
+            {error && <p className="text-xs text-red-500 ">{error}</p>}
           </div>
 
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
-              className="font-mono"
+              className=""
               onClick={() => onOpenChange(false)}
               disabled={updatePrice.isPending}
             >
               Cancel
             </Button>
             <Button
-              className="bg-primary hover:bg-primary/90 text-white font-mono"
+              className="bg-primary hover:bg-primary/90 text-white "
               onClick={handleSave}
               disabled={updatePrice.isPending}
             >

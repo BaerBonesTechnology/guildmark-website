@@ -1,17 +1,8 @@
-/// GET /marketplace/stats
-///
-/// Public endpoint — no auth required.
-/// Returns aggregate stats across all active marketplace listings:
-///   totalListings    — count of active listing rows
-///   totalUnits       — sum of asset quantities across active listings
-///   avgPricePerUnit  — average listed_price where price is set
-///   totalMarketValue — sum of (listed_price * quantity) across active listings
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/models/json_helpers.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -33,10 +24,12 @@ Future<Response> onRequest(RequestContext context) async {
 
   final row = result.first.toColumnMap();
 
-  return Response.json(body: {
-    'totalListings':    numToIntOrNull(row['total_listings'])       ?? 0,
-    'totalUnits':       numToIntOrNull(row['total_units'])          ?? 0,
-    'avgPricePerUnit':  numToDoubleOrNull(row['avg_price_per_unit']) ?? 0.0,
-    'totalMarketValue': numToDoubleOrNull(row['total_market_value']) ?? 0.0,
-  });
+  return Response.json(
+    body: {
+      'totalListings': numToIntOrNull(row['total_listings']) ?? 0,
+      'totalUnits': numToIntOrNull(row['total_units']) ?? 0,
+      'avgPricePerUnit': numToDoubleOrNull(row['avg_price_per_unit']) ?? 0.0,
+      'totalMarketValue': numToDoubleOrNull(row['total_market_value']) ?? 0.0,
+    },
+  );
 }

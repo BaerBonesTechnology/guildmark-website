@@ -1,5 +1,3 @@
-/// bcrypt password hashing. Cost-12 is current OWASP guidance for interactive
-/// logins; revisit when CPUs get faster.
 import 'package:bcrypt/bcrypt.dart';
 
 const _bcryptCost = 12;

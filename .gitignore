@@ -34,3 +34,8 @@ CLAUDE.md
 **/*.docx
 /guildmark/.next
 doppler.yaml
+
+# Appwrite secrets
+.env.appwrite
+/data/keyfile/
+GCP_Migration_Plan.md

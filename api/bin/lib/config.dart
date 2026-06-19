@@ -1,5 +1,3 @@
-/// Centralized config — read once at startup, fail loud on missing required values.
-
 import 'dart:io';
 
 class AppConfig {
@@ -14,6 +12,11 @@ class AppConfig {
     required this.isDebug,
     // ML service is optional — API degrades gracefully when unavailable.
     this.mlServiceUrl,
+    // Appwrite — endpoint defaults to the in-cluster gateway; PROJECT_ID and
+    // API_KEY are optional so the API still boots before a project exists.
+    required this.appwriteEndpoint,
+    this.appwriteProjectId,
+    this.appwriteApiKey,
     // Square Web Payments
     required this.squareAccessToken,
     required this.squareApplicationId,
@@ -82,15 +85,15 @@ class AppConfig {
 
     String env(String key, String fallback) =>
         Platform.environment[key]?.isNotEmpty == true
-            ? Platform.environment[key]!
-            : fallback;
+        ? Platform.environment[key]!
+        : fallback;
 
     int requireInt(String key) => int.parse(require(key));
 
     bool optionalBool(String key, {bool defaultValue = false}) =>
         (Platform.environment[key] ?? '').toLowerCase() == 'true'
-            ? true
-            : defaultValue;
+        ? true
+        : defaultValue;
 
     final squareEnvironment =
         Platform.environment['SQUARE_ENVIRONMENT'] ?? 'sandbox';
@@ -120,6 +123,10 @@ class AppConfig {
       }(),
       isDebug: optionalBool('GM_DEBUG'),
       mlServiceUrl: optional('ML_SERVICE_URL'),
+      // Appwrite
+      appwriteEndpoint: env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
+      appwriteProjectId: optional('APPWRITE_PROJECT_ID'),
+      appwriteApiKey: optional('APPWRITE_API_KEY'),
       // Square
       squareAccessToken: require('SQUARE_ACCESS_TOKEN'),
       squareApplicationId: require('SQUARE_APPLICATION_ID'),
@@ -149,8 +156,10 @@ class AppConfig {
       ebayApiUrl: env('EBAY_API_URL', 'https://api.sandbox.ebay.com'),
       // Back Market
       backmarketApiKey: optional('BACKMARKET_API_KEY'),
-      backmarketApiUrl:
-          env('BACKMARKET_API_URL', 'https://www.backmarket.com/ws'),
+      backmarketApiUrl: env(
+        'BACKMARKET_API_URL',
+        'https://www.backmarket.com/ws',
+      ),
       // Resend
       resendApiKey: optional('RESEND_API_KEY'),
       resendApiUrl: env('RESEND_API_URL', 'https://api.resend.com/emails'),
@@ -197,24 +206,23 @@ class AppConfig {
   final String corsOrigin;
   final bool isDebug;
 
-  /// Null when the ML service is not configured — callers must handle gracefully.
   final String? mlServiceUrl;
 
+  // ── Appwrite ────────────────────────────────────────────────────────────────
+  final String appwriteEndpoint;
+  final String? appwriteProjectId;
+  final String? appwriteApiKey;
+
   // ── Square Web Payments ─────────────────────────────────────────────────────
-  /// Server-side secret — never sent to the browser.
+
   final String squareAccessToken;
 
-  /// Public application ID — safe to expose as VITE_SQUARE_APPLICATION_ID.
   final String squareApplicationId;
 
-  /// Public location ID — safe to expose as VITE_SQUARE_LOCATION_ID.
   final String squareLocationId;
 
-  /// 'sandbox' or 'production'
   final String squareEnvironment;
 
-  /// Subscription plan variation IDs — set in Square Catalog.
-  /// Null when not configured (e.g. in sandbox without test plans).
   final String? squarePlanStarterMonthly;
   final String? squarePlanStarterAnnual;
   final String? squarePlanGrowthMonthly;
@@ -222,17 +230,13 @@ class AppConfig {
   final String? squarePlanProMonthly;
   final String? squarePlanProAnnual;
 
-  /// Returns the monthly plan variation ID for the given plan name.
-  /// Returns null if not configured.
   String? monthlyVariationId(String plan) => switch (plan) {
-        'starter' => squarePlanStarterMonthly,
-        'growth' => squarePlanGrowthMonthly,
-        'pro' => squarePlanProMonthly,
-        _ => null,
-      };
+    'starter' => squarePlanStarterMonthly,
+    'growth' => squarePlanGrowthMonthly,
+    'pro' => squarePlanProMonthly,
+    _ => null,
+  };
 
-  /// Base URL for Square API calls. Defaults to the sandbox URL unless
-  /// SQUARE_ENVIRONMENT=production or SQUARE_API_URL is set explicitly.
   final String squareApiUrl;
 
   // ── GuildMark Wallet ────────────────────────────────────────────────────────
@@ -242,7 +246,6 @@ class AppConfig {
   // ── MDM integrations ────────────────────────────────────────────────────────
   // Jamf and Intune credentials are stored per-company in the DB — no platform-level vars.
 
-  /// Microsoft Graph API base URL. Defaults to https://graph.microsoft.com/v1.0
   final String intuneApiUrl;
 
   // ── Market data sources ─────────────────────────────────────────────────────
@@ -250,18 +253,15 @@ class AppConfig {
   final String? ebayCertId;
   final String? ebayDevId;
 
-  /// eBay REST API base URL. Sandbox by default (EBAY_API_URL overrides).
   final String ebayApiUrl;
 
   final String? backmarketApiKey;
 
-  /// Back Market wholesale API base URL.
   final String backmarketApiUrl;
 
   // ── Email — Resend ──────────────────────────────────────────────────────────
   final String? resendApiKey;
 
-  /// Resend emails endpoint. Defaults to https://api.resend.com/emails
   final String resendApiUrl;
 
   // ── Escrow.com ──────────────────────────────────────────────────────────────
@@ -269,7 +269,6 @@ class AppConfig {
   final String? escrowEmail;
   final bool escrowSandbox;
 
-  /// Escrow.com API base URL. Defaults to sandbox unless ESCROW_ENVIRONMENT=production.
   final String escrowApiUrl;
 
   // ── FedEx Track API ─────────────────────────────────────────────────────────
@@ -278,7 +277,6 @@ class AppConfig {
   final String? fedexWebhookSecret;
   final bool fedexSandbox;
 
-  /// FedEx API base URL. Defaults to sandbox unless FEDEX_ENVIRONMENT=production.
   final String fedexApiUrl;
 
   // ── DevDash ─────────────────────────────────────────────────────────────────
@@ -288,32 +286,20 @@ class AppConfig {
   final String? partnerCorsOrigin;
 
   // ── Doppler webhook ─────────────────────────────────────────────────────────
-  /// Shared signing secret from Doppler (DOPPLER_SECRET env var).
-  /// Used to verify HMAC-SHA256 signatures on incoming webhook payloads.
+
   final String? dopplerWebhookSecret;
 
-  /// Service token used to authenticate the Doppler CLI during `doppler run`
-  /// (DOPPLER_BEARER_TOKEN env var). Passed as --token so the container does
-  /// not need a pre-existing `doppler login` session.
   final String? dopplerBearerToken;
 
   // ── WebAuthn / Passkey 2FA ───────────────────────────────────────────────────
-  /// Relying Party ID — typically the bare hostname (e.g. "devdash.guildmark.co").
-  /// When null, passkey 2FA is disabled and auth falls through to the full JWT.
+
   final String? webauthnRpId;
 
-  /// Human-readable RP name shown in the authenticator UI (e.g. "GuildMark DevDash").
   final String? webauthnRpName;
 
   // ── eBay Marketplace Account Deletion ───────────────────────────────────────
-  /// Verification token set in the eBay Developer Portal.
-  /// Used to compute the SHA-256 challenge response during endpoint validation
-  /// and to verify X-EBAY-SIGNATURE on incoming deletion notifications.
+
   final String? ebayVerificationToken;
 
-  /// The public HTTPS URL of the deletion endpoint as registered in the eBay
-  /// Developer Portal (e.g. https://api.guildmark.co/webhooks/ebay/account-deletion).
-  /// Must match exactly — it is included in the SHA-256 challenge hash.
   final String? ebayDeletionEndpoint;
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

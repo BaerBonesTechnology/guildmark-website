@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     async function restoreSession() {
       try {
-        const data = await api.post<LoginResponse>("/auth/refresh", {}, { skipAuth: true });
+        const data = await api.post<LoginResponse>("/pre/auth/refresh", {}, { skipAuth: true });
         if (!cancelled) {
           setAccessToken(data.access_token);
           setUser(data.user);
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
     try {
-      const data = await api.post<LoginResponse>("/auth/login", { email, password }, { skipAuth: true });
+      const data = await api.post<LoginResponse>("/pre/auth/login", { email, password }, { skipAuth: true });
       setAccessToken(data.access_token);
       setUser(data.user);
     } catch (err) {
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = useCallback(async (data: SignupRequest) => {
     setError(null);
     try {
-      const response = await api.post<LoginResponse>("/auth/signup", data, { skipAuth: true });
+      const response = await api.post<LoginResponse>("/pre/auth/signup", data, { skipAuth: true });
       setAccessToken(response.access_token);
       setUser(response.user);
     } catch (err) {
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const data = await api.post<LoginResponse>("/auth/refresh", {}, { skipAuth: true });
+      const data = await api.post<LoginResponse>("/pre/auth/refresh", {}, { skipAuth: true });
       setAccessToken(data.access_token);
       setUser(data.user);
     } catch { /* silently ignore — user stays as-is */ }

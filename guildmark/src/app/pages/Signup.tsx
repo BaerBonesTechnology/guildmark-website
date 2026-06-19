@@ -25,11 +25,11 @@ function FeatureItem({ children }: { children: React.ReactNode }) {
 function Step({ n, title, body }: { n: number; title: string; body: string }) {
   return (
     <div className="flex gap-3">
-      <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs  font-bold shrink-0 mt-0.5">
         {n}
       </div>
       <div>
-        <p className="text-sm font-semibold font-mono">{title}</p>
+        <p className="text-sm font-semibold ">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{body}</p>
       </div>
     </div>
@@ -86,7 +86,7 @@ export function Signup() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
 
         {/* ── Left: Sign Up Form ──────────────────────────────────────────── */}
-        <Card className="font-mono">
+        <Card className="">
           <CardHeader className="space-y-2">
             <CardTitle className="text-2xl">Create Your Account</CardTitle>
             <CardDescription>Start managing and trading IT assets today</CardDescription>
@@ -100,7 +100,7 @@ export function Signup() {
                   placeholder="Jamie Williams"
                   value={formData.fullName}
                   onChange={e => setFormData({ ...formData, fullName: e.target.value })}
-                  className="font-mono"
+                  className=""
                   required
                 />
               </div>
@@ -112,7 +112,7 @@ export function Signup() {
                   placeholder="Guildmark Enterprises, LLC"
                   value={formData.company}
                   onChange={e => setFormData({ ...formData, company: e.target.value })}
-                  className="font-mono"
+                  className=""
                   required
                 />
               </div>
@@ -124,7 +124,7 @@ export function Signup() {
                   placeholder="you@company.com"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="font-mono"
+                  className=""
                   required
                 />
               </div>
@@ -136,7 +136,7 @@ export function Signup() {
                   placeholder="Create a secure password"
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
-                  className="font-mono"
+                  className=""
                   required
                 />
               </div>
@@ -148,21 +148,21 @@ export function Signup() {
                   placeholder="Re-enter your password"
                   value={formData.confirmPassword}
                   onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="font-mono"
+                  className=""
                   required
                 />
               </div>
 
               {(error || passwordError) && (
-                <p className="text-sm text-red-500 font-mono">{passwordError ?? error}</p>
+                <p className="text-sm text-red-500 ">{passwordError ?? error}</p>
               )}
 
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-mono">
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white ">
                 Create Account — Free Forever
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground font-mono">
+              <p className="text-center text-sm text-muted-foreground ">
                 Already have an account?{" "}
                 <Link to="/login" className="text-primary hover:underline">
                   Sign in
@@ -177,15 +177,15 @@ export function Signup() {
 
           {/* Value prop */}
           <div className="space-y-1">
-            <h2 className="text-2xl font-mono">The IT asset platform built for IT teams</h2>
-            <p className="text-sm text-muted-foreground font-mono">
+            <h2 className="text-2xl ">The IT asset platform built for IT teams</h2>
+            <p className="text-sm text-muted-foreground ">
               GuildMark combines a fleet management suite with a B2B hardware marketplace —
               so you can track what you have, know what it's worth, and sell it when you're ready.
             </p>
           </div>
 
           {/* AMPS */}
-          <Card className="font-mono">
+          <Card className="">
             <CardContent className="pt-5 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -217,7 +217,7 @@ export function Signup() {
           </Card>
 
           {/* Marketplace */}
-          <Card className="font-mono">
+          <Card className="">
             <CardContent className="pt-5 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -249,7 +249,7 @@ export function Signup() {
           </Card>
 
           {/* How it works */}
-          <Card className="font-mono">
+          <Card className="">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">How it works</CardTitle>
             </CardHeader>
@@ -273,10 +273,10 @@ export function Signup() {
           </Card>
 
           {/* Pricing summary */}
-          <Card className="font-mono border-primary/20 bg-primary/5">
+          <Card className=" border-primary/20 bg-primary/5">
             <CardContent className="pt-5 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-mono font-bold text-primary">$0</span>
+                <span className="text-2xl  font-bold text-primary">$0</span>
                 <span className="text-sm text-muted-foreground">to get started — no subscription, ever</span>
               </div>
               <div className="grid grid-cols-3 gap-3 pt-1">
@@ -306,7 +306,7 @@ export function Signup() {
               { icon: Shield, text: "NIST 800-88 certified" },
               { icon: Zap,    text: "Live market valuations" },
             ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 border rounded-full px-3 py-1.5">
+              <div key={text} className="flex items-center gap-1.5 text-xs  text-muted-foreground bg-muted/50 border rounded-full px-3 py-1.5">
                 <Icon className="w-3.5 h-3.5 text-primary" />
                 {text}
               </div>

@@ -17,7 +17,7 @@ import type { Order, OrdersResponse } from "../models/order";
 export function useOrders() {
   const { data, isLoading, error } = useQuery<OrdersResponse>({
     queryKey: ["orders"],
-    queryFn: () => api.get<OrdersResponse>("/orders"),
+    queryFn: () => api.get<OrdersResponse>("/pre/orders"),
   });
 
   return {

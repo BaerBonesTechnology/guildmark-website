@@ -1,18 +1,13 @@
-/// PATCH /seller/offers/:offerId/:action  where action ∈ {accept, reject, counter}
-///
-/// For "counter" the body should include `{ counter_price: number }`.
-/// Sends email to the buyer on every action.
-
 import 'dart:async';
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../../lib/context.dart';
-import '../../../../lib/db/pool.dart';
-import '../../../../lib/http_helpers.dart';
-import '../../../../lib/repos/offer_repo.dart';
-import '../../../../lib/services/email_service.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/offer_repo.dart';
+import 'package:guildmark_api/services/email_service.dart';
 
 const _allowedActions = {'accept', 'reject', 'counter'};
 
@@ -42,27 +37,28 @@ Future<Response> onRequest(
 
   try {
     final offer = await OfferRepo(context.read<Db>()).respond(
-      offerId:         offerId,
+      offerId: offerId,
       sellerCompanyId: auth.companyId,
-      action:          action,
-      counterPrice:    counterPrice,
+      action: action,
+      counterPrice: counterPrice,
     );
 
     // Fire-and-forget: notify the buyer of the offer status change.
     final email = context.read<EmailService>();
-    final db    = context.read<Db>();
+    final db = context.read<Db>();
     // Look up buyer email + product name via a JOIN — the BuyerOffer model
     // doesn't carry these fields to avoid regenerating Freezed artifacts.
-    unawaited(_notifyBuyer(
-      db:           db,
-      email:        email,
-      offerId:      offerId,
-      action:       action,
-      counterPrice: counterPrice,
-    ));
+    unawaited(
+      _notifyBuyer(
+        db: db,
+        email: email,
+        offerId: offerId,
+        action: action,
+        counterPrice: counterPrice,
+      ),
+    );
 
     return Response.json(body: offer.toJson());
-
   } on StateError catch (e) {
     return notFound(e.message);
   } on ArgumentError catch (e) {
@@ -70,8 +66,6 @@ Future<Response> onRequest(
   }
 }
 
-/// Fetches buyer contact info + product name and sends the offer status email.
-/// Called fire-and-forget — never throws into the main response path.
 Future<void> _notifyBuyer({
   required Db db,
   required EmailService email,
@@ -95,21 +89,21 @@ Future<void> _notifyBuyer({
       parameters: {'oid': offerId},
     );
     if (rows.isEmpty) return;
-    final row         = rows.first.toColumnMap();
-    final buyerEmail  = row['buyer_email']  as String?;
+    final row = rows.first.toColumnMap();
+    final buyerEmail = row['buyer_email'] as String?;
     final productName = row['product_name'] as String? ?? 'IT Asset';
     if (buyerEmail == null) return;
 
     await email.sendOfferStatus(
-      toEmail:      buyerEmail,
-      productName:  productName,
-      status:       action == 'accept'
+      toEmail: buyerEmail,
+      productName: productName,
+      status: action == 'accept'
           ? 'accepted'
           : action == 'reject'
-              ? 'rejected'
-              : 'countered',
+          ? 'rejected'
+          : 'countered',
       counterPrice: counterPrice,
-      offersUrl:    'https://app.guildmark.co/orders',
+      offersUrl: 'https://app.guildmark.co/orders',
     );
   } catch (e) {
     // Best-effort — email failure must never affect the response.

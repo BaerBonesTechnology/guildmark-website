@@ -29,5 +29,5 @@ Map<String, dynamic> _$PlatformConfigToJson(PlatformConfig instance) =>
       'deferral_fee': instance.deferralFee,
       'data_wipe_price': instance.dataWipePrice,
       'updated_at': instance.updatedAt,
-      if (instance.updatedBy case final value?) 'updated_by': value,
+      'updated_by': ?instance.updatedBy,
     };

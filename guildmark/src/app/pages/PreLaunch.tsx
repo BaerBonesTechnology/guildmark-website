@@ -45,7 +45,7 @@ function FeatureItem({ children }: { children: React.ReactNode }) {
 
 function TrustBadge({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs font-mono text-white bg-primary border rounded-full px-3 py-2">
+    <div className="flex items-center gap-1.5 text-xs  text-white bg-primary border rounded-full px-3 py-2">
       <Icon className="w-3.5 h-3.5 text-primary fill-white" />
       {text}
     </div>
@@ -234,7 +234,7 @@ export function PreLaunch() {
       <div className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2 mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="text-xs font-mono uppercase tracking-widest text-primary">
+          <span className="text-xs  uppercase tracking-widest text-primary">
             {t("prelaunch.badge")}
           </span>
         </div>

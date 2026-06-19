@@ -1,16 +1,9 @@
-/// GET /admin/analytics?days=N
-///
-/// N = 7 | 30 | 90 | 0 (0 = all time).  Default: 30.
-///
-/// Returns summary stats + daily time-series for the analytics dashboard.
-/// Admin-only.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/models/json_helpers.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
@@ -22,7 +15,7 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   final params = context.request.uri.queryParameters;
-  final days   = int.tryParse(params['days'] ?? '30') ?? 30;
+  final days = int.tryParse(params['days'] ?? '30') ?? 30;
   final allTime = days <= 0;
 
   final db = context.read<Db>();
@@ -32,8 +25,10 @@ Future<Response> onRequest(RequestContext context) async {
       ? null
       : DateTime.now().toUtc().subtract(Duration(days: days));
 
-  final dateFilter  = allTime ? '' : 'AND created_at >= @from';
-  final dateParams  = allTime ? <String, dynamic>{} : <String, dynamic>{'from': from};
+  final dateFilter = allTime ? '' : 'AND created_at >= @from';
+  final dateParams = allTime
+      ? <String, dynamic>{}
+      : <String, dynamic>{'from': from};
 
   // ── Summary counts ────────────────────────────────────────────────────────
   // One query per table — FILTER handles the windowed "new" count so we avoid
@@ -73,10 +68,10 @@ Future<Response> onRequest(RequestContext context) async {
     parameters: dateParams,
   );
 
-  final userMap    = usersRow.first.toColumnMap();
-  final subMap     = subsRow.first.toColumnMap();
+  final userMap = usersRow.first.toColumnMap();
+  final subMap = subsRow.first.toColumnMap();
   final listingMap = listingsRow.first.toColumnMap();
-  final orderMap   = ordersRow.first.toColumnMap();
+  final orderMap = ordersRow.first.toColumnMap();
 
   // ── Subscription breakdown ────────────────────────────────────────────────
 
@@ -133,45 +128,53 @@ Future<Response> onRequest(RequestContext context) async {
     parameters: dateParams,
   );
 
-  return Response.json(body: {
-    'period': {
-      'days': days,
-      'all_time': allTime,
-      'from': from?.toIso8601String(),
+  return Response.json(
+    body: {
+      'period': {
+        'days': days,
+        'all_time': allTime,
+        'from': from?.toIso8601String(),
+      },
+      'summary': {
+        'total_users': numToIntOrNull(userMap['total']) ?? 0,
+        'new_users': numToIntOrNull(userMap['new_count']) ?? 0,
+        'total_subscribers': numToIntOrNull(subMap['total']) ?? 0,
+        'new_subscribers': numToIntOrNull(subMap['new_count']) ?? 0,
+        'total_listings': numToIntOrNull(listingMap['total']) ?? 0,
+        'active_listings': numToIntOrNull(listingMap['active']) ?? 0,
+        'total_orders': numToIntOrNull(orderMap['total']) ?? 0,
+        'completed_orders': numToIntOrNull(orderMap['completed']) ?? 0,
+        'gmv': numToDoubleOrNull(orderMap['gmv']) ?? 0.0,
+      },
+      'subscription_breakdown': planRows.map((r) {
+        final row = r.toColumnMap();
+        return {
+          'plan': row['plan'].toString(),
+          'count': numToIntOrNull(row['count']) ?? 0,
+        };
+      }).toList(),
+      'user_growth': userGrowthRows.map((r) {
+        final row = r.toColumnMap();
+        return {
+          'date': row['date'].toString(),
+          'count': numToIntOrNull(row['count']) ?? 0,
+        };
+      }).toList(),
+      'mailing_list_growth': mailingGrowthRows.map((r) {
+        final row = r.toColumnMap();
+        return {
+          'date': row['date'].toString(),
+          'count': numToIntOrNull(row['count']) ?? 0,
+        };
+      }).toList(),
+      'order_activity': orderActivityRows.map((r) {
+        final row = r.toColumnMap();
+        return {
+          'date': row['date'].toString(),
+          'count': numToIntOrNull(row['count']) ?? 0,
+          'amount': numToDoubleOrNull(row['amount']) ?? 0.0,
+        };
+      }).toList(),
     },
-    'summary': {
-      'total_users':       numToIntOrNull(userMap['total'])        ?? 0,
-      'new_users':         numToIntOrNull(userMap['new_count'])    ?? 0,
-      'total_subscribers': numToIntOrNull(subMap['total'])         ?? 0,
-      'new_subscribers':   numToIntOrNull(subMap['new_count'])     ?? 0,
-      'total_listings':    numToIntOrNull(listingMap['total'])     ?? 0,
-      'active_listings':   numToIntOrNull(listingMap['active'])    ?? 0,
-      'total_orders':      numToIntOrNull(orderMap['total'])       ?? 0,
-      'completed_orders':  numToIntOrNull(orderMap['completed'])   ?? 0,
-      'gmv':               numToDoubleOrNull(orderMap['gmv'])      ?? 0.0,
-    },
-    'subscription_breakdown': planRows.map((r) {
-      final row = r.toColumnMap();
-      return {
-        'plan':  row['plan'].toString(),
-        'count': numToIntOrNull(row['count']) ?? 0,
-      };
-    }).toList(),
-    'user_growth': userGrowthRows.map((r) {
-      final row = r.toColumnMap();
-      return {'date': row['date'].toString(), 'count': numToIntOrNull(row['count']) ?? 0};
-    }).toList(),
-    'mailing_list_growth': mailingGrowthRows.map((r) {
-      final row = r.toColumnMap();
-      return {'date': row['date'].toString(), 'count': numToIntOrNull(row['count']) ?? 0};
-    }).toList(),
-    'order_activity': orderActivityRows.map((r) {
-      final row = r.toColumnMap();
-      return {
-        'date':   row['date'].toString(),
-        'count':  numToIntOrNull(row['count'])       ?? 0,
-        'amount': numToDoubleOrNull(row['amount'])   ?? 0.0,
-      };
-    }).toList(),
-  });
+  );
 }

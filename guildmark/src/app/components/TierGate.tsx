@@ -65,7 +65,7 @@ export function TierGate({ require: required, children, message, hide = false }:
           <p className="text-xs text-muted-foreground mb-4">
             {message ?? `This feature is available on the ${PLAN_LABEL[required]} plan and above.`}
           </p>
-          <Button asChild size="sm" className="bg-amps-accent hover:bg-amps-accent/90 text-white font-mono gap-1.5">
+          <Button asChild size="sm" className="bg-amps-accent hover:bg-amps-accent/90 text-white  gap-1.5">
             <Link to="/amps">
               <Sparkles className="w-3.5 h-3.5" />
               Upgrade to GM Pro

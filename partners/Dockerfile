@@ -4,7 +4,6 @@ RUN corepack enable && corepack prepare pnpm@10.33.3 --activate
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --no-frozen-lockfile
 COPY . .
-ARG VITE_API_URL=https://api.guildmark.co
 RUN VITE_API_URL=$VITE_API_URL pnpm build
 
 FROM nginx:1.27-alpine AS runtime

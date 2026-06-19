@@ -240,18 +240,18 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
             <div className="text-xs text-muted-foreground space-y-1 px-1">
               <p className="font-medium text-foreground">Required columns</p>
               <p>
-                <span className="font-mono bg-muted px-1 rounded">model_name</span>
+                <span className=" bg-muted px-1 rounded">model_name</span>
                 {" · "}
-                <span className="font-mono bg-muted px-1 rounded">asset_type</span>
+                <span className=" bg-muted px-1 rounded">asset_type</span>
                 {" · "}
-                <span className="font-mono bg-muted px-1 rounded">condition_grade</span>
+                <span className=" bg-muted px-1 rounded">condition_grade</span>
                 {" · "}
-                <span className="font-mono bg-muted px-1 rounded">age_months</span>
+                <span className=" bg-muted px-1 rounded">age_months</span>
                 {" · "}
-                <span className="font-mono bg-muted px-1 rounded">fair_market_value</span>
+                <span className=" bg-muted px-1 rounded">fair_market_value</span>
               </p>
               <p className="text-muted-foreground">
-                Optional: <span className="font-mono">quantity · book_value · serial_number · department</span>
+                Optional: <span className="">quantity · book_value · serial_number · department</span>
               </p>
             </div>
 
@@ -290,7 +290,7 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
             {/* Summary bar */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 text-sm">
-                <span className="text-muted-foreground font-mono">{fileName}</span>
+                <span className="text-muted-foreground ">{fileName}</span>
                 <span className="flex items-center gap-1 text-success">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {validRows.length} valid
@@ -329,13 +329,13 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10 font-mono text-xs">#</TableHead>
-                    <TableHead className="font-mono text-xs">Model</TableHead>
-                    <TableHead className="font-mono text-xs">Type</TableHead>
-                    <TableHead className="font-mono text-xs text-center">Grade</TableHead>
-                    <TableHead className="font-mono text-xs text-right">Age</TableHead>
-                    <TableHead className="font-mono text-xs text-right">FMV</TableHead>
-                    <TableHead className="font-mono text-xs">Status</TableHead>
+                    <TableHead className="w-10  text-xs">#</TableHead>
+                    <TableHead className=" text-xs">Model</TableHead>
+                    <TableHead className=" text-xs">Type</TableHead>
+                    <TableHead className=" text-xs text-center">Grade</TableHead>
+                    <TableHead className=" text-xs text-right">Age</TableHead>
+                    <TableHead className=" text-xs text-right">FMV</TableHead>
+                    <TableHead className=" text-xs">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -346,21 +346,21 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
                         key={row.rowNum}
                         className={hasError ? "bg-destructive/5" : undefined}
                       >
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className=" text-xs text-muted-foreground">
                           {row.rowNum}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className=" text-xs">
                           {row.raw.model_name || row.raw.model || (
                             <span className="text-destructive italic">missing</span>
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className=" text-xs text-muted-foreground">
                           {row.raw.asset_type || row.raw.type || "—"}
                         </TableCell>
                         <TableCell className="text-center">
                           {row.raw.condition_grade || row.raw.condition
                             ? (
-                              <span className={`inline-flex items-center justify-center w-7 h-5 rounded font-mono text-xs font-medium ${
+                              <span className={`inline-flex items-center justify-center w-7 h-5 rounded  text-xs font-medium ${
                                 (row.raw.condition_grade || row.raw.condition)?.toUpperCase() === "A"
                                   ? "bg-grade-a-subtle text-grade-a-text"
                                   : (row.raw.condition_grade || row.raw.condition)?.toUpperCase() === "B"
@@ -373,10 +373,10 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
                             : <span className="text-destructive text-xs italic">—</span>
                           }
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-right text-muted-foreground">
+                        <TableCell className=" text-xs text-right text-muted-foreground">
                           {row.raw.age_months || row.raw.age || "—"}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-right">
+                        <TableCell className=" text-xs text-right">
                           {row.raw.fair_market_value || row.raw.fmv || row.raw.value
                             ? `$${parseFloat(row.raw.fair_market_value || row.raw.fmv || row.raw.value || "0").toLocaleString()}`
                             : <span className="text-destructive italic">—</span>

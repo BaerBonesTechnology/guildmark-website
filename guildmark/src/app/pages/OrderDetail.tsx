@@ -94,7 +94,7 @@ function OrderTimeline({ order }: { order: Order }) {
 
   return (
     <div className="space-y-1">
-      <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide mb-3">
+      <p className="text-xs text-muted-foreground  uppercase tracking-wide mb-3">
         Order Timeline
       </p>
       <div className="flex items-center gap-0">
@@ -122,7 +122,7 @@ function OrderTimeline({ order }: { order: Order }) {
                   )}
                 </div>
                 <p
-                  className={`text-[10px] font-mono mt-1 text-center w-16 leading-tight ${
+                  className={`text-[10px]  mt-1 text-center w-16 leading-tight ${
                     active ? "text-primary font-semibold" : "text-muted-foreground"
                   }`}
                 >
@@ -142,7 +142,7 @@ function OrderTimeline({ order }: { order: Order }) {
         {isBad && (
           <div className="ml-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 border border-red-500/30">
             <AlertCircle className="h-3 w-3 text-red-500" />
-            <span className="text-xs font-mono text-red-500">
+            <span className="text-xs  text-red-500">
               {order.orderStatus === "cancelled" ? "Cancelled" : "Disputed"}
             </span>
           </div>
@@ -188,8 +188,8 @@ export function OrderDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
         <AlertCircle className="h-10 w-10 text-muted-foreground" />
-        <p className="font-mono text-muted-foreground">Order not found.</p>
-        <Button asChild variant="outline" size="sm" className="font-mono">
+        <p className=" text-muted-foreground">Order not found.</p>
+        <Button asChild variant="outline" size="sm" className="">
           <Link to="/orders">← Back to Orders</Link>
         </Button>
       </div>
@@ -214,24 +214,24 @@ export function OrderDetail() {
       <div>
         <Link
           to="/orders"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground font-mono hover:text-foreground transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground  hover:text-foreground transition-colors mb-3"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Orders
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-mono font-semibold text-foreground">
+            <h1 className="text-2xl  font-semibold text-foreground">
               {order.productName}
             </h1>
             {order.specs && (
-              <p className="text-sm text-muted-foreground font-mono mt-0.5">
+              <p className="text-sm text-muted-foreground  mt-0.5">
                 {order.specs}
               </p>
             )}
           </div>
           <Badge
-            className={`flex items-center gap-1.5 border font-mono text-xs px-3 py-1.5 ${statusClass}`}
+            className={`flex items-center gap-1.5 border  text-xs px-3 py-1.5 ${statusClass}`}
           >
             <StatusIcon className="h-3.5 w-3.5" />
             {statusLabel}
@@ -252,7 +252,7 @@ export function OrderDetail() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-mono text-muted-foreground uppercase tracking-wide">
+              <CardTitle className="text-sm  text-muted-foreground uppercase tracking-wide">
                 Order Details
               </CardTitle>
             </CardHeader>
@@ -274,7 +274,7 @@ export function OrderDetail() {
           {/* Shipping */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-mono text-muted-foreground uppercase tracking-wide">
+              <CardTitle className="text-sm  text-muted-foreground uppercase tracking-wide">
                 Shipping
               </CardTitle>
             </CardHeader>
@@ -299,16 +299,16 @@ export function OrderDetail() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-mono text-muted-foreground uppercase tracking-wide">
+              <CardTitle className="text-sm  text-muted-foreground uppercase tracking-wide">
                 Financials
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-mono text-muted-foreground">
+                <span className="text-sm  text-muted-foreground">
                   {isBuyer ? "Total Cost" : "Net Revenue"}
                 </span>
-                <span className="text-2xl font-mono font-semibold text-foreground">
+                <span className="text-2xl  font-semibold text-foreground">
                   ${order.totalValue.toLocaleString()}
                 </span>
               </div>
@@ -325,7 +325,7 @@ export function OrderDetail() {
           {/* Escrow */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-mono text-muted-foreground uppercase tracking-wide">
+              <CardTitle className="text-sm  text-muted-foreground uppercase tracking-wide">
                 Escrow
               </CardTitle>
             </CardHeader>
@@ -352,7 +352,7 @@ export function OrderDetail() {
                   href={order.escrowPaymentUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-mono text-primary hover:underline mt-1"
+                  className="inline-flex items-center gap-1.5 text-xs  text-primary hover:underline mt-1"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Fund Escrow
@@ -365,19 +365,19 @@ export function OrderDetail() {
           {(canConfirm || canDispute) && (
             <Card className="border-amber-500/30 bg-amber-500/5">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-mono text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                <CardTitle className="text-sm  text-amber-600 dark:text-amber-400 uppercase tracking-wide">
                   Action Required
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-sm font-mono text-muted-foreground">
+                <p className="text-sm  text-muted-foreground">
                   Inspect the items and confirm receipt to release payment to the
                   seller, or open a dispute if there's an issue.
                 </p>
                 <div className="flex gap-2">
                   {canConfirm && (
                     <Button
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-mono"
+                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white "
                       disabled={isConfirming}
                       onClick={() => confirm(order.id)}
                     >
@@ -388,7 +388,7 @@ export function OrderDetail() {
                   {canDispute && (
                     <Button
                       variant="outline"
-                      className="flex-1 border-red-500/40 text-red-500 hover:bg-red-500/10 font-mono"
+                      className="flex-1 border-red-500/40 text-red-500 hover:bg-red-500/10 "
                       disabled={isDisputing}
                       onClick={() => dispute(order.id)}
                     >
@@ -423,9 +423,9 @@ function Row({
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className="h-3.5 w-3.5 shrink-0" />
-        <span className="text-xs font-mono">{label}</span>
+        <span className="text-xs ">{label}</span>
       </div>
-      <span className="text-xs font-mono text-foreground text-right max-w-[200px] truncate">
+      <span className="text-xs  text-foreground text-right max-w-[200px] truncate">
         {value}
       </span>
     </div>

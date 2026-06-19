@@ -1,4 +1,4 @@
-import 'package:astech_api/auth/jwt.dart';
+import 'package:guildmark_api/auth/jwt.dart';
 import 'package:test/test.dart';
 
 void main() {

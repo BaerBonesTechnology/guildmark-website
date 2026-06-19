@@ -1,16 +1,13 @@
-/// GET  /seller/listings   — list this company's listings
-/// POST /seller/listings   — create a new listing (calls ML for valuation)
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/models/asset.dart';
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/ml/ml_client.dart';
-import '../../../lib/repos/asset_repo.dart';
-import '../../../lib/repos/asset_valuation_repo.dart';
-import '../../../lib/repos/listing_repo.dart';
+import 'package:guildmark_api/models/asset.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/repos/asset_repo.dart';
+import 'package:guildmark_api/repos/asset_valuation_repo.dart';
+import 'package:guildmark_api/repos/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
@@ -18,8 +15,9 @@ Future<Response> onRequest(RequestContext context) async {
 
   switch (context.request.method) {
     case HttpMethod.get:
-      final listings =
-          await ListingRepo(context.read<Db>()).findByCompany(auth.companyId);
+      final listings = await ListingRepo(
+        context.read<Db>(),
+      ).findByCompany(auth.companyId);
       return Response.json(body: listings.map((l) => l.toJson()).toList());
 
     case HttpMethod.post:
@@ -39,7 +37,8 @@ Future<Response> onRequest(RequestContext context) async {
           quantity == null ||
           price == null) {
         return badRequest(
-            'model_name, asset_type, condition, quantity, listed_price required');
+          'model_name, asset_type, condition, quantity, listed_price required',
+        );
       }
       if (price <= 0) return badRequest('listed_price must be positive');
 
@@ -68,8 +67,9 @@ Future<Response> onRequest(RequestContext context) async {
           department: body['department'] as String?,
         );
       } else {
-        final found = await AssetRepo(db)
-            .findById(id: assetId, companyId: auth.companyId);
+        final found = await AssetRepo(
+          db,
+        ).findById(id: assetId, companyId: auth.companyId);
         if (found == null) return notFound('Asset $assetId not found');
         asset = found;
       }
@@ -81,16 +81,18 @@ Future<Response> onRequest(RequestContext context) async {
       final ageMonths = _ageMonths(asset.purchaseDate);
 
       try {
-        final valuation = await ml?.estimateFairMarketValue(ValuationRequest(
-          assetType: asset.assetType,
-          modelName: asset.modelName,
-          conditionGrade: asset.conditionGrade,
-          ageMonths: ageMonths,
-          cpuScore: asset.cpuScore,
-          ramGb: asset.ramGb?.toInt() ?? 0,
-          storageGb: asset.storageGb?.toInt() ?? 0,
-          originalPrice: asset.originalPurchasePrice,
-        ));
+        final valuation = await ml?.estimateFairMarketValue(
+          ValuationRequest(
+            assetType: asset.assetType,
+            modelName: asset.modelName,
+            conditionGrade: asset.conditionGrade,
+            ageMonths: ageMonths,
+            cpuScore: asset.cpuScore,
+            ramGb: asset.ramGb?.toInt() ?? 0,
+            storageGb: asset.storageGb?.toInt() ?? 0,
+            originalPrice: asset.originalPurchasePrice,
+          ),
+        );
         fmv = valuation?.fairMarketValue;
         mlVersion = valuation?.modelVersion;
         mlConfidence = valuation?.confidence;

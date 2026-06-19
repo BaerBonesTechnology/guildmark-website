@@ -110,26 +110,26 @@ function InvoiceRow({ inv }: { inv: SubscriptionInvoice }) {
   const plan = PLANS.find((p) => p.key === inv.plan);
   return (
     <tr className="border-b border-border/50 last:border-0 hover:bg-muted/20">
-      <td className="px-4 py-3 font-mono text-sm">{fmtDate(inv.created_at)}</td>
+      <td className="px-4 py-3  text-sm">{fmtDate(inv.created_at)}</td>
       <td className="px-4 py-3">
         {plan && plan.badge ? (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium border ${plan.badge}`}>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs  font-medium border ${plan.badge}`}>
             {plan.label}
           </span>
         ) : (
-          <span className="font-mono text-sm text-muted-foreground">—</span>
+          <span className=" text-sm text-muted-foreground">—</span>
         )}
       </td>
-      <td className="px-4 py-3 font-mono text-sm">
+      <td className="px-4 py-3  text-sm">
         {inv.period_start && inv.period_end
           ? `${fmtDate(inv.period_start)} – ${fmtDate(inv.period_end)}`
           : "—"}
       </td>
-      <td className="px-4 py-3 font-mono text-sm font-medium">
+      <td className="px-4 py-3  text-sm font-medium">
         {fmtAmount(inv.amount_cents)}
       </td>
       <td className="px-4 py-3">
-        <span className={`text-xs font-mono ${
+        <span className={`text-xs  ${
           inv.status === "paid" ? "text-primary" : "text-destructive"
         }`}>
           {inv.status}
@@ -141,12 +141,12 @@ function InvoiceRow({ inv }: { inv: SubscriptionInvoice }) {
             href={inv.receipt_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-xs  text-muted-foreground hover:text-foreground transition-colors"
           >
             Receipt <ArrowUpRight className="w-3 h-3" />
           </a>
         ) : (
-          <span className="text-xs text-muted-foreground font-mono">—</span>
+          <span className="text-xs text-muted-foreground ">—</span>
         )}
       </td>
     </tr>
@@ -195,8 +195,8 @@ export function Settings() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-mono font-semibold mb-2">Settings</h1>
-        <p className="text-muted-foreground font-mono text-sm">
+        <h1 className="text-3xl  font-semibold mb-2">Settings</h1>
+        <p className="text-muted-foreground  text-sm">
           Manage your GuildMark account, subscription, and preferences
         </p>
       </div>
@@ -209,8 +209,8 @@ export function Settings() {
               <Building2 className="h-5 w-5 text-amps-accent" />
             </div>
             <div>
-              <CardTitle className="font-mono">Company Profile</CardTitle>
-              <CardDescription className="font-mono">
+              <CardTitle className="">Company Profile</CardTitle>
+              <CardDescription className="">
                 Your organization details and account information
               </CardDescription>
             </div>
@@ -219,34 +219,34 @@ export function Settings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="font-mono">Company Name</Label>
+              <Label className="">Company Name</Label>
               <Input
                 value={companyData.name}
                 onChange={(e) => setCompanyData({ ...companyData, name: e.target.value })}
-                className="font-mono"
+                className=""
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-mono">Industry</Label>
+              <Label className="">Industry</Label>
               <Input
                 value={companyData.industry}
                 onChange={(e) => setCompanyData({ ...companyData, industry: e.target.value })}
-                className="font-mono"
+                className=""
                 placeholder="Technology"
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="font-mono">Company Size</Label>
+            <Label className="">Company Size</Label>
             <Input
               value={companyData.size}
               onChange={(e) => setCompanyData({ ...companyData, size: e.target.value })}
-              className="font-mono"
+              className=""
               placeholder="50-200"
             />
           </div>
           <div className="pt-2">
-            <Button className="font-mono">Save Changes</Button>
+            <Button className="">Save Changes</Button>
           </div>
         </CardContent>
       </Card>
@@ -260,8 +260,8 @@ export function Settings() {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="font-mono">Subscription</CardTitle>
-                <CardDescription className="font-mono">
+                <CardTitle className="">Subscription</CardTitle>
+                <CardDescription className="">
                   Your current plan and billing details
                 </CardDescription>
               </div>
@@ -272,18 +272,18 @@ export function Settings() {
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             ) : (
               <div className="text-right">
-                <p className="text-xs text-muted-foreground font-mono">Current plan</p>
-                <p className="font-mono font-semibold capitalize">
+                <p className="text-xs text-muted-foreground ">Current plan</p>
+                <p className=" font-semibold capitalize">
                   {currentPlan}
                 </p>
                 {subData?.status === "cancelled" && (
-                  <p className="text-xs text-destructive font-mono mt-0.5">
+                  <p className="text-xs text-destructive  mt-0.5">
                     Cancelled · access until {subData.currentPeriodEnd
                       ? fmtDate(subData.currentPeriodEnd) : "—"}
                   </p>
                 )}
                 {subData?.status === "past_due" && (
-                  <p className="text-xs text-warning font-mono mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-warning  mt-0.5 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> Payment past due
                   </p>
                 )}
@@ -311,17 +311,17 @@ export function Settings() {
                 >
                   {isCurrent && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amps-accent to-amps-highlight text-white text-xs font-semibold font-mono">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amps-accent to-amps-highlight text-white text-xs font-semibold ">
                         <Check className="w-2.5 h-2.5" /> Current
                       </span>
                     </div>
                   )}
 
                   <div className="text-center pt-2">
-                    <p className={`font-mono font-semibold ${p.badge ? p.badge.split(" ")[0] : ""}`}>
+                    <p className={` font-semibold ${p.badge ? p.badge.split(" ")[0] : ""}`}>
                       {p.label}
                     </p>
-                    <p className="text-2xl font-mono font-bold mt-1">
+                    <p className="text-2xl  font-bold mt-1">
                       {p.price === 0 ? "Free" : `$${p.price}`}
                       {p.price > 0 && (
                         <span className="text-xs text-muted-foreground font-normal">/mo</span>
@@ -329,7 +329,7 @@ export function Settings() {
                     </p>
                   </div>
 
-                  <ul className="space-y-1 text-xs font-mono text-muted-foreground">
+                  <ul className="space-y-1 text-xs  text-muted-foreground">
                     <li className="flex items-center gap-1.5">
                       <Check className="w-3 h-3 text-primary shrink-0" />
                       {p.devices}
@@ -348,7 +348,7 @@ export function Settings() {
                     <Button
                       size="sm"
                       variant={isUpgrade ? "default" : "outline"}
-                      className={`w-full font-mono text-xs ${
+                      className={`w-full  text-xs ${
                         isUpgrade
                           ? "bg-amps-accent hover:bg-amps-accent/90 text-white"
                           : ""
@@ -363,7 +363,7 @@ export function Settings() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-full font-mono text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="w-full  text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setCancelConfirm(true)}
                     >
                       Cancel plan
@@ -376,7 +376,7 @@ export function Settings() {
 
           {/* Next billing date */}
           {subData?.currentPeriodEnd && currentPlan !== "free" && subData.status === "active" && (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border text-sm font-mono">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border text-sm ">
               <span className="text-muted-foreground">Next billing date</span>
               <span className="font-medium">{fmtDate(subData.currentPeriodEnd)}</span>
             </div>
@@ -392,8 +392,8 @@ export function Settings() {
               <Receipt className="h-5 w-5 text-amps-accent" />
             </div>
             <div>
-              <CardTitle className="font-mono">Billing History</CardTitle>
-              <CardDescription className="font-mono">
+              <CardTitle className="">Billing History</CardTitle>
+              <CardDescription className="">
                 Your last 24 subscription payments
               </CardDescription>
             </div>
@@ -407,12 +407,12 @@ export function Settings() {
           ) : (subData?.invoices ?? []).length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
               <CreditCard className="w-7 h-7 opacity-30" />
-              <p className="text-sm font-mono">No billing history yet</p>
+              <p className="text-sm ">No billing history yet</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b text-xs text-muted-foreground font-mono uppercase tracking-wide">
+                <thead className="border-b text-xs text-muted-foreground  uppercase tracking-wide">
                   <tr>
                     <th className="text-left px-4 py-3">Date</th>
                     <th className="text-left px-4 py-3">Plan</th>
@@ -441,8 +441,8 @@ export function Settings() {
               <Bell className="h-5 w-5 text-amps-accent" />
             </div>
             <div>
-              <CardTitle className="font-mono">Notification Preferences</CardTitle>
-              <CardDescription className="font-mono">
+              <CardTitle className="">Notification Preferences</CardTitle>
+              <CardDescription className="">
                 Choose what alerts you want to receive
               </CardDescription>
             </div>
@@ -479,13 +479,13 @@ export function Settings() {
                 className="mt-0.5 rounded border-border"
               />
               <div>
-                <p className="font-mono font-semibold text-sm">{label}</p>
-                <p className="text-xs text-muted-foreground font-mono">{desc}</p>
+                <p className=" font-semibold text-sm">{label}</p>
+                <p className="text-xs text-muted-foreground ">{desc}</p>
               </div>
             </label>
           ))}
           <div className="pt-2">
-            <Button className="font-mono">Save Preferences</Button>
+            <Button className="">Save Preferences</Button>
           </div>
         </CardContent>
       </Card>
@@ -504,11 +504,11 @@ export function Settings() {
       <Dialog open={cancelConfirm} onOpenChange={setCancelConfirm}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-mono flex items-center gap-2">
+            <DialogTitle className=" flex items-center gap-2">
               <X className="w-4 h-4 text-destructive" />
               Cancel subscription?
             </DialogTitle>
-            <DialogDescription className="font-mono">
+            <DialogDescription className="">
               You'll keep access until the end of your current billing period.
               Your plan will revert to Free after that.
             </DialogDescription>
@@ -516,7 +516,7 @@ export function Settings() {
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="font-mono"
+              className=""
               onClick={() => setCancelConfirm(false)}
               disabled={cancelSub.isPending}
             >
@@ -524,7 +524,7 @@ export function Settings() {
             </Button>
             <Button
               variant="destructive"
-              className="font-mono"
+              className=""
               onClick={handleCancel}
               disabled={cancelSub.isPending}
             >

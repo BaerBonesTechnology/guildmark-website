@@ -26,12 +26,6 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "base32",
-      "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/base32-2.2.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "bcrypt",
       "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/bcrypt-1.2.0",
       "packageUri": "lib/",
@@ -314,12 +308,6 @@
       "languageVersion": "2.12"
     },
     {
-      "name": "otp",
-      "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/otp-3.2.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "package_config",
       "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/package_config-2.2.0",
       "packageUri": "lib/",
@@ -470,12 +458,6 @@
       "languageVersion": "3.10"
     },
     {
-      "name": "timezone",
-      "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/timezone-0.10.1",
-      "packageUri": "lib/",
-      "languageVersion": "2.19"
-    },
-    {
       "name": "typed_data",
       "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/typed_data-1.4.0",
       "packageUri": "lib/",
@@ -486,6 +468,12 @@
       "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/uuid-4.5.3",
       "packageUri": "lib/",
       "languageVersion": "3.0"
+    },
+    {
+      "name": "very_good_analysis",
+      "rootUri": "file:///D:/AppData/Local/Pub/Cache/hosted/pub.dev/very_good_analysis-10.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.11"
     },
     {
       "name": "vm_service",
@@ -537,8 +525,8 @@
     }
   ],
   "generator": "pub",
-  "generatorVersion": "3.12.0",
-  "flutterRoot": "file:///C:/Users/baerh/fvm/default",
-  "flutterVersion": "3.44.0",
+  "generatorVersion": "3.12.1",
+  "flutterRoot": "file:///C:/Users/baerh/fvm/versions/3.44.0",
+  "flutterVersion": "3.44.1",
   "pubCache": "file:///D:/AppData/Local/Pub/Cache"
 }

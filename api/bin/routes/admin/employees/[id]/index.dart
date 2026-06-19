@@ -1,11 +1,8 @@
-/// PATCH /admin/employees/:id — update role or active status
-/// DELETE /admin/employees/:id — deactivate (soft delete)
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../../lib/context.dart';
-import '../../../../lib/db/pool.dart';
-import '../../../../lib/http_helpers.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   final principal = context.read<AuthPrincipal?>();
@@ -20,12 +17,13 @@ Future<Response> onRequest(RequestContext context, String id) async {
       if (body == null) return badRequest('Request body required');
 
       final updates = <String>[];
-      final params  = <String, Object?>{'id': id};
+      final params = <String, Object?>{'id': id};
 
       if (body.containsKey('role')) {
         const validRoles = ['superadmin', 'engineer', 'support', 'marketing'];
         final role = body['role'] as String?;
-        if (role == null || !validRoles.contains(role)) return badRequest('Invalid role');
+        if (role == null || !validRoles.contains(role))
+          return badRequest('Invalid role');
         updates.add('role = @role::employee_role');
         params['role'] = role;
       }
@@ -37,7 +35,8 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
       if (body.containsKey('full_name')) {
         final name = (body['full_name'] as String?)?.trim();
-        if (name == null || name.isEmpty) return badRequest('full_name cannot be empty');
+        if (name == null || name.isEmpty)
+          return badRequest('full_name cannot be empty');
         updates.add('full_name = @name');
         params['name'] = name;
       }
@@ -56,13 +55,15 @@ Future<Response> onRequest(RequestContext context, String id) async {
       if (result.isEmpty) return notFound('Employee not found');
 
       final row = result.first.toColumnMap();
-      return Response.json(body: {
-        'id':        row['id'].toString(),
-        'email':     row['email'].toString(),
-        'full_name': row['full_name'].toString(),
-        'role':      row['role'].toString(),
-        'is_active': row['is_active'] as bool,
-      });
+      return Response.json(
+        body: {
+          'id': row['id'].toString(),
+          'email': row['email'].toString(),
+          'full_name': row['full_name'].toString(),
+          'role': row['role'].toString(),
+          'is_active': row['is_active'] as bool,
+        },
+      );
 
     case HttpMethod.delete:
       // Soft-delete: deactivate rather than remove audit trail.

@@ -6,15 +6,16 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'lib/auth/jwt.dart';
-import 'lib/config.dart';
-import 'lib/db/migrations.dart';
-import 'lib/db/pool.dart';
-import 'lib/ml/ml_client.dart';
-import 'lib/services/email_service.dart';
-import 'lib/services/escrow_service.dart';
-import 'lib/services/fedex_service.dart';
-import 'lib/services/square_service.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/auth/jwt.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/db/migrations.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/services/email_service.dart';
+import 'package:guildmark_api/services/escrow_service.dart';
+import 'package:guildmark_api/services/fedex_service.dart';
+import 'package:guildmark_api/services/square_service.dart';
 
 Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final cfg = AppConfig.fromEnv();
@@ -34,6 +35,17 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     stdout.writeln(
       '[boot] ML_SERVICE_URL not set — valuation endpoints will return 503.',
     );
+  }
+
+  // Appwrite is optional — enabled once APPWRITE_PROJECT_ID and APPWRITE_API_KEY
+  // are set. Runs alongside Postgres during the migration.
+  final appwrite = AppwriteService.fromConfig(cfg);
+  if (appwrite == null) {
+    stdout.writeln(
+      '[boot] APPWRITE_PROJECT_ID/APPWRITE_API_KEY not set — Appwrite disabled.',
+    );
+  } else {
+    stdout.writeln('[boot] Appwrite enabled → ${appwrite.endpoint}');
   }
 
   final jwt = JwtService(
@@ -86,6 +98,7 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
       .use(provider<AppConfig>((_) => cfg))
       .use(provider<Db>((_) => db))
       .use(provider<MlClient?>((_) => ml))
+      .use(provider<AppwriteService?>((_) => appwrite))
       .use(provider<JwtService>((_) => jwt))
       .use(provider<PartnerJwtService>((_) => partnerJwt))
       .use(provider<SquareService?>((_) => square))

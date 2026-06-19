@@ -1,21 +1,10 @@
-/// POST /valuation/estimate
-///
-/// Thin pass-through to the Python ML service. The frontend's
-/// MarketCalculator hits this when the user fills in asset details.
-///
-/// If [asset_id] is included in the request body, the result is recorded in
-/// asset_valuations so the asset's valuation history stays up to date even
-/// from on-demand calculator calls (not just listing creation).
-///
-/// Returns 503 if the ML service is not configured (ML_SERVICE_URL unset).
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/context.dart';
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/ml/ml_client.dart';
-import '../../lib/repos/asset_valuation_repo.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/repos/asset_valuation_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -42,14 +31,15 @@ Future<Response> onRequest(RequestContext context) async {
   final condition = body['condition_grade'] as String?;
   final ageMonths = body['age_months'] as int?;
   // Optional — when provided, the valuation is recorded in asset_valuations.
-  final assetId   = body['asset_id'] as String?;
+  final assetId = body['asset_id'] as String?;
 
   if (assetType == null ||
       modelName == null ||
       condition == null ||
       ageMonths == null) {
     return badRequest(
-        'asset_type, model_name, condition_grade, age_months required');
+      'asset_type, model_name, condition_grade, age_months required',
+    );
   }
 
   try {
@@ -69,26 +59,33 @@ Future<Response> onRequest(RequestContext context) async {
     // Persist valuation history when the caller identifies the asset.
     // Fire-and-forget — never blocks the estimate response.
     if (assetId != null) {
-      AssetValuationRepo(context.read<Db>()).record(
-        assetId:        assetId,
-        source:         'estimate',
-        modelName:      modelName,
-        assetType:      assetType,
-        conditionGrade: condition,
-        ageMonths:      ageMonths,
-        fairMarketValue: result.fairMarketValue,
-        confidence:     result.confidence,
-        modelVersion:   result.modelVersion,
-      ).ignore();
+      AssetValuationRepo(context.read<Db>())
+          .record(
+            assetId: assetId,
+            source: 'estimate',
+            modelName: modelName,
+            assetType: assetType,
+            conditionGrade: condition,
+            ageMonths: ageMonths,
+            fairMarketValue: result.fairMarketValue,
+            confidence: result.confidence,
+            modelVersion: result.modelVersion,
+          )
+          .ignore();
     }
 
-    return Response.json(body: {
-      'fair_market_value': result.fairMarketValue,
-      'confidence': result.confidence,
-      'model_version': result.modelVersion,
-    });
+    return Response.json(
+      body: {
+        'fair_market_value': result.fairMarketValue,
+        'confidence': result.confidence,
+        'model_version': result.modelVersion,
+      },
+    );
   } on MlServiceException catch (e) {
     return jsonError(
-        502, 'ML_UNAVAILABLE', 'Valuation service error: ${e.statusCode}');
+      502,
+      'ML_UNAVAILABLE',
+      'Valuation service error: ${e.statusCode}',
+    );
   }
 }

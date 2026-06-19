@@ -1,23 +1,12 @@
-/// POST /admin/orders/expire-inspections
-///
-/// Called by a cron job (or manually from DevDash) to auto-expire any orders
-/// whose inspection_ends_at has passed without buyer confirmation.
-///
-/// For each expired order:
-///   1. Mark status → 'complete' in DB
-///   2. Call escrow.acceptDelivery (fire-and-forget)
-///
-/// Auth: admin role required.
-
 import 'dart:async';
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/services/escrow_service.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/services/escrow_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -28,7 +17,7 @@ Future<Response> onRequest(RequestContext context) async {
   if (auth == null) return unauthorized();
   if (auth.role != 'admin') return forbidden('Admin role required');
 
-  final db     = context.read<Db>();
+  final db = context.read<Db>();
   final escrow = context.read<EscrowService>();
 
   // Find all orders past their inspection window that are still in
@@ -52,19 +41,28 @@ Future<Response> onRequest(RequestContext context) async {
     final escrowId = row['escrow_transaction_id'] as String?;
     if (escrow.isConfigured && escrowId != null) {
       unawaited(
-        escrow.acceptDelivery(escrowId).then((_) {
-          stdout.writeln('[expiry] Released escrow $escrowId for order ${row['id']}');
-        }).catchError((e) {
-          stderr.writeln('[expiry] Escrow release failed for ${row['id']}: $e');
-        }),
+        escrow
+            .acceptDelivery(escrowId)
+            .then((_) {
+              stdout.writeln(
+                '[expiry] Released escrow $escrowId for order ${row['id']}',
+              );
+            })
+            .catchError((e) {
+              stderr.writeln(
+                '[expiry] Escrow release failed for ${row['id']}: $e',
+              );
+            }),
       );
     }
   }
 
   stdout.writeln('[expiry] Auto-expired ${expired.length} inspection(s)');
 
-  return Response.json(body: {
-    'expired': expired.length,
-    'order_ids': expired.map((r) => r['id'] as String).toList(),
-  });
+  return Response.json(
+    body: {
+      'expired': expired.length,
+      'order_ids': expired.map((r) => r['id'] as String).toList(),
+    },
+  );
 }

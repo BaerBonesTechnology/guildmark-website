@@ -65,7 +65,7 @@ function formatCurrency(n: number): string {
 function SeasonalityTooltip({ active, payload, label, view }: any) {
     if (!active || !payload?.length) return null;
     return (
-        <div className="bg-muted border border-border rounded-lg px-3 py-2 text-xs font-mono">
+        <div className="bg-muted border border-border rounded-lg px-3 py-2 text-xs ">
             <p className="text-foreground mb-1">{label}</p>
             <p className={view === "purchasing" ? "text-muted-foreground" : "text-amber-400"}>
                 {view === "purchasing" ? "Primary Purchasing" : "Secondary Supply"}: {payload[0].value} (Index)
@@ -79,7 +79,7 @@ function TechLagTooltip({ active, payload, label }: any) {
     const min = payload[0]?.value ?? 0;
     const variance = payload[1]?.value ?? 0;
     return (
-        <div className="bg-muted border border-border rounded-lg px-3 py-2 text-xs font-mono">
+        <div className="bg-muted border border-border rounded-lg px-3 py-2 text-xs ">
             <p className="text-foreground mb-1">{label}</p>
             <p className="text-muted-foreground">Fleet Age: {min}–{(min + variance).toFixed(1)} yrs</p>
         </div>
@@ -243,19 +243,19 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
 
             {/* ── Hero ── */}
             <header className="max-w-5xl mx-auto px-6 py-16 text-center">
-                <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
+                <p className="text-xs  uppercase tracking-widest text-muted-foreground mb-4">
                     Market Research · 2025–2026
                 </p>
                 <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
                     Capitalizing on the IT Hardware{" "}
                     <span className="text-muted-foreground">Lifecycle Gap</span>
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed font-mono">
+                <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed ">
                     The secondary B2B hardware market is driven by predictable refresh cycles,
                     unspent corporate budgets, and a real technology gap between large enterprises
                     and small businesses. Here is the data behind the GuildMarket opportunity.
                 </p>
-                <div className="flex justify-center gap-6 mt-10 text-sm font-mono">
+                <div className="flex justify-center gap-6 mt-10 text-sm ">
                     {[
                         { href: "#stockpile", label: "The Stockpile Problem" },
                         { href: "#seasonality", label: "Market Rhythms" },
@@ -297,10 +297,10 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                 </p>
                                 <div className="mb-8">
                                     <div className="flex justify-between mb-3">
-                                        <label htmlFor="assetValue" className="text-sm text-foreground font-mono">
+                                        <label htmlFor="assetValue" className="text-sm text-foreground ">
                                             Original Value of Idle Fleet
                                         </label>
-                                        <span className="font-bold text-muted-foreground font-mono text-lg">
+                                        <span className="font-bold text-muted-foreground  text-lg">
                                             {formatCurrency(assetValue)}
                                         </span>
                                     </div>
@@ -314,7 +314,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                         onChange={(e) => setAssetValue(Number(e.target.value))}
                                         className="w-full h-1 rounded-full appearance-none bg-border accent-primary cursor-pointer"
                                     />
-                                    <div className="flex justify-between text-xs text-muted-foreground font-mono mt-1">
+                                    <div className="flex justify-between text-xs text-muted-foreground  mt-1">
                                         <span>$50k</span><span>$2M</span>
                                     </div>
                                 </div>
@@ -341,7 +341,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                    <span className="text-xs font-mono uppercase tracking-widest text-red-400">
+                                    <span className="text-xs  uppercase tracking-widest text-red-400">
                                         Value Decay, Live
                                     </span>
                                 </div>
@@ -349,22 +349,22 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                     Cost accumulating since you opened this page
                                 </h3>
                                 <div className="text-center py-4">
-                                    <span className="text-5xl font-bold font-mono text-red-400 tabular-nums">
+                                    <span className="text-5xl font-bold  text-red-400 tabular-nums">
                                         {formatCurrency(accumulated)}
                                     </span>
-                                    <p className="text-muted-foreground text-sm font-mono mt-2">and counting</p>
+                                    <p className="text-muted-foreground text-sm  mt-2">and counting</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3 mt-6">
                                 <div className="bg-muted/50 rounded-xl p-3 text-center border border-border">
-                                    <span className="block text-xs text-muted-foreground font-mono mb-1">Per Hour</span>
-                                    <span className="text-lg font-bold font-mono text-red-300">
+                                    <span className="block text-xs text-muted-foreground  mb-1">Per Hour</span>
+                                    <span className="text-lg font-bold  text-red-300">
                                         {formatCurrency(costPerHour)}
                                     </span>
                                 </div>
                                 <div className="bg-muted/50 rounded-xl p-3 text-center border border-border">
-                                    <span className="block text-xs text-muted-foreground font-mono mb-1">Per Day</span>
-                                    <span className="text-lg font-bold font-mono text-red-300">
+                                    <span className="block text-xs text-muted-foreground  mb-1">Per Day</span>
+                                    <span className="text-lg font-bold  text-red-300">
                                         {formatCurrency(costPerDay)}
                                     </span>
                                 </div>
@@ -378,7 +378,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                         {/* Fleet idle grid */}
                         <div className="bg-card border border-border rounded-2xl p-8">
                             <h3 className="text-lg font-semibold text-foreground mb-1">Your Estimated Fleet</h3>
-                            <p className="text-sm text-muted-foreground mb-6 font-mono">
+                            <p className="text-sm text-muted-foreground mb-6 ">
                                 ~{estimatedDevices.toLocaleString()} devices at ${AVG_DEVICE_VALUE.toLocaleString()} avg ·{" "}
                                 <span className="text-amber-400">{idleDevices} idle</span> based on the 80% survey average<Cite n={22} />
                             </p>
@@ -398,12 +398,12 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                     );
                                 })}
                                 {estimatedDevices > 120 && (
-                                    <span className="text-xs text-muted-foreground font-mono self-end ml-1">
+                                    <span className="text-xs text-muted-foreground  self-end ml-1">
                                         +{(estimatedDevices - 120).toLocaleString()} more
                                     </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-6 mt-5 text-xs font-mono text-muted-foreground">
+                            <div className="flex items-center gap-6 mt-5 text-xs  text-muted-foreground">
                                 <span className="flex items-center gap-2">
                                     <span className="w-3 h-3 rounded-sm bg-primary/30 border border-primary/20 inline-block" />
                                     Active
@@ -418,7 +418,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                         {/* Supply cadence strip */}
                         <div className="bg-card border border-border rounded-2xl p-8">
                             <h3 className="text-lg font-semibold text-foreground mb-1">Recurring Offload Supply</h3>
-                            <p className="text-sm text-muted-foreground mb-6 font-mono">
+                            <p className="text-sm text-muted-foreground mb-6 ">
                                 On a 4-year refresh cycle this fleet generates{" "}
                                 <span className="text-muted-foreground">{monthlyOffload} units per month</span> on a steady, predictable schedule
                             </p>
@@ -429,19 +429,19 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                     const label = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i];
                                     return (
                                         <div key={i} className="flex flex-col items-center gap-1 h-full justify-end">
-                                            <span className="text-muted-foreground text-xs font-mono font-bold">
+                                            <span className="text-muted-foreground text-xs  font-bold">
                                                 {Math.round(monthlyOffload * (isQ4Adjacent ? 1.4 : height / 80))}
                                             </span>
                                             <div
                                                 className="w-full rounded-t bg-primary/40 border-t border-primary/60 transition-all duration-500"
                                                 style={{ height: `${height}%` }}
                                             />
-                                            <span className="text-muted-foreground text-muted-foreground font-mono">{label}</span>
+                                            <span className="text-muted-foreground text-muted-foreground ">{label}</span>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <p className="text-xs text-muted-foreground font-mono mt-4">
+                            <p className="text-xs text-muted-foreground  mt-4">
                                 Estimated units available for marketplace listing per month
                             </p>
                         </div>
@@ -472,7 +472,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                             <h3 className="text-lg font-semibold text-foreground">
                                 Purchasing Volume vs. Future Supply Lag
                             </h3>
-                            <div className="flex bg-muted rounded-lg p-1 border border-border font-mono text-sm gap-1">
+                            <div className="flex bg-muted rounded-lg p-1 border border-border  text-sm gap-1">
                                 {(["purchasing", "supply"] as const).map((v) => (
                                     <button
                                         key={v}
@@ -589,7 +589,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                         <h3 className="text-lg font-semibold text-foreground mb-1">
                             Technology Generation Lag by Segment
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-8 font-mono">
+                        <p className="text-sm text-muted-foreground mb-8 ">
                             Average active fleet age by company size.<Cite n={9} /><Cite n={11} /> The gap between
                             mid-market and SMB fleets is where the marketplace transaction happens.
                         </p>
@@ -650,12 +650,12 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
             {/* ── Sources ── */}
             <footer id="sources" className="border-t border-border px-6 py-12">
                 <div className="max-w-7xl mx-auto">
-                    <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6">
+                    <p className="text-xs  uppercase tracking-widest text-muted-foreground mb-6">
                         Sources
                     </p>
                     <ol className="space-y-3">
                         {SOURCES.map(({ n, label, url }) => (
-                            <li key={n} className="flex items-start gap-3 text-sm font-mono">
+                            <li key={n} className="flex items-start gap-3 text-sm ">
                                 <span className="text-muted-foreground shrink-0">[{n}]</span>
                                 <a
                                     href={url}
@@ -682,7 +682,7 @@ function Cite({ n }: { n: number }) {
     return (
         <a
             href="#sources"
-            className="text-muted-foreground text-xs font-mono align-super ml-0.5 transition-colors"
+            className="text-muted-foreground text-xs  align-super ml-0.5 transition-colors"
         >
             [{n}]
         </a>
@@ -691,7 +691,7 @@ function Cite({ n }: { n: number }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
+        <p className="text-xs  uppercase tracking-widest text-muted-foreground mb-3">
             {children}
         </p>
     );
@@ -710,10 +710,10 @@ function MetricBox({
 }) {
     return (
         <div className="bg-muted/50 p-4 rounded-xl border border-border">
-            <span className="block text-xs uppercase tracking-wider text-muted-foreground font-mono mb-1">
+            <span className="block text-xs uppercase tracking-wider text-muted-foreground  mb-1">
                 {label}
             </span>
-            <span className={`text-2xl font-bold font-mono ${valueClass}`}>{value}</span>
+            <span className={`text-2xl font-bold  ${valueClass}`}>{value}</span>
             <span className="block text-xs text-muted-foreground mt-1">{sub}</span>
         </div>
     );
@@ -757,11 +757,11 @@ function StatCard({
     return (
         <div className="bg-card border border-border rounded-2xl p-6 text-center">
             <span className="block text-4xl mb-3">{icon}</span>
-            <span className="block text-3xl font-bold font-mono text-foreground mb-1">
+            <span className="block text-3xl font-bold  text-foreground mb-1">
                 {value}{cite && <Cite n={cite} />}
             </span>
             <span className="text-sm text-muted-foreground">{label}</span>
-            <div className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-mono ${tagClass}`}>
+            <div className={`mt-3 inline-block px-3 py-1 rounded-full text-xs  ${tagClass}`}>
                 {tag}
             </div>
         </div>

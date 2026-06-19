@@ -77,7 +77,7 @@ export function Invoices() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-mono font-semibold mb-2">Invoices</h1>
+          <h1 className="text-3xl  font-semibold mb-2">Invoices</h1>
           <p className="text-muted-foreground text-sm">
             Generate and manage write-off documentation for accounting
           </p>
@@ -96,13 +96,13 @@ export function Invoices() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground mb-1">Total invoices</p>
-            <p className="text-3xl font-mono font-semibold">{invoices.length}</p>
+            <p className="text-3xl  font-semibold">{invoices.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground mb-1">Total write-offs</p>
-            <p className="text-3xl font-mono font-semibold">
+            <p className="text-3xl  font-semibold">
               ${totalWriteOffs.toLocaleString()}
             </p>
           </CardContent>
@@ -110,7 +110,7 @@ export function Invoices() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground mb-1">This month</p>
-            <p className="text-3xl font-mono font-semibold">
+            <p className="text-3xl  font-semibold">
               ${thisMonthTotal.toLocaleString()}
             </p>
           </CardContent>
@@ -126,7 +126,7 @@ export function Invoices() {
               placeholder="Search by invoice number or asset..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 font-mono"
+              className="pl-9 "
             />
           </div>
         </CardContent>
@@ -154,23 +154,23 @@ export function Invoices() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-mono">Invoice #</TableHead>
-                  <TableHead className="font-mono">Date</TableHead>
-                  <TableHead className="font-mono">Asset</TableHead>
-                  <TableHead className="font-mono">Type</TableHead>
-                  <TableHead className="font-mono text-right">Write-off amount</TableHead>
-                  <TableHead className="font-mono text-right">Market value</TableHead>
+                  <TableHead className="">Invoice #</TableHead>
+                  <TableHead className="">Date</TableHead>
+                  <TableHead className="">Asset</TableHead>
+                  <TableHead className="">Type</TableHead>
+                  <TableHead className=" text-right">Write-off amount</TableHead>
+                  <TableHead className=" text-right">Market value</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
-                    <TableCell className="font-mono font-semibold">{invoice.id}</TableCell>
-                    <TableCell className="font-mono text-sm">{invoice.date}</TableCell>
-                    <TableCell className="font-mono">{invoice.asset}</TableCell>
+                    <TableCell className=" font-semibold">{invoice.id}</TableCell>
+                    <TableCell className=" text-sm">{invoice.date}</TableCell>
+                    <TableCell className="">{invoice.asset}</TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-mono ${
+                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs  ${
                         invoice.type === "Sale"     ? "bg-success/10 text-success" :
                         invoice.type === "Disposal" ? "bg-warning/10 text-warning" :
                         invoice.type === "Donation" ? "bg-info/10 text-info"       :
@@ -179,10 +179,10 @@ export function Invoices() {
                         {invoice.type}
                       </span>
                     </TableCell>
-                    <TableCell className="font-mono text-right font-semibold">
+                    <TableCell className=" text-right font-semibold">
                       ${invoice.writeOffAmount.toLocaleString()}
                     </TableCell>
-                    <TableCell className="font-mono text-right text-muted-foreground">
+                    <TableCell className=" text-right text-muted-foreground">
                       ${invoice.marketValue.toLocaleString()}
                     </TableCell>
                     <TableCell>
@@ -215,7 +215,7 @@ export function Invoices() {
                 placeholder='e.g., MacBook Pro 14" M3'
                 value={formData.asset}
                 onChange={(e) => setFormData({ ...formData, asset: e.target.value })}
-                className="font-mono"
+                className=""
               />
             </div>
 
@@ -244,7 +244,7 @@ export function Invoices() {
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="font-mono"
+                  className=""
                 />
               </div>
               <div className="space-y-1.5">
@@ -255,7 +255,7 @@ export function Invoices() {
                   placeholder="Units"
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                  className="font-mono"
+                  className=""
                 />
               </div>
             </div>
@@ -271,7 +271,7 @@ export function Invoices() {
                 placeholder="e.g., 1200"
                 value={formData.marketValue}
                 onChange={(e) => setFormData({ ...formData, marketValue: e.target.value })}
-                className="font-mono"
+                className=""
               />
             </div>
 
@@ -279,15 +279,15 @@ export function Invoices() {
               <div className="bg-muted/50 rounded-lg p-4 border space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Fair market value</span>
-                  <span className="font-mono">${fmv.toLocaleString()} / unit</span>
+                  <span className="">${fmv.toLocaleString()} / unit</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Quantity</span>
-                  <span className="font-mono">{qty} units</span>
+                  <span className="">{qty} units</span>
                 </div>
                 <div className="pt-2 border-t flex justify-between">
                   <span className="font-medium">Total write-off amount</span>
-                  <span className="text-xl font-mono font-semibold text-amps-accent">
+                  <span className="text-xl  font-semibold text-amps-accent">
                     ${total.toLocaleString()}
                   </span>
                 </div>

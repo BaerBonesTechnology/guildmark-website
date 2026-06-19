@@ -1,14 +1,8 @@
-/// GET /partner/account
-///
-/// Returns the authenticated partner's profile + recent payout history.
-///
-/// Requires: valid partner JWT.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -65,31 +59,34 @@ Future<Response> onRequest(RequestContext context) async {
   final payouts = payoutRows.map((row) {
     final r = row.toColumnMap();
     return {
-      'id':           r['id'].toString(),
-      'payout_ref':   r['payout_ref'].toString(),
+      'id': r['id'].toString(),
+      'payout_ref': r['payout_ref'].toString(),
       'amount_cents': (r['amount_cents'] as num?)?.toInt() ?? 0,
-      'method':       r['method'].toString(),
-      'status':       r['status'].toString(),
-      'paid_at':      r['paid_at']?.toString(),
-      'created_at':   r['created_at'].toString(),
+      'method': r['method'].toString(),
+      'status': r['status'].toString(),
+      'paid_at': r['paid_at']?.toString(),
+      'created_at': r['created_at'].toString(),
     };
   }).toList();
 
   return Response.json(
     body: {
       'partner': {
-        'id':                   p['id'].toString(),
-        'email':                p['email'].toString(),
-        'company_name':         p['company_name'].toString(),
-        'partner_code':         p['partner_code'].toString(),
-        'status':               p['status'].toString(),
-        'rating':               (p['rating'] as num?)?.toDouble() ?? 5.0,
-        'total_jobs_completed': (p['total_jobs_completed'] as num?)?.toInt() ?? 0,
-        'available_balance':    (p['available_balance'] as num?)?.toDouble() ?? 0.0,
-        'service_radius_miles': (p['service_radius_miles'] as num?)?.toInt() ?? 50,
-        'city':                 p['city']?.toString(),
-        'state':                p['state']?.toString(),
-        'created_at':           p['created_at'].toString(),
+        'id': p['id'].toString(),
+        'email': p['email'].toString(),
+        'company_name': p['company_name'].toString(),
+        'partner_code': p['partner_code'].toString(),
+        'status': p['status'].toString(),
+        'rating': (p['rating'] as num?)?.toDouble() ?? 5.0,
+        'total_jobs_completed':
+            (p['total_jobs_completed'] as num?)?.toInt() ?? 0,
+        'available_balance':
+            (p['available_balance'] as num?)?.toDouble() ?? 0.0,
+        'service_radius_miles':
+            (p['service_radius_miles'] as num?)?.toInt() ?? 50,
+        'city': p['city']?.toString(),
+        'state': p['state']?.toString(),
+        'created_at': p['created_at'].toString(),
       },
       'payouts': payouts,
     },

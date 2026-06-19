@@ -1,16 +1,7 @@
-/// POST /contact
-///
-/// Public endpoint — no auth required.
-/// Accepts a contact form submission (name, email, message) and stores it
-/// in the mailing_list table with source = 'contact'.
-///
-/// Uses ON CONFLICT (email) DO UPDATE to append the new message to any
-/// existing notes, so repeat submissions from the same email are not lost.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -19,8 +10,8 @@ Future<Response> onRequest(RequestContext context) async {
 
   final body = await context.request.json() as Map<String, dynamic>?;
 
-  final email   = (body?['email']   as String?)?.trim();
-  final name    = (body?['name']    as String?)?.trim();
+  final email = (body?['email'] as String?)?.trim();
+  final name = (body?['name'] as String?)?.trim();
   final message = (body?['message'] as String?)?.trim();
 
   if (email == null || email.isEmpty) {
@@ -34,7 +25,8 @@ Future<Response> onRequest(RequestContext context) async {
   // or causing downstream email services to process unexpectedly large content.
   if (email.length > 254) return badRequest('email is too long');
   if (name != null && name.length > 200) return badRequest('name is too long');
-  if (message.length > 5000) return badRequest('message is too long (max 5000 characters)');
+  if (message.length > 5000)
+    return badRequest('message is too long (max 5000 characters)');
 
   final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
   if (!emailRegex.hasMatch(email)) {

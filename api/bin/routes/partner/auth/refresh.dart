@@ -1,15 +1,10 @@
-/// POST /partner/auth/refresh
-///
-/// Reads the `partner_refresh` httpOnly cookie, rotates it (single-use), and
-/// returns a fresh partner access token.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/auth/jwt.dart';
-import '../../../lib/config.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/repos/partner_repo.dart';
+import 'package:guildmark_api/auth/jwt.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/partner_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -19,21 +14,21 @@ Future<Response> onRequest(RequestContext context) async {
   final oldToken = _readRefreshCookie(context);
   if (oldToken == null) return unauthorized('No refresh token');
 
-  final cfg        = context.read<AppConfig>();
-  final repo       = PartnerRepo(context.read<Db>());
-  final newPlain   = generateRefreshTokenPlaintext();
+  final cfg = context.read<AppConfig>();
+  final repo = PartnerRepo(context.read<Db>());
+  final newPlain = generateRefreshTokenPlaintext();
   final newExpires = DateTime.now().toUtc().add(cfg.refreshTokenTtl);
 
   final partner = await repo.rotateRefreshToken(
-    plaintextToken:    oldToken,
+    plaintextToken: oldToken,
     newPlaintextToken: newPlain,
-    newExpiresAt:      newExpires,
+    newExpiresAt: newExpires,
   );
   if (partner == null) return unauthorized('Refresh token invalid or expired');
 
   final accessToken = context.read<PartnerJwtService>().issueAccessToken(
     PartnerClaims(
-      partnerId:   partner.id,
+      partnerId: partner.id,
       partnerCode: partner.partnerCode,
     ),
   );
@@ -41,7 +36,7 @@ Future<Response> onRequest(RequestContext context) async {
   return Response.json(
     body: {
       'access_token': accessToken,
-      'partner':      partner.toAuthPartner(),
+      'partner': partner.toAuthPartner(),
     },
     headers: {
       'Set-Cookie':

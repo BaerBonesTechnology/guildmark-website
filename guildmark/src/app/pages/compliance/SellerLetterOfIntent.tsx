@@ -7,7 +7,7 @@
 function Section({ n, title, children }: { n?: string | number; title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold font-mono">{n !== undefined ? `${n}. ` : ""}{title}</h2>
+      <h2 className="text-base font-semibold ">{n !== undefined ? `${n}. ` : ""}{title}</h2>
       <div className="space-y-2 text-sm text-foreground/80 leading-relaxed">{children}</div>
     </div>
   );
@@ -16,7 +16,7 @@ function Section({ n, title, children }: { n?: string | number; title: string; c
 function Clause({ letter, children }: { letter: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3 pl-4">
-      <span className="font-mono text-muted-foreground shrink-0">({letter})</span>
+      <span className=" text-muted-foreground shrink-0">({letter})</span>
       <p>{children}</p>
     </div>
   );
@@ -26,9 +26,9 @@ export function SellerLetterOfIntent() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-primary uppercase tracking-widest">Non-Binding · Template</p>
-        <h1 className="text-3xl font-bold font-mono">Seller Letter of Intent</h1>
-        <p className="text-sm font-mono text-muted-foreground">Template Version: May 2025</p>
+        <p className="text-xs  text-primary uppercase tracking-widest">Non-Binding · Template</p>
+        <h1 className="text-3xl font-bold ">Seller Letter of Intent</h1>
+        <p className="text-sm  text-muted-foreground">Template Version: May 2025</p>
         <p className="text-sm text-foreground/80 leading-relaxed">
           This Letter of Intent ("<strong>LOI</strong>") sets forth the mutual non-binding intent of
           Baerhous Media Group, LLC, operating as GuildMark™ ("<strong>GuildMark</strong>"), and the

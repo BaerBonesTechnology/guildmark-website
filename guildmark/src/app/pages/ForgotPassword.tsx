@@ -31,10 +31,10 @@ export function ForgotPassword() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-xl font-mono font-semibold text-foreground">
+          <h1 className="text-xl  font-semibold text-foreground">
             Guild<span className="text-primary">Mark</span>
           </h1>
-          <p className="text-sm text-muted-foreground font-mono mt-1">
+          <p className="text-sm text-muted-foreground  mt-1">
             Reset your password
           </p>
         </div>
@@ -42,19 +42,19 @@ export function ForgotPassword() {
         {sent ? (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 text-center space-y-3">
             <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
-            <p className="font-mono font-semibold text-foreground">Check your email</p>
-            <p className="text-sm font-mono text-muted-foreground">
+            <p className=" font-semibold text-foreground">Check your email</p>
+            <p className="text-sm  text-muted-foreground">
               If <strong>{email}</strong> is registered, you'll receive a reset link shortly.
               The link expires in 1 hour.
             </p>
-            <Button asChild variant="outline" className="w-full font-mono mt-2">
+            <Button asChild variant="outline" className="w-full  mt-2">
               <Link to="/login">Back to Sign In</Link>
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-border bg-card p-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-mono text-sm">
+              <Label htmlFor="email" className=" text-sm">
                 Email address
               </Label>
               <div className="relative">
@@ -65,7 +65,7 @@ export function ForgotPassword() {
                   placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-9 font-mono"
+                  className="pl-9 "
                   required
                   autoFocus
                 />
@@ -73,12 +73,12 @@ export function ForgotPassword() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-500 font-mono">{error}</p>
+              <p className="text-sm text-red-500 ">{error}</p>
             )}
 
             <Button
               type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-white font-mono"
+              className="w-full bg-primary hover:bg-primary/90 text-white "
               disabled={isLoading}
             >
               {isLoading ? "Sending…" : "Send Reset Link"}
@@ -87,7 +87,7 @@ export function ForgotPassword() {
             <div className="text-center">
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 text-xs  text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="h-3 w-3" />
                 Back to Sign In

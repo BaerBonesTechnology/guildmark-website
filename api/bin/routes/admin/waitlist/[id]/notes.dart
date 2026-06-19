@@ -1,14 +1,9 @@
-/// PATCH /admin/waitlist/:id/notes
-///
-/// Updates the admin notes on a subscriber without marking them as contacted.
-/// Admin-only.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../../lib/context.dart';
-import '../../../../lib/db/pool.dart';
-import '../../../../lib/http_helpers.dart';
-import '../../../../lib/repos/mailing_list_repo.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/mailing_list_repo.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   final principal = context.read<AuthPrincipal?>();

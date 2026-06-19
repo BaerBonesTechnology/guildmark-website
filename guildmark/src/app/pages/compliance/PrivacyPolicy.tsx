@@ -5,7 +5,7 @@
 function Section({ n, title, children }: { n?: string | number; title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold font-mono">
+      <h2 className="text-base font-semibold ">
         {n !== undefined ? `${n}. ` : ""}{title}
       </h2>
       <div className="space-y-2 text-sm text-foreground/80 leading-relaxed">
@@ -28,9 +28,9 @@ export function PrivacyPolicy() {
   return (
     <div className="space-y-10">
       <div className="space-y-3">
-        <p className="text-xs font-mono text-primary uppercase tracking-widest">Legal</p>
-        <h1 className="text-3xl font-bold font-mono">Privacy Policy</h1>
-        <p className="text-sm font-mono text-muted-foreground">
+        <p className="text-xs  text-primary uppercase tracking-widest">Legal</p>
+        <h1 className="text-3xl font-bold ">Privacy Policy</h1>
+        <p className="text-sm  text-muted-foreground">
           Effective Date: January 1, 2025 · Last Updated: May 1, 2025
         </p>
         <p className="text-sm text-foreground/80 leading-relaxed">

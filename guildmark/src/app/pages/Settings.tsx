@@ -46,10 +46,10 @@ function NotifRow({
         className="mt-0.5 rounded border-border accent-primary"
       />
       <div>
-        <p className="font-mono font-semibold text-sm text-foreground">
+        <p className=" font-semibold text-sm text-foreground">
           {label}
         </p>
-        <p className="text-xs text-muted-foreground font-mono mt-0.5">
+        <p className="text-xs text-muted-foreground  mt-0.5">
           {description}
         </p>
       </div>
@@ -61,8 +61,8 @@ function NotifRow({
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
-      <span className="text-sm text-muted-foreground font-mono">{label}</span>
-      <span className="text-sm font-mono font-semibold text-foreground">
+      <span className="text-sm text-muted-foreground ">{label}</span>
+      <span className="text-sm  font-semibold text-foreground">
         {value}
       </span>
     </div>
@@ -111,10 +111,10 @@ export function AccountSettings() {
     <div className="space-y-6 pb-20">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-mono font-semibold text-foreground">
+        <h1 className="text-2xl  font-semibold text-foreground">
           Account Settings
         </h1>
-        <p className="text-sm text-muted-foreground font-mono mt-1">
+        <p className="text-sm text-muted-foreground  mt-1">
           Manage your profile, security, and notification preferences.
         </p>
       </div>
@@ -131,8 +131,8 @@ export function AccountSettings() {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="font-mono">Profile Information</CardTitle>
-                  <CardDescription className="font-mono">
+                  <CardTitle className="">Profile Information</CardTitle>
+                  <CardDescription className="">
                     Your personal account details
                   </CardDescription>
                 </div>
@@ -141,24 +141,24 @@ export function AccountSettings() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-mono">Full Name</Label>
+                  <Label className="">Full Name</Label>
                   <Input
                     value={profile.fullName}
                     onChange={(e) =>
                       setProfile({ ...profile, fullName: e.target.value })
                     }
-                    className="font-mono"
+                    className=""
                     placeholder="Your name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-mono">Email Address</Label>
+                  <Label className="">Email Address</Label>
                   <Input
                     value={profile.email}
                     onChange={(e) =>
                       setProfile({ ...profile, email: e.target.value })
                     }
-                    className="font-mono"
+                    className=""
                     type="email"
                     placeholder="you@company.com"
                   />
@@ -166,28 +166,28 @@ export function AccountSettings() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-mono">Phone Number</Label>
+                  <Label className="">Phone Number</Label>
                   <Input
                     value={profile.phone}
                     onChange={(e) =>
                       setProfile({ ...profile, phone: e.target.value })
                     }
-                    className="font-mono"
+                    className=""
                     type="tel"
                     placeholder="+1 (555) 000-0000"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-mono">Role</Label>
+                  <Label className="">Role</Label>
                   <Input
                     value={profile.role}
                     readOnly
-                    className="font-mono bg-muted text-muted-foreground cursor-not-allowed"
+                    className=" bg-muted text-muted-foreground cursor-not-allowed"
                   />
                 </div>
               </div>
               <div className="pt-2">
-                <Button className="bg-primary hover:bg-primary/90 text-white font-mono">
+                <Button className="bg-primary hover:bg-primary/90 text-white ">
                   Save Profile
                 </Button>
               </div>
@@ -202,8 +202,8 @@ export function AccountSettings() {
                   <Building2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="font-mono">Company Information</CardTitle>
-                  <CardDescription className="font-mono">
+                  <CardTitle className="">Company Information</CardTitle>
+                  <CardDescription className="">
                     Details about your organization
                   </CardDescription>
                 </div>
@@ -211,53 +211,53 @@ export function AccountSettings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="font-mono">Company Name</Label>
+                <Label className="">Company Name</Label>
                 <Input
                   value={company.name}
                   onChange={(e) =>
                     setCompany({ ...company, name: e.target.value })
                   }
-                  className="font-mono"
+                  className=""
                   placeholder="Acme Corp"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="font-mono">Business Address</Label>
+                <Label className="">Business Address</Label>
                 <Input
                   value={company.address}
                   onChange={(e) =>
                     setCompany({ ...company, address: e.target.value })
                   }
-                  className="font-mono"
+                  className=""
                   placeholder="123 Main St, San Francisco, CA 94102"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-mono">Industry</Label>
+                  <Label className="">Industry</Label>
                   <Input
                     value={company.industry}
                     onChange={(e) =>
                       setCompany({ ...company, industry: e.target.value })
                     }
-                    className="font-mono"
+                    className=""
                     placeholder="Technology"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-mono">Company Size</Label>
+                  <Label className="">Company Size</Label>
                   <Input
                     value={company.size}
                     onChange={(e) =>
                       setCompany({ ...company, size: e.target.value })
                     }
-                    className="font-mono"
+                    className=""
                     placeholder="100–500 employees"
                   />
                 </div>
               </div>
               <div className="pt-2">
-                <Button className="bg-primary hover:bg-primary/90 text-white font-mono">
+                <Button className="bg-primary hover:bg-primary/90 text-white ">
                   Save Company Info
                 </Button>
               </div>
@@ -272,8 +272,8 @@ export function AccountSettings() {
                   <Lock className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="font-mono">Security</CardTitle>
-                  <CardDescription className="font-mono">
+                  <CardTitle className="">Security</CardTitle>
+                  <CardDescription className="">
                     Password and two-factor authentication
                   </CardDescription>
                 </div>
@@ -282,11 +282,11 @@ export function AccountSettings() {
             <CardContent className="space-y-6">
               {/* Password change */}
               <div className="space-y-4">
-                <p className="text-sm font-mono font-semibold text-foreground">
+                <p className="text-sm  font-semibold text-foreground">
                   Change Password
                 </p>
                 <div className="space-y-2">
-                  <Label className="font-mono">Current Password</Label>
+                  <Label className="">Current Password</Label>
                   <div className="relative">
                     <Input
                       type={showCurrent ? "text" : "password"}
@@ -294,7 +294,7 @@ export function AccountSettings() {
                       onChange={(e) =>
                         setPasswords({ ...passwords, current: e.target.value })
                       }
-                      className="font-mono pr-10"
+                      className=" pr-10"
                       placeholder="••••••••"
                     />
                     <button
@@ -311,7 +311,7 @@ export function AccountSettings() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-mono">New Password</Label>
+                  <Label className="">New Password</Label>
                   <div className="relative">
                     <Input
                       type={showNew ? "text" : "password"}
@@ -319,7 +319,7 @@ export function AccountSettings() {
                       onChange={(e) =>
                         setPasswords({ ...passwords, next: e.target.value })
                       }
-                      className="font-mono pr-10"
+                      className=" pr-10"
                       placeholder="••••••••"
                     />
                     <button
@@ -337,7 +337,7 @@ export function AccountSettings() {
                 </div>
                 <Button
                   variant="outline"
-                  className="font-mono"
+                  className=""
                   disabled={!passwords.current || !passwords.next}
                 >
                   Update Password
@@ -351,10 +351,10 @@ export function AccountSettings() {
                 <div className="flex items-center gap-3">
                   <Smartphone className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-mono font-semibold text-foreground">
+                    <p className="text-sm  font-semibold text-foreground">
                       Two-Factor Authentication
                     </p>
-                    <p className="text-xs text-muted-foreground font-mono">
+                    <p className="text-xs text-muted-foreground ">
                       Add an extra layer of security to your account.
                     </p>
                   </div>
@@ -363,8 +363,8 @@ export function AccountSettings() {
                   <Badge
                     className={
                       twoFaEnabled
-                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-mono"
-                        : "bg-muted text-muted-foreground border-border font-mono"
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 "
+                        : "bg-muted text-muted-foreground border-border "
                     }
                   >
                     {twoFaEnabled ? "Enabled" : "Disabled"}
@@ -372,7 +372,7 @@ export function AccountSettings() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="font-mono"
+                    className=""
                     onClick={() => setTwoFaEnabled((v) => !v)}
                   >
                     {twoFaEnabled ? "Disable" : "Enable"}
@@ -390,10 +390,10 @@ export function AccountSettings() {
                   <Bell className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="font-mono">
+                  <CardTitle className="">
                     Notification Preferences
                   </CardTitle>
-                  <CardDescription className="font-mono">
+                  <CardDescription className="">
                     Choose which events trigger email alerts
                   </CardDescription>
                 </div>
@@ -431,7 +431,7 @@ export function AccountSettings() {
                 onChange={setNotif("marketDigest")}
               />
               <div className="pt-2">
-                <Button className="bg-primary hover:bg-primary/90 text-white font-mono">
+                <Button className="bg-primary hover:bg-primary/90 text-white ">
                   Save Preferences
                 </Button>
               </div>
@@ -447,33 +447,33 @@ export function AccountSettings() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                <CardTitle className="font-mono text-base">
+                <CardTitle className=" text-base">
                   Account Status
                 </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground font-mono">
+                <span className="text-sm text-muted-foreground ">
                   Plan
                 </span>
-                <Badge className="bg-primary/10 text-primary border-primary/30 font-mono">
+                <Badge className="bg-primary/10 text-primary border-primary/30 ">
                   {user ? "Active" : "—"}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground font-mono">
+                <span className="text-sm text-muted-foreground ">
                   Account
                 </span>
-                <span className="text-sm font-mono text-foreground">
+                <span className="text-sm  text-foreground">
                   {user?.role ?? "—"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground font-mono">
+                <span className="text-sm text-muted-foreground ">
                   Company
                 </span>
-                <span className="text-sm font-mono text-foreground truncate max-w-[120px]">
+                <span className="text-sm  text-foreground truncate max-w-[120px]">
                   {user?.company ?? "—"}
                 </span>
               </div>
@@ -485,11 +485,11 @@ export function AccountSettings() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
-                <CardTitle className="font-mono text-base">
+                <CardTitle className=" text-base">
                   Activity Summary
                 </CardTitle>
               </div>
-              <CardDescription className="font-mono text-xs">
+              <CardDescription className=" text-xs">
                 Lifetime account statistics
               </CardDescription>
             </CardHeader>
@@ -506,7 +506,7 @@ export function AccountSettings() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
-                <CardTitle className="font-mono text-base text-red-500">
+                <CardTitle className=" text-base text-red-500">
                   Danger Zone
                 </CardTitle>
               </div>
@@ -514,7 +514,7 @@ export function AccountSettings() {
             <CardContent className="space-y-3">
               <Button
                 variant="outline"
-                className="w-full font-mono text-sm border-border"
+                className="w-full  text-sm border-border"
                 onClick={() => logout()}
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -522,13 +522,13 @@ export function AccountSettings() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full font-mono text-sm border-muted-foreground/30 text-muted-foreground"
+                className="w-full  text-sm border-muted-foreground/30 text-muted-foreground"
               >
                 Export My Data
               </Button>
               <Button
                 variant="outline"
-                className="w-full font-mono text-sm border-red-500/40 text-red-500 hover:bg-red-500/10"
+                className="w-full  text-sm border-red-500/40 text-red-500 hover:bg-red-500/10"
               >
                 Delete Account
               </Button>

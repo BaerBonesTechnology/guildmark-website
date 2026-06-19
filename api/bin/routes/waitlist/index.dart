@@ -1,24 +1,11 @@
-/// POST /waitlist
-///
-/// Public endpoint — no auth required.
-/// Accepts an email and adds it to the mailing_list table.
-/// Responds 200 whether the email is new or already registered
-/// to avoid leaking whether an address exists.
-///
-/// Optional partner fields (stored in notes):
-///   name         — contact name
-///   company      — company name
-///   partner_type — reseller | msp | refurbisher | itservices | other
-///   phone        — contact phone number
-
 import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/repos/mailing_list_repo.dart';
-import '../../lib/services/email_service.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/mailing_list_repo.dart';
+import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -45,32 +32,39 @@ Future<Response> onRequest(RequestContext context) async {
 
   // Build notes string from optional partner fields.
   String? notes;
-  final name        = (body?['name']         as String?)?.trim();
-  final company     = (body?['company']       as String?)?.trim();
-  final partnerType = (body?['partner_type']  as String?)?.trim();
-  final phone       = (body?['phone']         as String?)?.trim();
+  final name = (body?['name'] as String?)?.trim();
+  final company = (body?['company'] as String?)?.trim();
+  final partnerType = (body?['partner_type'] as String?)?.trim();
+  final phone = (body?['phone'] as String?)?.trim();
 
   if (name != null && name.length > 200) return badRequest('name is too long');
-  if (company != null && company.length > 200) return badRequest('company is too long');
-  if (phone != null && phone.length > 50) return badRequest('phone is too long');
+  if (company != null && company.length > 200)
+    return badRequest('company is too long');
+  if (phone != null && phone.length > 50)
+    return badRequest('phone is too long');
   final loiAccepted = body?['loi_accepted'] == true;
 
-  if (name != null || company != null || partnerType != null || phone != null || loiAccepted) {
+  if (name != null ||
+      company != null ||
+      partnerType != null ||
+      phone != null ||
+      loiAccepted) {
     final parts = <String>[
-      if (name        != null && name.isNotEmpty)        'Name: $name',
-      if (company     != null && company.isNotEmpty)     'Company: $company',
+      if (name != null && name.isNotEmpty) 'Name: $name',
+      if (company != null && company.isNotEmpty) 'Company: $company',
       if (partnerType != null && partnerType.isNotEmpty) 'Type: $partnerType',
-      if (phone       != null && phone.isNotEmpty)       'Phone: $phone',
-      if (loiAccepted)                                   'LOI: accepted ${DateTime.now().toUtc().toIso8601String().substring(0, 10)}',
+      if (phone != null && phone.isNotEmpty) 'Phone: $phone',
+      if (loiAccepted)
+        'LOI: accepted ${DateTime.now().toUtc().toIso8601String().substring(0, 10)}',
     ];
     if (parts.isNotEmpty) notes = parts.join(' | ');
   }
 
-  final repo  = MailingListRepo(context.read<Db>());
+  final repo = MailingListRepo(context.read<Db>());
   final entry = await repo.subscribe(
-    email:  email,
+    email: email,
     source: source,
-    notes:  notes,
+    notes: notes,
     // Partner LOI submissions must overwrite any prior waitlist entry so that
     // the signed LOI date and partner fields are always stored, even if the
     // contact's email already exists from an earlier sign-up.

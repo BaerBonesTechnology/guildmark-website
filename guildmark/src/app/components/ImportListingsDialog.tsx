@@ -155,10 +155,10 @@ export function ImportListingsDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col font-mono">
+      <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col ">
         <DialogHeader>
-          <DialogTitle className="font-mono">Import Listings from CSV</DialogTitle>
-          <DialogDescription className="font-mono text-xs">
+          <DialogTitle className="">Import Listings from CSV</DialogTitle>
+          <DialogDescription className=" text-xs">
             Required columns: <span className="text-foreground">model_name, asset_type, condition, quantity, listed_price</span>
             <br />
             Optional: ram_gb, storage_gb, cpu_score, serial_number, reason
@@ -213,18 +213,18 @@ export function ImportListingsDialog({ open, onOpenChange }: Props) {
             <table className="w-full text-xs">
               <thead className="bg-muted sticky top-0">
                 <tr>
-                  <th className="text-left p-2 font-mono text-muted-foreground uppercase tracking-wide">Model</th>
-                  <th className="text-left p-2 font-mono text-muted-foreground uppercase tracking-wide">Type</th>
-                  <th className="text-left p-2 font-mono text-muted-foreground uppercase tracking-wide">Grade</th>
-                  <th className="text-right p-2 font-mono text-muted-foreground uppercase tracking-wide">Qty</th>
-                  <th className="text-right p-2 font-mono text-muted-foreground uppercase tracking-wide">Price</th>
-                  <th className="text-center p-2 font-mono text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="text-left p-2  text-muted-foreground uppercase tracking-wide">Model</th>
+                  <th className="text-left p-2  text-muted-foreground uppercase tracking-wide">Type</th>
+                  <th className="text-left p-2  text-muted-foreground uppercase tracking-wide">Grade</th>
+                  <th className="text-right p-2  text-muted-foreground uppercase tracking-wide">Qty</th>
+                  <th className="text-right p-2  text-muted-foreground uppercase tracking-wide">Price</th>
+                  <th className="text-center p-2  text-muted-foreground uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i} className="border-t border-border">
-                    <td className="p-2 font-mono">{r.row.model_name}</td>
+                    <td className="p-2 ">{r.row.model_name}</td>
                     <td className="p-2 text-muted-foreground">{r.row.asset_type}</td>
                     <td className="p-2 text-muted-foreground">{r.row.condition}</td>
                     <td className="p-2 text-right">{r.row.quantity}</td>
@@ -249,18 +249,18 @@ export function ImportListingsDialog({ open, onOpenChange }: Props) {
         {/* Footer */}
         <div className="flex justify-end gap-2 pt-2">
           {done ? (
-            <Button onClick={() => handleClose(false)} className="font-mono">
+            <Button onClick={() => handleClose(false)} className="">
               Close
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={() => handleClose(false)} disabled={importing} className="font-mono">
+              <Button variant="outline" onClick={() => handleClose(false)} disabled={importing} className="">
                 Cancel
               </Button>
               <Button
                 onClick={handleImport}
                 disabled={rows.length === 0 || importing}
-                className="bg-primary hover:bg-primary/90 text-white font-mono"
+                className="bg-primary hover:bg-primary/90 text-white "
               >
                 {importing
                   ? <><Loader2 className="w-3 h-3 mr-2 animate-spin" /> Importing…</>

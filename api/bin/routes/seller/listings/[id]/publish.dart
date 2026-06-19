@@ -1,11 +1,9 @@
-/// PATCH /seller/listings/:id/publish  — promote a draft to active.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../../lib/context.dart';
-import '../../../../lib/db/pool.dart';
-import '../../../../lib/http_helpers.dart';
-import '../../../../lib/repos/listing_repo.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.patch) {
@@ -15,8 +13,9 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (auth == null) return unauthorized();
 
   try {
-    final listing = await ListingRepo(context.read<Db>())
-        .publish(id: id, companyId: auth.companyId);
+    final listing = await ListingRepo(
+      context.read<Db>(),
+    ).publish(id: id, companyId: auth.companyId);
     return Response.json(body: listing.toJson());
   } on StateError {
     return notFound('Listing $id not found or is not a draft');

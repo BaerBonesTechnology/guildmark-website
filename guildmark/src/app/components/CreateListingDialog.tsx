@@ -102,7 +102,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl font-mono max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl  max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Listing</DialogTitle>
           <DialogDescription>
@@ -114,14 +114,14 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Item Category <span className="text-red-500">*</span></Label>
             <Select value={formData.item} onValueChange={(value) => { setFormData({ ...formData, item: value }); setErrors((e) => ({ ...e, item: undefined })); }}>
-              <SelectTrigger className={`font-mono ${errors.item ? "border-red-500" : ""}`}>
+              <SelectTrigger className={` ${errors.item ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="laptop" className="font-mono">Laptop</SelectItem>
-                <SelectItem value="desktop" className="font-mono">Desktop</SelectItem>
-                <SelectItem value="server" className="font-mono">Server</SelectItem>
-                <SelectItem value="monitor" className="font-mono">Monitor</SelectItem>
+                <SelectItem value="laptop" className="">Laptop</SelectItem>
+                <SelectItem value="desktop" className="">Desktop</SelectItem>
+                <SelectItem value="server" className="">Server</SelectItem>
+                <SelectItem value="monitor" className="">Monitor</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -129,15 +129,15 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Brand</Label>
             <Select value={formData.brand} onValueChange={(value) => setFormData({ ...formData, brand: value })}>
-              <SelectTrigger className="font-mono">
+              <SelectTrigger className="">
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="apple" className="font-mono">Apple</SelectItem>
-                <SelectItem value="dell" className="font-mono">Dell</SelectItem>
-                <SelectItem value="hp" className="font-mono">HP</SelectItem>
-                <SelectItem value="lenovo" className="font-mono">Lenovo</SelectItem>
-                <SelectItem value="microsoft" className="font-mono">Microsoft</SelectItem>
+                <SelectItem value="apple" className="">Apple</SelectItem>
+                <SelectItem value="dell" className="">Dell</SelectItem>
+                <SelectItem value="hp" className="">HP</SelectItem>
+                <SelectItem value="lenovo" className="">Lenovo</SelectItem>
+                <SelectItem value="microsoft" className="">Microsoft</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -148,7 +148,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
               placeholder='e.g., MacBook Pro 14"'
               value={formData.model}
               onChange={(e) => { setFormData({ ...formData, model: e.target.value }); setErrors((er) => ({ ...er, model: undefined })); }}
-              className={`font-mono ${errors.model ? "border-red-500" : ""}`}
+              className={` ${errors.model ? "border-red-500" : ""}`}
             />
             {errors.model && <p className="text-xs text-red-500">{errors.model}</p>}
           </div>
@@ -159,21 +159,21 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
               placeholder="e.g., M2 Pro"
               value={formData.cpu}
               onChange={(e) => setFormData({ ...formData, cpu: e.target.value })}
-              className="font-mono"
+              className=""
             />
           </div>
 
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">RAM</Label>
             <Select value={formData.ram} onValueChange={(value) => setFormData({ ...formData, ram: value })}>
-              <SelectTrigger className="font-mono">
+              <SelectTrigger className="">
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="8gb" className="font-mono">8 GB</SelectItem>
-                <SelectItem value="16gb" className="font-mono">16 GB</SelectItem>
-                <SelectItem value="32gb" className="font-mono">32 GB</SelectItem>
-                <SelectItem value="64gb" className="font-mono">64 GB</SelectItem>
+                <SelectItem value="8gb" className="">8 GB</SelectItem>
+                <SelectItem value="16gb" className="">16 GB</SelectItem>
+                <SelectItem value="32gb" className="">32 GB</SelectItem>
+                <SelectItem value="64gb" className="">64 GB</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -181,14 +181,14 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Storage</Label>
             <Select value={formData.storage} onValueChange={(value) => setFormData({ ...formData, storage: value })}>
-              <SelectTrigger className="font-mono">
+              <SelectTrigger className="">
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="256gb" className="font-mono">256 GB</SelectItem>
-                <SelectItem value="512gb" className="font-mono">512 GB</SelectItem>
-                <SelectItem value="1tb" className="font-mono">1 TB</SelectItem>
-                <SelectItem value="2tb" className="font-mono">2 TB</SelectItem>
+                <SelectItem value="256gb" className="">256 GB</SelectItem>
+                <SelectItem value="512gb" className="">512 GB</SelectItem>
+                <SelectItem value="1tb" className="">1 TB</SelectItem>
+                <SelectItem value="2tb" className="">2 TB</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -196,13 +196,13 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Condition <span className="text-red-500">*</span></Label>
             <Select value={formData.condition} onValueChange={(value) => { setFormData({ ...formData, condition: value }); setErrors((e) => ({ ...e, condition: undefined })); }}>
-              <SelectTrigger className="font-mono">
+              <SelectTrigger className="">
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="excellent" className="font-mono">Excellent</SelectItem>
-                <SelectItem value="good" className="font-mono">Good</SelectItem>
-                <SelectItem value="fair" className="font-mono">Fair</SelectItem>
+                <SelectItem value="excellent" className="">Excellent</SelectItem>
+                <SelectItem value="good" className="">Good</SelectItem>
+                <SelectItem value="fair" className="">Fair</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -215,7 +215,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
               placeholder="Number of units"
               value={formData.quantity}
               onChange={(e) => { setFormData({ ...formData, quantity: e.target.value }); setErrors((er) => ({ ...er, quantity: undefined })); }}
-              className={`font-mono ${errors.quantity ? "border-red-500" : ""}`}
+              className={` ${errors.quantity ? "border-red-500" : ""}`}
             />
             {errors.quantity && <p className="text-xs text-red-500">{errors.quantity}</p>}
           </div>
@@ -229,7 +229,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
               placeholder="Enter price per unit"
               value={formData.pricePerUnit}
               onChange={(e) => { setFormData({ ...formData, pricePerUnit: e.target.value }); setErrors((er) => ({ ...er, pricePerUnit: undefined })); }}
-              className={`font-mono ${errors.pricePerUnit ? "border-red-500" : ""}`}
+              className={` ${errors.pricePerUnit ? "border-red-500" : ""}`}
             />
             {errors.pricePerUnit && <p className="text-xs text-red-500">{errors.pricePerUnit}</p>}
           </div>
@@ -240,7 +240,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
               placeholder="Add any additional details about the assets..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm  ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               rows={3}
             />
           </div>
@@ -271,7 +271,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           <div className="bg-muted/50 rounded-lg p-4 border space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Gross Value</span>
-              <span className="font-mono">
+              <span className="">
                 ${(quantityNum * priceNum).toLocaleString()}
               </span>
             </div>
@@ -284,7 +284,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
                   </span>
                 )}
               </span>
-              <span className="font-mono text-red-500">
+              <span className=" text-red-500">
                 {sellerFee != null
                   ? `-$${(sellerFee * quantityNum).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
                   : "—"}
@@ -295,14 +295,14 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
                 <span className="text-muted-foreground">
                   Data Wipe Service ({quantityNum} × ${fees?.data_wipe_price ?? 8})
                 </span>
-                <span className="font-mono text-red-500">
+                <span className=" text-red-500">
                   -${(quantityNum * (fees?.data_wipe_price ?? 8)).toFixed(2)}
                 </span>
               </div>
             )}
             <div className="pt-2 border-t flex justify-between">
               <span className="font-semibold">You Receive on Arrival</span>
-              <span className="text-2xl font-mono text-primary">
+              <span className="text-2xl  text-primary">
                 ${(
                   (totalNet ?? quantityNum * priceNum) -
                   (formData.includeDataWipe ? quantityNum * (fees?.data_wipe_price ?? 8) : 0)
@@ -322,10 +322,10 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="font-mono" disabled={createListing.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="" disabled={createListing.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-white font-mono" disabled={createListing.isPending}>
+          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-white " disabled={createListing.isPending}>
             {createListing.isPending ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating…</>
             ) : (

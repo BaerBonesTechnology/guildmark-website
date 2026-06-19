@@ -1,17 +1,8 @@
-/// AMPS route middleware — enforces paid subscription.
-///
-/// All routes under /amps/* require:
-///   1. A valid auth token (non-null AuthPrincipal).
-///   2. A non-free subscription that is in 'active' status.
-///
-/// Free users receive a structured 403 with a `SUBSCRIPTION_REQUIRED` code
-/// so the frontend can show an upgrade prompt rather than a generic error.
-
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/context.dart';
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Handler middleware(Handler handler) {
   return (context) async {
@@ -31,17 +22,21 @@ Handler middleware(Handler handler) {
     );
 
     // No subscription row → treat as free.
-    final plan   = rows.isEmpty ? 'free'   : rows.first.toColumnMap()['plan'].toString();
-    final status = rows.isEmpty ? 'active' : rows.first.toColumnMap()['status'].toString();
+    final plan = rows.isEmpty
+        ? 'free'
+        : rows.first.toColumnMap()['plan'].toString();
+    final status = rows.isEmpty
+        ? 'active'
+        : rows.first.toColumnMap()['status'].toString();
 
     // Free plan is not allowed on AMPS routes.
     if (plan == 'free') {
       return Response.json(
         statusCode: 403,
         body: {
-          'code':    'SUBSCRIPTION_REQUIRED',
+          'code': 'SUBSCRIPTION_REQUIRED',
           'message': 'GM Pro subscription required to access this feature.',
-          'plan':    plan,
+          'plan': plan,
         },
       );
     }
@@ -51,9 +46,10 @@ Handler middleware(Handler handler) {
       return Response.json(
         statusCode: 402,
         body: {
-          'code':    'PAYMENT_REQUIRED',
-          'message': 'Your subscription payment is past due. Please update your payment method.',
-          'plan':    plan,
+          'code': 'PAYMENT_REQUIRED',
+          'message':
+              'Your subscription payment is past due. Please update your payment method.',
+          'plan': plan,
         },
       );
     }
@@ -63,9 +59,9 @@ Handler middleware(Handler handler) {
       return Response.json(
         statusCode: 403,
         body: {
-          'code':    'SUBSCRIPTION_CANCELLED',
+          'code': 'SUBSCRIPTION_CANCELLED',
           'message': 'Your subscription has been cancelled.',
-          'plan':    plan,
+          'plan': plan,
         },
       );
     }

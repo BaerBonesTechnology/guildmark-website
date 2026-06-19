@@ -19,7 +19,7 @@ export function Login() {
     setSubmitting(true);
     try {
       await login(email, password);
-      navigate("/dashboard");
+      navigate("/pre/dashboard");
     } catch {
       // error is set in useAuth
     } finally {
@@ -29,7 +29,7 @@ export function Login() {
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-      <Card className="w-full max-w-md font-mono">
+      <Card className="w-full max-w-md ">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl">Welcome to GuildMark</CardTitle>
           <CardDescription>Sign in to access your IT asset dashboard</CardDescription>
@@ -37,7 +37,7 @@ export function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-md bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger font-mono">
+              <div className="rounded-md bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger ">
                 {error}
               </div>
             )}
@@ -48,7 +48,7 @@ export function Login() {
                 placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="font-mono"
+                className=""
                 required
                 disabled={submitting}
               />
@@ -56,7 +56,7 @@ export function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Password</Label>
-                <Link to="/forgot-password" className="text-xs text-primary hover:underline font-mono">
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline ">
                   Forgot password?
                 </Link>
               </div>
@@ -65,22 +65,22 @@ export function Login() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="font-mono"
+                className=""
                 required
                 disabled={submitting}
               />
             </div>
             <Button
               type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-white font-mono"
+              className="w-full bg-primary hover:bg-primary/90 text-white "
               disabled={submitting}
             >
               {submitting ? "Signing in..." : "Sign In"}
             </Button>
             <div className="text-center text-sm text-muted-foreground space-y-2">
-              <p className="font-mono">
+              <p className="">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
+                <Link to="/pre/signup" className="text-primary hover:underline">
                   Sign up free
                 </Link>
               </p>
