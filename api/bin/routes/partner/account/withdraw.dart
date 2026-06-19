@@ -3,9 +3,9 @@ import 'dart:math';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:postgres/postgres.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {

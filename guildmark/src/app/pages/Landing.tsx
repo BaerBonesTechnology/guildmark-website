@@ -6,7 +6,7 @@ import React, {useState } from 'react';
 import {motion } from 'framer-motion';
 // Hero Images
 import heroImg_Woman from "../../hero-imgs/hero-image-woman.png";
-import heroImg_ServerRoom from "../../hero-imgs/hero-image-server-rrom.png";
+import heroImg_ServerRoom from "../../hero-imgs/hero-image-server-room.png";
 import heroImg_Floor from "../../hero-imgs/hero-image-floor.png";
 
 export function Landing() {

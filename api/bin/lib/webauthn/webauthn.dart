@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' as crypto;
-import 'package:cryptography/cryptography.dart' as c;
+import 'package:cryptography/cryptography.dart';
 
 // ---------------------------------------------------------------------------
 // Base64url helpers (WebAuthn always uses unpadded base64url)
@@ -275,14 +275,14 @@ Future<bool> verifyAssertion({
   final p1363 = derToP1363(derSignature);
 
   // Reconstruct the EC public key
-  final publicKey = c.EcPublicKey(
+  final publicKey = EcPublicKey(
     x: publicKeyX,
     y: publicKeyY,
-    type: c.KeyPairType.p256,
+    type: KeyPairType.p256,
   );
 
-  final algorithm = c.Ecdsa.p256(c.Sha256());
-  final signature = c.Signature(p1363, publicKey: publicKey);
+  final algorithm = Ecdsa.p256(Sha256());
+  final signature = Signature(p1363, publicKey: publicKey);
 
   try {
     return await algorithm.verify(sigBase, signature: signature);

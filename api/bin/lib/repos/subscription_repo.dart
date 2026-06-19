@@ -1,4 +1,4 @@
-import '../db/pool.dart';
+import 'package:guildmark_api/db/pool.dart';
 
 // ---------------------------------------------------------------------------
 // Constants — fee rates by plan

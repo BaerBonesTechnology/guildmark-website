@@ -177,6 +177,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.9.0"
+  dart_appwrite:
+    dependency: "direct main"
+    description:
+      name: dart_appwrite
+      sha256: "1b720e2177cee0e97001e5e97c87b02da16595b0a6228e889339d678a09f4d26"
+      url: "https://pub.dev"
+    source: hosted
+    version: "25.1.0"
   dart_frog:
     dependency: "direct main"
     description:

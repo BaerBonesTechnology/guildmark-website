@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 
-import '../db/pool.dart';
+import 'package:guildmark_api/db/pool.dart';
 
 class PartnerRecord {
   PartnerRecord({

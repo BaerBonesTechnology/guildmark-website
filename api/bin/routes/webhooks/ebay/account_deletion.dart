@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/config.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final cfg = context.read<AppConfig>();

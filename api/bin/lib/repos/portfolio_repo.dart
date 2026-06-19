@@ -1,6 +1,6 @@
-import '../db/pool.dart';
-import '../models/json_helpers.dart';
-import '../models/portfolio.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
+import 'package:guildmark_api/models/portfolio.dart';
 
 class PortfolioRepo {
   PortfolioRepo(this._db);

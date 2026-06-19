@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'listing.freezed.dart';
 part 'listing.g.dart';
 
-@freezed
+@Freezed()
 abstract class Listing with _$Listing {
   const Listing._();
 
@@ -68,7 +68,7 @@ abstract class Listing with _$Listing {
   );
 }
 
-@freezed
+@Freezed()
 abstract class MarketplaceListing with _$MarketplaceListing {
   const MarketplaceListing._();
 

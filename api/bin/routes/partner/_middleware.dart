@@ -1,7 +1,7 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/auth/jwt.dart';
-import '../../lib/context.dart';
+import 'package:guildmark_api/auth/jwt.dart';
+import 'package:guildmark_api/context.dart';
 
 Handler middleware(Handler handler) {
   return (context) async {

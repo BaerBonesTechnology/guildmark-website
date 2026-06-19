@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/repos/offer_repo.dart';
-import '../../../lib/services/email_service.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/offer_repo.dart';
+import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();

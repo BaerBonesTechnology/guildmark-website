@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/config.dart';
-import '../../lib/crypto_utils.dart';
-import '../../lib/http_helpers.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/crypto_utils.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {

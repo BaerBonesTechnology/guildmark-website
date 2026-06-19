@@ -1,8 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
-import '../../lib/models/json_helpers.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {

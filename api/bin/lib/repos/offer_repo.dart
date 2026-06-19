@@ -1,8 +1,8 @@
 import 'package:postgres/postgres.dart';
 
-import '../db/pool.dart';
-import '../models/json_helpers.dart';
-import '../models/offer.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
+import 'package:guildmark_api/models/offer.dart';
 
 const _offerTtl = Duration(hours: 72);
 

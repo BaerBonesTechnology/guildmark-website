@@ -2,7 +2,7 @@ library platform_config;
 
 import 'package:json_annotation/json_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'platform_config.g.dart';
 

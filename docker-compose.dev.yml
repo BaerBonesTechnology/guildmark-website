@@ -1,0 +1,162 @@
+# GuildMark — Development Docker Compose
+# ---------------------------------------------------------------------------
+# DEV MODE: every layer is published directly to localhost and there is NO
+# nginx. Use this for local work; prod/base keep the nginx workflow untouched.
+#
+#   docker compose -f docker-compose.dev.yml up -d            # core stack
+#   docker compose -f docker-compose.dev.yml --profile ml up  # + ML service
+#
+# Appwrite runs from its own file and is already published on localhost:9444:
+#   docker compose --env-file .env.appwrite -f docker-compose.appwrite.yml up -d
+# This dev stack joins the same `guildmark-net`, so the API reaches Appwrite at
+# http://appwrite/v1 internally when that stack is up.
+#
+# Localhost port map (no nginx, hit each layer directly):
+#   API (Dart Frog)      → http://localhost:8080
+#   Marketplace UI       → http://localhost:3000
+#   DevDash admin        → http://localhost:3001
+#   Partners portal      → http://localhost:3002
+#   ML service (profile) → http://localhost:8001
+#   Postgres             → localhost:5432
+#   Appwrite console     → http://localhost:9444/console   (from the appwrite file)
+# ---------------------------------------------------------------------------
+
+services:
+  # ── Postgres ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
+    networks:
+      - guildmark-net
+
+  # ── Dart Frog API — direct on 8080 ───────────────────────────────────────
+  api:
+    build:
+      context:    ./api/bin
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      API_PORT:                ${API_PORT:-8080}
+      DATABASE_URL:            ${DATABASE_URL}
+      JWT_ACCESS_SECRET:       ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET:      ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
+      JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
+      ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
+      # Appwrite over guildmark-net (optional — API degrades when absent).
+      APPWRITE_ENDPOINT:       ${APPWRITE_ENDPOINT:-http://appwrite/v1}
+      APPWRITE_PROJECT_ID:     ${APPWRITE_PROJECT_ID:-}
+      APPWRITE_API_KEY:        ${APPWRITE_API_KEY:-}
+      # Dev: relax CORS + debug; each UI is served from its own localhost port.
+      GM_DEBUG:                ${GM_DEBUG:-true}
+      CORS_ORIGIN:             ${CORS_ORIGIN:-http://localhost:3000}
+      ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-http://localhost:3001}
+      PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-http://localhost:3002}
+      SQUARE_APPLICATION_ID:   ${SQUARE_APPLICATION_ID:-none}
+      SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_LOCATION_ID:      ${SQUARE_LOCATION_ID:-}
+      SQUARE_ENVIRONMENT:      ${SQUARE_ENVIRONMENT:-sandbox}
+      RESEND_API_KEY:          ${RESEND_API_KEY:-}
+      ESCROW_API_KEY:          ${ESCROW_API_KEY:-}
+      ESCROW_ENVIRONMENT:      ${ESCROW_ENVIRONMENT:-sandbox}
+      FEDEX_CLIENT_ID:         ${FEDEX_CLIENT_ID:-}
+      FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
+      FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-sandbox}
+    volumes:
+      - ./api/migrations:/app/migrations:ro
+    networks:
+      - guildmark-net
+
+  # ── Marketplace frontend — direct on 3000 ────────────────────────────────
+  guildmark:
+    build:
+      context:    ./guildmark
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:   ${VITE_API_URL:-http://localhost:8080}
+        VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-false}
+        VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-true}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+    networks:
+      - guildmark-net
+
+  # ── DevDash admin — direct on 3001 ───────────────────────────────────────
+  devdash:
+    build:
+      context:    ./devdash
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL:       ${VITE_API_URL:-http://localhost:8080}
+        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-http://localhost:8080}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3001:80"
+    networks:
+      - guildmark-net
+
+  # ── Partners portal — direct on 3002 ─────────────────────────────────────
+  partners:
+    build:
+      context:    ./partners
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3002:80"
+    networks:
+      - guildmark-net
+
+  # ── Python ML service — direct on 8001 (opt-in: --profile ml) ────────────
+  ml:
+    build: ./ml-qv
+    profiles: ["ml"]
+    restart: unless-stopped
+    environment:
+      ML_PORT:      ${ML_PORT:-8001}
+      ML_MODEL_DIR: /app/model_artifacts
+      EBAY_APP_ID:  ${EBAY_APP_ID:-}
+      EBAY_CERT_ID: ${EBAY_CERT_ID:-}
+      RETRAIN:      ${RETRAIN:-0}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ml-qv/model_artifacts:/app/model_artifacts
+    networks:
+      - guildmark-net
+
+volumes:
+  postgres_data_dev:
+
+# Same fixed-name network the appwrite stack joins as external, so the dev API
+# can reach Appwrite at http://appwrite/v1 when that stack is also running.
+networks:
+  guildmark-net:
+    name: guildmark-net-dev

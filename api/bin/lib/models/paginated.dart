@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'paginated.freezed.dart';
 part 'paginated.g.dart';
 
-@freezed
+@Freezed(genericArgumentFactories: true)
 abstract class PaginatedResponse<T> with _$PaginatedResponse<T> {
   const PaginatedResponse._();
 

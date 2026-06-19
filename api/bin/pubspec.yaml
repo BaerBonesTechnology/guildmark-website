@@ -9,6 +9,7 @@ environment:
 dependencies:
   dart_frog: ^1.1.0
   postgres: ^3.3.0      # Native protocol Postgres client.
+  dart_appwrite: ^25.1.0     # Appwrite server SDK (compatible with Appwrite 1.9.x).
   dart_jsonwebtoken: ^3.4.1     # JWT issue + verify.
   bcrypt: ^1.1.3      # Password hashing.
   uuid: ^4.4.0

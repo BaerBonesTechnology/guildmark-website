@@ -5,13 +5,13 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/config.dart';
-import '../../../lib/crypto_utils.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/repos/order_repo.dart';
-import '../../../lib/services/email_service.dart';
-import '../../../lib/services/escrow_service.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/crypto_utils.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/order_repo.dart';
+import 'package:guildmark_api/services/email_service.dart';
+import 'package:guildmark_api/services/escrow_service.dart';
 
 const _inspectionDuration = Duration(hours: 48);
 

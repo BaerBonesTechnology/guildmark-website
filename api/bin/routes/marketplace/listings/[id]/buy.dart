@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:postgres/postgres.dart';
 
-import '../../../../lib/context.dart';
-import '../../../../lib/db/pool.dart';
-import '../../../../lib/http_helpers.dart';
-import '../../../../lib/models/json_helpers.dart';
-import '../../../../lib/repos/order_repo.dart';
-import '../../../../lib/repos/subscription_repo.dart';
-import '../../../../lib/services/email_service.dart';
-import '../../../../lib/services/escrow_service.dart';
-import '../../../../lib/services/square_service.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
+import 'package:guildmark_api/repos/order_repo.dart';
+import 'package:guildmark_api/repos/subscription_repo.dart';
+import 'package:guildmark_api/services/email_service.dart';
+import 'package:guildmark_api/services/escrow_service.dart';
+import 'package:guildmark_api/services/square_service.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.post) {

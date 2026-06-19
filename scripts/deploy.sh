@@ -1,18 +1,11 @@
 #!/bin/bash
-# GuildMark production deploy script
-# Pulls latest images from Docker Hub and redeploys services
-
 set -e
+cd "$(dirname "$0")/.."                       # repo root, regardless of CWD
 
-REPO_DIR="/path/to/your/repo"  # Change this to your actual repo path
-cd "$REPO_DIR"
+echo "[$(date '+%F %T')] Starting deployment..."
+ docker network create guildmark-net 2>/dev/null || true   # shared external net
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment..."
-
-# Pull latest images from Docker Hub
-docker compose -f docker-compose.prod.yml pull
-
-# Redeploy services
-docker compose -f docker-compose.prod.yml up -d
-
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment complete"
+doppler run -- docker compose -f docker-compose.prod.yml build --no-cache
+docker compose -- env-file .env.appwrite -f docker-compose.appwrite.yml up -d
+doppler run --docker compose -f docker-compose.prod.yml up -d
+echo "[$(date '+%F %T')] Deployment complete"

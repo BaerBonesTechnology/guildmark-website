@@ -1,5 +1,5 @@
-import '../db/pool.dart';
-import '../models/platform_config.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/platform_config.dart';
 
 class ConfigRepo {
   ConfigRepo(this._db);

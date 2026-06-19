@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'portfolio.freezed.dart';
 part 'portfolio.g.dart';
 
-@freezed
+@Freezed()
 abstract class ValuationSnapshot with _$ValuationSnapshot {
   const ValuationSnapshot._();
 
@@ -31,7 +31,7 @@ abstract class ValuationSnapshot with _$ValuationSnapshot {
       );
 }
 
-@freezed
+@Freezed()
 abstract class PortfolioBucket with _$PortfolioBucket {
   const factory PortfolioBucket({
     required int count,
@@ -42,7 +42,7 @@ abstract class PortfolioBucket with _$PortfolioBucket {
       _$PortfolioBucketFromJson(json);
 }
 
-@freezed
+@Freezed()
 abstract class PortfolioSummary with _$PortfolioSummary {
   const factory PortfolioSummary({
     required int totalDevices,

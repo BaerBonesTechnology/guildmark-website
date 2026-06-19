@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'mdm_connection.freezed.dart';
 part 'mdm_connection.g.dart';
 
-@freezed
+@Freezed()
 abstract class MdmConnection with _$MdmConnection {
   const MdmConnection._();
 

@@ -1,8 +1,8 @@
 import 'package:postgres/postgres.dart';
 
-import '../db/pool.dart';
-import '../models/invoice.dart';
-import '../models/json_helpers.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/invoice.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 const _invoiceCols = '''
   ti.id, ti.invoice_number, ti.invoice_type, ti.invoice_date,

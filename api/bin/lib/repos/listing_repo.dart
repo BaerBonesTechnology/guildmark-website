@@ -1,7 +1,7 @@
-import '../db/pool.dart';
-import '../models/json_helpers.dart';
-import '../models/listing.dart';
-import '../models/paginated.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
+import 'package:guildmark_api/models/listing.dart';
+import 'package:guildmark_api/models/paginated.dart';
 
 class MarketplaceFilters {
   MarketplaceFilters({

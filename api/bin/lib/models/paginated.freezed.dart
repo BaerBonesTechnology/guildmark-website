@@ -23,7 +23,7 @@ mixin _$PaginatedResponse<T> {
 $PaginatedResponseCopyWith<T, PaginatedResponse<T>> get copyWith => _$PaginatedResponseCopyWithImpl<T, PaginatedResponse<T>>(this as PaginatedResponse<T>, _$identity);
 
   /// Serializes this PaginatedResponse to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson(Object? Function(T) toJsonT);
 
 
 @override
@@ -210,11 +210,11 @@ return $default(_that.data,_that.total,_that.page,_that.pageSize,_that.totalPage
 }
 
 /// @nodoc
-@JsonSerializable()
+@JsonSerializable(genericArgumentFactories: true)
 
 class _PaginatedResponse<T> extends PaginatedResponse<T> {
   const _PaginatedResponse({required final  List<T> data, required this.total, required this.page, required this.pageSize, required this.totalPages}): _data = data,super._();
-  factory _PaginatedResponse.fromJson(Map<String, dynamic> json, T Function(Object? json) parseData) => _$PaginatedResponseFromJson(json, parseData );
+  factory _PaginatedResponse.fromJson(Map<String, dynamic> json,T Function(Object?) fromJsonT) => _$PaginatedResponseFromJson(json,fromJsonT);
 
  final  List<T> _data;
 @override List<T> get data {
@@ -235,8 +235,8 @@ class _PaginatedResponse<T> extends PaginatedResponse<T> {
 _$PaginatedResponseCopyWith<T, _PaginatedResponse<T>> get copyWith => __$PaginatedResponseCopyWithImpl<T, _PaginatedResponse<T>>(this, _$identity);
 
 @override
-Map<String, dynamic> toJson() {
-  return _$PaginatedResponseToJson<T>(this, (json) => json);
+Map<String, dynamic> toJson(Object? Function(T) toJsonT) {
+  return _$PaginatedResponseToJson<T>(this, toJsonT);
 }
 
 @override

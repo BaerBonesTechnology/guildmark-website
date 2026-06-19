@@ -1,10 +1,10 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../../lib/auth/jwt.dart';
-import '../../../../lib/config.dart';
-import '../../../../lib/db/pool.dart';
-import '../../../../lib/http_helpers.dart';
-import '../../../../lib/webauthn/webauthn.dart';
+import 'package:guildmark_api/auth/jwt.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/webauthn/webauthn.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {

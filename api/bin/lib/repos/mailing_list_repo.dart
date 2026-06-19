@@ -1,7 +1,7 @@
 import 'package:postgres/postgres.dart';
 
-import '../db/pool.dart';
-import '../models/json_helpers.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 class MailingListEntry {
   MailingListEntry({

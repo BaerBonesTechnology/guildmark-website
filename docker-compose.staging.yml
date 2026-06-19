@@ -132,7 +132,7 @@ services:
       - api-stg
     networks:
       - guildmark-net
-    # Port not exposed publicly — prod nginx proxies to guildmark-stg:80 internally.
+    # Port not exposed publicly — prod nginx proxies to guildmark-stg81:80 internally.
 
   # ── DevDash admin panel (staging) ─────────────────────────────────────────
   devdash-stg:
@@ -147,7 +147,7 @@ services:
       - api-stg
     networks:
       - guildmark-net
-    # Port not exposed publicly — prod nginx proxies to devdash-stg:80 internally.
+    # Port not exposed publicly — prod nginx proxies to devdash-stg81:80 internally.
 
 volumes:
   postgres_stg_data:

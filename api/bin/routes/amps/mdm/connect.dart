@@ -2,10 +2,10 @@ import 'dart:typed_data';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/repos/mdm_repo.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/mdm_repo.dart';
 
 const _allowedTypes = {'jamf_pro', 'jamf_school', 'intune'};
 

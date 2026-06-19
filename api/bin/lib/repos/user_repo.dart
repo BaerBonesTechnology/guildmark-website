@@ -1,9 +1,8 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:guildmark_api/db/pool.dart';
 import 'package:postgres/postgres.dart';
-
-import '../db/pool.dart';
 
 class UserRecord {
   UserRecord({

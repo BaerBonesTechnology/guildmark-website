@@ -1,8 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/repos/listing_repo.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -21,6 +21,6 @@ Future<Response> onRequest(RequestContext context) async {
 
   final result = await ListingRepo(context.read<Db>()).searchActive(filters);
   return Response.json(
-    body: result.toJson(),
+    body: result.toJson((listing) => listing.toJson()),
   );
 }

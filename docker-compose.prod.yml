@@ -4,7 +4,7 @@
 # Cloudflare routes each subdomain to the correct port via Origin Rules.
 #
 # Port map:
-#   guildmark.co          →  nginx  :443  (fronts the React app)
+#   guildmark.co          →  nginx  :444  (fronts the React app)
 #   api.guildmark.co      →  api    :8443 (Dart Frog — Cloudflare proxied HTTPS port)
 #   devdash.guildmark.co  →  devdash:2053 (Cloudflare proxied HTTPS port)
 #
@@ -105,7 +105,7 @@ services:
       retries:      10
       start_period: 120s
 
-  # ── GuildMark marketplace frontend — served via nginx on 443 ─────────────
+  # ── GuildMark marketplace frontend — served via nginx on 444 ─────────────
   guildmark:
     build:
       context:    ./guildmark
@@ -132,7 +132,7 @@ services:
     ports:
       - "2053:80"
 
-  # ── NGINX — serves guildmark.co on 80/443 only ───────────────────────────
+  # ── NGINX — serves guildmark.co on 80/444 only ───────────────────────────
   nginx:
     build:
       context:    ./nginx
@@ -142,7 +142,7 @@ services:
       - guildmark
     ports:
       - "80:80"
-      - "443:443"
+      - "444:444"
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
 

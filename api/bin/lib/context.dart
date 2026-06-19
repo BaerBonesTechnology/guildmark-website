@@ -1,4 +1,4 @@
-import 'auth/jwt.dart';
+import 'package:guildmark_api/auth/jwt.dart';
 
 class AuthPrincipal {
   AuthPrincipal({

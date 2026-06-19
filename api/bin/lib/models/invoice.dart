@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'invoice.freezed.dart';
 part 'invoice.g.dart';
 
-@freezed
+@Freezed()
 abstract class TaxInvoice with _$TaxInvoice {
   const factory TaxInvoice({
     required String id,

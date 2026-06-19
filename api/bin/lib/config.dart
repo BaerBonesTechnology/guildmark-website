@@ -12,6 +12,11 @@ class AppConfig {
     required this.isDebug,
     // ML service is optional — API degrades gracefully when unavailable.
     this.mlServiceUrl,
+    // Appwrite — endpoint defaults to the in-cluster gateway; PROJECT_ID and
+    // API_KEY are optional so the API still boots before a project exists.
+    required this.appwriteEndpoint,
+    this.appwriteProjectId,
+    this.appwriteApiKey,
     // Square Web Payments
     required this.squareAccessToken,
     required this.squareApplicationId,
@@ -118,6 +123,10 @@ class AppConfig {
       }(),
       isDebug: optionalBool('GM_DEBUG'),
       mlServiceUrl: optional('ML_SERVICE_URL'),
+      // Appwrite
+      appwriteEndpoint: env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
+      appwriteProjectId: optional('APPWRITE_PROJECT_ID'),
+      appwriteApiKey: optional('APPWRITE_API_KEY'),
       // Square
       squareAccessToken: require('SQUARE_ACCESS_TOKEN'),
       squareApplicationId: require('SQUARE_APPLICATION_ID'),
@@ -198,6 +207,11 @@ class AppConfig {
   final bool isDebug;
 
   final String? mlServiceUrl;
+
+  // ── Appwrite ────────────────────────────────────────────────────────────────
+  final String appwriteEndpoint;
+  final String? appwriteProjectId;
+  final String? appwriteApiKey;
 
   // ── Square Web Payments ─────────────────────────────────────────────────────
 

@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'offer.freezed.dart';
 part 'offer.g.dart';
 
-@freezed
+@Freezed()
 abstract class BuyerOffer with _$BuyerOffer {
   const BuyerOffer._();
 

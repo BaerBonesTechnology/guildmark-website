@@ -8,7 +8,7 @@ import 'package:guildmark_api/models/user.dart';
 part 'company.freezed.dart';
 part 'company.g.dart';
 
-@freezed
+@Freezed()
 abstract class Company with _$Company {
   const factory Company({
     required String id,

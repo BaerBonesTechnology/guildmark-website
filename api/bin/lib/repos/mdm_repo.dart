@@ -1,5 +1,5 @@
-import '../db/pool.dart';
-import '../models/mdm_connection.dart';
+import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/models/mdm_connection.dart';
 
 const _mdmCols = '''
   id, company_id, mdm_type, sync_enabled, last_sync_at, last_sync_status,

@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../lib/auth/jwt.dart';
-import '../lib/config.dart';
-import '../lib/context.dart';
-import '../lib/http_helpers.dart';
+import 'package:guildmark_api/auth/jwt.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Handler middleware(Handler handler) {
   return handler

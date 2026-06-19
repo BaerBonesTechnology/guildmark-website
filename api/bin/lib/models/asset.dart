@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'asset.freezed.dart';
 part 'asset.g.dart';
 
-@freezed
+@Freezed()
 abstract class Asset with _$Asset {
   const Asset._();
 
