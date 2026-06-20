@@ -35,6 +35,8 @@ services:
       interval: 5s
       timeout:  5s
       retries:  10
+    networks:
+      - guildmark-net
 
   # ── Dart Frog API — exposed on 8443 (Cloudflare proxied HTTPS port) ───────
   api:
@@ -55,6 +57,9 @@ services:
       JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
       JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
       ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
+      APPWRITE_ENDPOINT:       ${APPWRITE_ENDPOINT:-http://appwrite/v1}
+      APPWRITE_PROJECT_ID:     ${APPWRITE_PROJECT_ID:-}
+      APPWRITE_API_KEY:        ${APPWRITE_API_KEY:-}
       CORS_ORIGIN:             ${CORS_ORIGIN}
       GM_DEBUG:                ${GM_DEBUG:-false}
       SQUARE_ACCESS_TOKEN:     ${SQUARE_ACCESS_TOKEN:-}
@@ -84,6 +89,8 @@ services:
       ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
       ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
       PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-partner.guildmark.co}
+    networks:
+      - guildmark-net
 
   # ── Python ML service (optional — opt-in with --profile ml) ──────────────
   ml:
@@ -104,6 +111,8 @@ services:
       timeout:      10s
       retries:      10
       start_period: 120s
+    networks:
+      - guildmark-net
 
   # ── GuildMark marketplace frontend — served via nginx on 444 ─────────────
   guildmark:
@@ -117,6 +126,8 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    networks:
+      - guildmark-net
 
   # ── DevDash admin panel — exposed on 2053 (Cloudflare proxied HTTPS port) ─
   devdash:
@@ -131,6 +142,8 @@ services:
       - api
     ports:
       - "2053:80"
+    networks:
+      - guildmark-net
 
   # ── NGINX — serves guildmark.co on 80/444 only ───────────────────────────
   nginx:
@@ -145,7 +158,17 @@ services:
       - "444:444"
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - guildmark-net
 
 volumes:
   postgres_data:
   ml_artifacts:
+
+# Shared external network — also used by docker-compose.appwrite.yml so the
+# prod api can reach Appwrite (http://appwrite/v1) and nginx can proxy
+# db.guildmark.co → appwrite-traefik. Created by deploy.sh / deploy.cmd.
+networks:
+  guildmark-net:
+    name: guildmark-net
+    external: true
