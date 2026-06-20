@@ -13,7 +13,7 @@ part 'listing.freezed.dart';
 part 'listing.g.dart';
 
 @Freezed()
-class Listing with _$Listing {
+abstract class Listing with _$Listing {
   const Listing._();
 
   const factory Listing({
@@ -76,7 +76,7 @@ class Listing with _$Listing {
 }
 
 @Freezed()
-class MarketplaceListing with _$MarketplaceListing {
+abstract class MarketplaceListing with _$MarketplaceListing {
   const MarketplaceListing._();
 
   const factory MarketplaceListing({

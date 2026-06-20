@@ -10,7 +10,7 @@ part 'portfolio.freezed.dart';
 part 'portfolio.g.dart';
 
 @Freezed()
-class ValuationSnapshot with _$ValuationSnapshot {
+abstract class ValuationSnapshot with _$ValuationSnapshot {
   const ValuationSnapshot._();
 
   const factory ValuationSnapshot({
@@ -35,7 +35,7 @@ class ValuationSnapshot with _$ValuationSnapshot {
 }
 
 @Freezed()
-class PortfolioBucket with _$PortfolioBucket {
+abstract class PortfolioBucket with _$PortfolioBucket {
   const factory PortfolioBucket({
     required int    count,
     required double value,
@@ -46,7 +46,7 @@ class PortfolioBucket with _$PortfolioBucket {
 }
 
 @Freezed()
-class PortfolioSummary with _$PortfolioSummary {
+abstract class PortfolioSummary with _$PortfolioSummary {
   const factory PortfolioSummary({
     required int    totalDevices,
     required double totalPortfolioValue,

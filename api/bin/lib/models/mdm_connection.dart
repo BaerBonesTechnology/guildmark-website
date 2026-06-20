@@ -9,7 +9,7 @@ part 'mdm_connection.freezed.dart';
 part 'mdm_connection.g.dart';
 
 @Freezed()
-class MdmConnection with _$MdmConnection {
+abstract class MdmConnection with _$MdmConnection {
   const MdmConnection._();
 
   const factory MdmConnection({

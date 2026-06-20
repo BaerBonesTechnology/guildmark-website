@@ -9,7 +9,7 @@ part 'offer.freezed.dart';
 part 'offer.g.dart';
 
 @Freezed()
-class BuyerOffer with _$BuyerOffer {
+abstract class BuyerOffer with _$BuyerOffer {
   const BuyerOffer._();
 
   const factory BuyerOffer({

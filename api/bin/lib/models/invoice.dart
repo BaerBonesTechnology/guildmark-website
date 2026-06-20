@@ -9,7 +9,7 @@ part 'invoice.freezed.dart';
 part 'invoice.g.dart';
 
 @Freezed()
-class TaxInvoice with _$TaxInvoice {
+abstract class TaxInvoice with _$TaxInvoice {
   const TaxInvoice._();
 
   const factory TaxInvoice({

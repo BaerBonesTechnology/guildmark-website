@@ -991,11 +991,28 @@ services:
       - OPR_EXECUTOR_STORAGE_WASABI_REGION=$_APP_STORAGE_WASABI_REGION
       - OPR_EXECUTOR_STORAGE_WASABI_BUCKET=$_APP_STORAGE_WASABI_BUCKET
 
+  # Generates the replica-set keyfile (once) into the shared volume with the
+  # permissions/ownership mongod requires (mode 400, owned by uid 999). Without
+  # this, `mongod --keyFile` exits on startup and mongodb never becomes healthy.
+  mongodb-keyfile-init:
+    image: mongo:8.2.5
+    container_name: appwrite-mongodb-keyfile-init
+    <<: *x-logging
+    restart: "no"
+    networks:
+      - appwrite
+    volumes:
+      - appwrite-mongodb-keyfile:/data/keyfile
+    entrypoint: ["bash", "-c", "if [ ! -s /data/keyfile/mongo-keyfile ]; then openssl rand -base64 756 > /data/keyfile/mongo-keyfile; fi; chmod 400 /data/keyfile/mongo-keyfile; chown 999:999 /data/keyfile/mongo-keyfile"]
+
   mongodb:
     image: mongo:8.2.5
     container_name: appwrite-mongodb
     <<: *x-logging
     restart: unless-stopped
+    depends_on:
+      mongodb-keyfile-init:
+        condition: service_completed_successfully
     networks:
       - appwrite
     volumes:
@@ -1007,7 +1024,10 @@ services:
       - MONGO_INITDB_DATABASE=${_APP_DB_SCHEMA}
       - MONGO_INITDB_USERNAME=${_APP_DB_USER}
       - MONGO_INITDB_PASSWORD=${_APP_DB_PASS}
-    entrypoint: mongod --replSet rs0 --bind_ip_all --auth --keyFile /data/keyfile/mongo-keyfile
+    # Use `command:` (not `entrypoint:`) so the image's docker-entrypoint.sh runs
+    # and actually creates the root user from MONGO_INITDB_ROOT_*. Overriding the
+    # entrypoint bypasses that, leaving an --auth server with no users.
+    command: ["--replSet", "rs0", "--bind_ip_all", "--auth", "--keyFile", "/data/keyfile/mongo-keyfile"]
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
       interval: 10s
@@ -1059,3 +1079,5 @@ volumes:
   appwrite-sites:
   appwrite-builds:
   appwrite-config:
+
+
