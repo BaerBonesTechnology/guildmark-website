@@ -12,6 +12,7 @@ interface PlatformFees {
   buyer_fee:           number;
   deferral_fee:        number;
   data_wipe_price:     number;
+  payment_terms_enabled: boolean;
   updated_at:          string;
   updated_by:          string | null;
 }
@@ -70,6 +71,8 @@ export function Pricing() {
     deferral_fee:       "1.30",
     data_wipe_price:    "8.00",
   });
+  // Feature flag — separate from the numeric fee fields.
+  const [paymentTermsEnabled, setPaymentTermsEnabled] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/admin/config`, {
@@ -87,6 +90,7 @@ export function Pricing() {
           deferral_fee:       String(pct(data.deferral_fee)),
           data_wipe_price:    data.data_wipe_price.toFixed(2),
         });
+        setPaymentTermsEnabled(data.payment_terms_enabled ?? false);
       })
       .catch(() => setErrorMsg("Failed to load config"))
       .finally(() => setLoading(false));
@@ -112,6 +116,7 @@ export function Pricing() {
         buyer_fee:          parse(form.buyer_fee)          / 100,
         deferral_fee:       parse(form.deferral_fee)       / 100,
         data_wipe_price:    parse(form.data_wipe_price),
+        payment_terms_enabled: paymentTermsEnabled,
         updated_by:         "admin",
       };
 
@@ -185,6 +190,30 @@ export function Pricing() {
         <div className="px-4">
           <FeeField label="Buyer Fee" description="Flat fee charged to buyer at checkout, all plans" {...field("buyer_fee")} />
           <FeeField label="Deferral Fee (Net-30/60)" description="Added to buyer total when payment is deferred" {...field("deferral_fee")} />
+          <div className="flex items-center justify-between py-3">
+            <div className="flex-1 min-w-0 mr-6">
+              <p className="text-sm text-slate-200 font-mono">Net 30/60 Payment Terms</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Allow buyers to defer payment at checkout. Keep OFF until financing
+                partners are in place — the API rejects deferred terms while disabled.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={paymentTermsEnabled}
+              onClick={() => setPaymentTermsEnabled((v) => !v)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                paymentTermsEnabled ? "bg-blue-600" : "bg-slate-700"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                  paymentTermsEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 

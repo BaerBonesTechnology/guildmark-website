@@ -42,6 +42,15 @@ Future<Response> onRequest(RequestContext context) async {
         if (body[k] == null) return badRequest('Missing field: $k');
       }
 
+      // Feature flag — must be an explicit boolean when present; existing
+      // value is kept when the field is omitted (older devdash clients).
+      final ptRaw = body['payment_terms_enabled'];
+      if (ptRaw != null && ptRaw is! bool) {
+        return badRequest('payment_terms_enabled must be a boolean');
+      }
+      final paymentTermsEnabled =
+          ptRaw as bool? ?? (await repo.get()).paymentTermsEnabled;
+
       final sellerFeeFree = parse('seller_fee_free')!;
       final sellerFeeStarter = parse('seller_fee_starter')!;
       final sellerFeeGrowth = parse('seller_fee_growth')!;
@@ -77,6 +86,7 @@ Future<Response> onRequest(RequestContext context) async {
         buyerFee: buyerFee,
         deferralFee: deferralFee,
         dataWipePrice: dataWipePrice,
+        paymentTermsEnabled: paymentTermsEnabled,
         updatedBy: updatedBy,
       );
 

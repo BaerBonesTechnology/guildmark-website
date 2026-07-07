@@ -7,6 +7,7 @@ import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/models/json_helpers.dart';
+import 'package:guildmark_api/repos/config_repo.dart';
 import 'package:guildmark_api/repos/order_repo.dart';
 import 'package:guildmark_api/repos/subscription_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
@@ -92,12 +93,26 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   final amount = listedPrice * quantity;
 
-  // ── 2. Determine fee rates ────────────────────────────────────────────────
+  // ── 2. Determine fee rates (from platform_config, snapshotted onto the
+  //       order) and enforce the payment-terms feature flag ─────────────────
+  final cfg = await ConfigRepo(db).get();
+
+  // Net 30/60 is feature-flagged off until financing partners are in place.
+  // Server-side check — must happen before the Square charge below.
+  if (paymentTerms != 'immediate' && !cfg.paymentTermsEnabled) {
+    return jsonError(
+      403,
+      'PAYMENT_TERMS_DISABLED',
+      'Deferred payment terms are not currently available. '
+          'Use immediate payment.',
+    );
+  }
+
   final subRepo = SubscriptionRepo(db);
   final sellerSub = await subRepo.findByCompany(sellerCompanyId);
-  final sFeePct = sellerFeePct(sellerSub?.plan ?? 'free');
-  const bFeePct = kBuyerFeePct;
-  final dFeePct = paymentTerms != 'immediate' ? kDeferralFeePct : 0.0;
+  final sFeePct = cfg.sellerFeeForPlan(sellerSub?.plan ?? 'free');
+  final bFeePct = cfg.buyerFee;
+  final dFeePct = paymentTerms != 'immediate' ? cfg.deferralFee : 0.0;
 
   final buyerFee = double.parse((amount * bFeePct).toStringAsFixed(2));
   final deferralF = double.parse((amount * dFeePct).toStringAsFixed(2));

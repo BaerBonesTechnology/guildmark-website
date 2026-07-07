@@ -22,10 +22,11 @@ class ConfigRepo {
     required double buyerFee,
     required double deferralFee,
     required double dataWipePrice,
+    required bool paymentTermsEnabled,
     String? updatedBy,
   }) async {
 
-    print('Updating platform_config with sellerFeeFree=$sellerFeeFree, sellerFeeStarter=$sellerFeeStarter, sellerFeeGrowth=$sellerFeeGrowth, sellerFeePro=$sellerFeePro, buyerFee=$buyerFee, deferralFee=$deferralFee, dataWipePrice=$dataWipePrice, updatedBy=$updatedBy');
+    print('Updating platform_config with sellerFeeFree=$sellerFeeFree, sellerFeeStarter=$sellerFeeStarter, sellerFeeGrowth=$sellerFeeGrowth, sellerFeePro=$sellerFeePro, buyerFee=$buyerFee, deferralFee=$deferralFee, dataWipePrice=$dataWipePrice, paymentTermsEnabled=$paymentTermsEnabled, updatedBy=$updatedBy');
 
     final rows = await _db.query(
       '''
@@ -37,6 +38,7 @@ class ConfigRepo {
         buyer_fee           = @buyerFee,
         deferral_fee        = @deferralFee,
         data_wipe_price     = @dataWipePrice,
+        payment_terms_enabled = @paymentTermsEnabled,
         updated_at          = now(),
         updated_by          = @updatedBy
       WHERE id = 1
@@ -50,6 +52,7 @@ class ConfigRepo {
         'buyerFee':         buyerFee,
         'deferralFee':      deferralFee,
         'dataWipePrice':    dataWipePrice,
+        'paymentTermsEnabled': paymentTermsEnabled,
         'updatedBy':        updatedBy,
       },
     );

@@ -7,24 +7,8 @@ library;
 
 import '../db/pool.dart';
 
-// ---------------------------------------------------------------------------
-// Constants — fee rates by plan
-// ---------------------------------------------------------------------------
-
-/// Returns the seller-side fee percentage (0–1) for a given plan string.
-/// Defaults to the free tier rate if the plan is unrecognised.
-double sellerFeePct(String plan) => switch (plan) {
-      'pro'     => 0.03,
-      'growth'  => 0.05,
-      'starter' => 0.06,
-      _         => 0.08, // free
-    };
-
-/// Buyer-side fee — flat across all tiers.
-const double kBuyerFeePct = 0.03;
-
-/// Net 30/60 deferral fee — flat across all tiers.
-const double kDeferralFeePct = 0.013;
+// NOTE: fee rates (seller/buyer/deferral) live in the platform_config table
+// and are read via ConfigRepo at order creation — do not hardcode them here.
 
 // ---------------------------------------------------------------------------
 // Model
@@ -56,9 +40,6 @@ class Subscription {
   final DateTime updatedAt;
 
   bool get isActive => status == 'active';
-
-  /// Seller-side fee percentage for this plan.
-  double get sellerFeeRate => sellerFeePct(plan);
 
   factory Subscription.fromRow(Map<String, dynamic> row) => Subscription(
         id:                   row['id'].toString(),

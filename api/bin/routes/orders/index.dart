@@ -5,6 +5,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/config_repo.dart';
 import 'package:guildmark_api/repos/order_repo.dart';
 import 'package:guildmark_api/repos/subscription_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
@@ -55,11 +56,13 @@ Future<Response> _create(RequestContext context, AuthPrincipal auth) async {
   final escrow = context.read<EscrowService>();
   final email = context.read<EmailService>();
 
-  // 1 — Resolve seller's subscription plan to determine fee rates.
+  // 1 — Fee rates come from platform_config, snapshotted onto the order.
+  //     Seller-side rate varies by the seller's subscription plan.
+  final cfg = await ConfigRepo(db).get();
   final subRepo = SubscriptionRepo(db);
   final subscription = await subRepo.findByCompany(auth.companyId);
-  final sFeePct = sellerFeePct(subscription?.plan ?? 'free');
-  const bFeePct = kBuyerFeePct;
+  final sFeePct = cfg.sellerFeeForPlan(subscription?.plan ?? 'free');
+  final bFeePct = cfg.buyerFee;
 
   // Optional: buyer can select Net 30/60 payment terms.
   final paymentTerms = (body?['payment_terms'] as String? ?? 'immediate');
@@ -69,7 +72,16 @@ Future<Response> _create(RequestContext context, AuthPrincipal auth) async {
       'payment_terms must be one of: immediate, net_30, net_60',
     );
   }
-  final dFeePct = paymentTerms != 'immediate' ? kDeferralFeePct : 0.0;
+  // Net 30/60 is feature-flagged off until financing partners are in place.
+  if (paymentTerms != 'immediate' && !cfg.paymentTermsEnabled) {
+    return jsonError(
+      403,
+      'PAYMENT_TERMS_DISABLED',
+      'Deferred payment terms are not currently available. '
+          'Use immediate payment.',
+    );
+  }
+  final dFeePct = paymentTerms != 'immediate' ? cfg.deferralFee : 0.0;
 
   // 2 — Create the order row (validates offer is accepted & belongs to caller).
   final Order order;
