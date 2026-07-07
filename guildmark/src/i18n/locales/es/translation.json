@@ -51,5 +51,12 @@
   "insights": {
     "title": "Investigación de Mercado",
     "subtitle": "Investigación de Mercado · 2025–2026"
+  },
+  "cookies": {
+    "ariaLabel": "Aviso de cookies",
+    "message": "GuildMark utiliza únicamente cookies esenciales para mantener tu sesión iniciada, además de ajustes locales de tema e idioma. No mostramos anuncios ni vendemos tus datos.",
+    "learnMore": "Política de privacidad",
+    "acceptAll": "Aceptar todo",
+    "essentialOnly": "Solo esenciales"
   }
 }

@@ -26,7 +26,7 @@ export function TermsOfService() {
       <div className="space-y-3">
         <p className="text-xs  text-primary uppercase tracking-widest">Legal</p>
         <h1 className="text-3xl font-bold ">Terms of Service</h1>
-        <p className="text-sm  text-muted-foreground">Effective Date: January 1, 2025 · Last Updated: May 1, 2025</p>
+        <p className="text-sm  text-muted-foreground">Effective Date: July 7, 2026 · Last Updated: July 7, 2026</p>
         <p className="text-sm text-foreground/80 leading-relaxed">
           These Terms of Service ("<strong>Terms</strong>") govern your access to and use of the GuildMark
           platform and related services operated by Baerhous Media Group, LLC ("<strong>GuildMark</strong>").
@@ -50,8 +50,8 @@ export function TermsOfService() {
         <Section n={2} title="The GuildMark Platform">
           <p>GuildMark provides the following primary services:</p>
           <Clause letter="a"><strong>Asset Management & Portfolio System (AMPS):</strong> Tools for tracking IT hardware assets, monitoring depreciation, syncing with MDM providers, and generating invoices.</Clause>
-          <Clause letter="b"><strong>B2B Marketplace:</strong> A platform for verified businesses to list, buy, and sell certified IT hardware. All transactions are facilitated through Escrow.com.</Clause>
-          <Clause letter="c"><strong>Data Wipe Service:</strong> Optional NIST 800-88 certified data destruction services at GuildMark's Orlando, Florida facility.</Clause>
+          <Clause letter="b"><strong>B2B Marketplace:</strong> A platform for verified businesses to list, buy, and sell certified IT hardware. Transactions are processed through our payment partners: Square for card payments and Escrow.com for escrow-protected transactions.</Clause>
+          <Clause letter="c"><strong>Data Wipe Service:</strong> Optional NIST 800-88 data destruction and OS reimaging services, performed by GuildMark or by certified partners in the GuildMark partner network.</Clause>
           <Clause letter="d"><strong>Market Valuation:</strong> AI-powered real-time hardware valuations based on market data. Valuations are estimates and not guarantees of resale value.</Clause>
         </Section>
 
@@ -65,10 +65,12 @@ export function TermsOfService() {
         </Section>
 
         <Section n={4} title="Fees and Payments">
-          <Clause letter="a"><strong>Platform Fee:</strong> 12% of the final sale price on each completed marketplace transaction, deducted from seller proceeds prior to disbursement.</Clause>
-          <Clause letter="b"><strong>Data Wipe Service:</strong> A flat per-unit rate based on device type and volume, quoted at time of service request.</Clause>
-          <Clause letter="c"><strong>Shipping:</strong> Charged at actual carrier cost. Prepaid labels for 1–5 units; pallet pickup available for 6+ units.</Clause>
-          <p>All payments are processed through Escrow.com. GuildMark does not store payment card information. Fees are subject to change with 30 days' notice.</p>
+          <Clause letter="a"><strong>Seller Platform Fee:</strong> A percentage of the final sale price on each completed marketplace transaction, determined by your subscription plan (currently 8% Free, 6% Starter, 5% Growth, 3% Pro), locked in at order creation and deducted from seller proceeds prior to disbursement.</Clause>
+          <Clause letter="b"><strong>Buyer Transaction Fee:</strong> A flat 3% of the final sale price, added at checkout across all plans.</Clause>
+          <Clause letter="c"><strong>AMPS Subscriptions:</strong> Recurring subscription fees for paid AMPS plans, billed through Square at the rates shown at the time of purchase.</Clause>
+          <Clause letter="d"><strong>Data Wipe Service:</strong> A flat per-unit rate based on device type and volume, quoted at time of service request.</Clause>
+          <Clause letter="e"><strong>Shipping:</strong> Charged at actual carrier cost. Prepaid labels for 1–5 units; pallet pickup available for 6+ units.</Clause>
+          <p>All marketplace purchases require payment in full at the time of order; GuildMark does not currently offer deferred payment terms. Payments are processed through Square and Escrow.com — GuildMark does not store payment card information. Fees are subject to change with 30 days' notice.</p>
         </Section>
 
         <Section n={5} title="Intellectual Property">
