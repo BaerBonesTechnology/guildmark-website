@@ -27,10 +27,21 @@ class Aw {
   static const String subscriptionInvoices = 'subscription_invoices';
   static const String platformConfig = 'platform_config';
   static const String guildmarkEmployees = 'guildmark_employees';
+  static const String employeeGroups = 'employee_groups';
+  static const String employeeGroupMembers = 'employee_group_members';
+  static const String employeeInvites = 'employee_invites';
+  static const String employeePasskeys = 'employee_passkeys';
+  static const String employeePasskeyChallenges = 'employee_passkey_challenges';
   static const String passwordResetTokens = 'password_reset_tokens';
+  static const String assetValuations = 'asset_valuations';
   static const String partners = 'partners';
   static const String partnerRefreshTokens = 'partner_refresh_tokens';
   static const String partnerResetTokens = 'partner_reset_tokens';
+  static const String partnerServiceAssignments = 'partner_service_assignments';
+  static const String partnerPayouts = 'partner_payouts';
+
+  /// `$id` of the single platform_config row (singleton table).
+  static const String platformConfigRowId = 'config';
 }
 
 /// Postgres UUIDs contain hyphens, which are illegal in an Appwrite `$id`.

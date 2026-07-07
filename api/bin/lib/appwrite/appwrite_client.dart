@@ -27,6 +27,9 @@ class AppwriteService {
 
   // Lazily-constructed service handles. Construct per use — they are cheap
   // value wrappers around [client].
+  /// Preferred data API (Appwrite 1.8+). New repos use this.
+  TablesDB get tablesDB => TablesDB(client);
+  @Deprecated('Use tablesDB — Databases is the pre-1.8 API')
   Databases get databases => Databases(client);
   Users get users => Users(client);
   Storage get storage => Storage(client);
