@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
-import 'package:postgres/postgres.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/user_repo.dart';
+import 'package:guildmark_api/repos/appwrite/user_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
+
+import 'package:dart_appwrite/dart_appwrite.dart' show ID, Query;
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -24,38 +25,53 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('email is required');
   }
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
   final mail = context.read<EmailService>();
   final cfg = context.read<AppConfig>();
 
   // Always return 200 — never disclose whether the address exists.
-  final user = await UserRepo(db).findByEmail(email);
+  final user = await UserRepo(aw).findByEmail(email);
   if (user != null) {
     final plaintext = _randomToken();
     final hash = _hash(plaintext);
-    final expiresAt = DateTime.now().toUtc().add(const Duration(hours: 1));
+    final now = DateTime.now().toUtc();
+    final expiresAt = now.add(const Duration(hours: 1));
+    final db = aw.tablesDB;
 
-    // Revoke any existing unused tokens for this user before issuing a new one.
-    // This ensures only the most-recently-requested token is ever valid,
-    // preventing a confused-deputy scenario where an older intercepted email
-    // can still be used after the user requested a fresh reset.
-    await db.query(
-      '''
-      UPDATE password_reset_tokens
-         SET used_at = NOW()
-       WHERE user_id = @uid
-         AND used_at IS NULL
-         AND expires_at > NOW()
-      ''',
-      parameters: {'uid': user.id},
+    // Revoke any existing unused tokens for this user before issuing a new
+    // one, so only the most-recently-requested token is ever valid. No
+    // multi-row UPDATE in Appwrite — list then update each.
+    final live = await db.listRows(
+      databaseId: Aw.databaseId,
+      tableId: Aw.passwordResetTokens,
+      queries: [
+        Query.equal('user_id', user.id),
+        Query.isNull('used_at'),
+        Query.greaterThan('expires_at', now.toIso8601String()),
+        Query.limit(100),
+      ],
     );
+    for (final row in live.rows) {
+      await db.updateRow(
+        databaseId: Aw.databaseId,
+        tableId: Aw.passwordResetTokens,
+        rowId: row.$id,
+        data: {'used_at': now.toIso8601String()},
+      );
+    }
 
-    await db.query(
-      '''
-      INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-      VALUES (@uid, @hash, @exp)
-      ''',
-      parameters: {'uid': user.id, 'hash': hash, 'exp': expiresAt},
+    await db.createRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.passwordResetTokens,
+      rowId: ID.unique(),
+      data: {
+        'user_id': user.id,
+        'token_hash': hash,
+        'expires_at': expiresAt.toIso8601String(),
+      },
     );
 
     final frontendUrl = cfg.corsOrigin;

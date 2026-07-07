@@ -1,10 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -55,27 +55,22 @@ Future<Response> onRequest(RequestContext context) async {
       return jsonError(400, 'INVALID_JSON', 'Could not parse request body');
     }
 
-    // eBay notification structure:
-    // {
-    //   "metadata": { "topic": "MARKETPLACE_ACCOUNT_DELETION", ... },
-    //   "notification": {
-    //     "data": {
-    //       "userId":    "<eBay user ID>",
-    //       "username":  "<eBay username>"
-    //     }
-    //   }
-    // }
     final notification = payload['notification'] as Map<String, dynamic>?;
     final data = notification?['data'] as Map<String, dynamic>?;
     final ebayUserId = data?['userId'] as String?;
     final ebayUsername = data?['username'] as String?;
 
+    // No eBay user identifiers are stored anywhere in the current schema —
+    // eBay is used only as an anonymous market-pricing source — so there is
+    // nothing to anonymise. (The old Postgres handler updated a
+    // listings.ebay_seller_id column that never existed in any migration;
+    // that write would have failed at runtime.) Log receipt for audit and
+    // acknowledge. If eBay identifiers are ever persisted, wipe them here.
     if (ebayUserId != null || ebayUsername != null) {
-      final db = context.read<Db>();
-      await _anonymiseEbayUser(
-        db: db,
-        ebayUserId: ebayUserId,
-        ebayUsername: ebayUsername,
+      stdout.writeln(
+        '[ebay] account-deletion notice received for '
+        'userId=${ebayUserId ?? '-'} username=${ebayUsername ?? '-'} — '
+        'no eBay identifiers stored; nothing to anonymise.',
       );
     }
 
@@ -84,35 +79,4 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   return jsonError(405, 'METHOD_NOT_ALLOWED', 'GET or POST only');
-}
-
-// ---------------------------------------------------------------------------
-// Anonymisation
-// ---------------------------------------------------------------------------
-
-Future<void> _anonymiseEbayUser({
-  required Db db,
-  String? ebayUserId,
-  String? ebayUsername,
-}) async {
-  // Nullify ebay_seller_id on any listing that references this account.
-  // The column is nullable — we set it to NULL rather than deleting the
-  // listing so the seller's own GuildMark record is preserved.
-  if (ebayUserId != null) {
-    await db.query(
-      '''
-      UPDATE listings
-      SET ebay_seller_id = NULL
-      WHERE ebay_seller_id = @uid
-      ''',
-      parameters: {'uid': ebayUserId},
-    );
-  }
-
-  // If we ever cache eBay sold-listings data for valuation, wipe it here.
-  // Example placeholder — extend as the schema grows:
-  // await db.query(
-  //   'DELETE FROM ebay_valuation_cache WHERE ebay_user_id = @uid',
-  //   parameters: {'uid': ebayUserId},
-  // );
 }

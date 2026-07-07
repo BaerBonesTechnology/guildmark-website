@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/config_repo.dart';
-import 'package:guildmark_api/repos/order_repo.dart';
-import 'package:guildmark_api/repos/subscription_repo.dart';
+import 'package:guildmark_api/repos/appwrite/config_repo.dart';
+import 'package:guildmark_api/repos/appwrite/order_repo.dart';
+import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 
@@ -27,7 +27,11 @@ Future<Response> onRequest(RequestContext context) async {
 // ---------------------------------------------------------------------------
 
 Future<Response> _list(RequestContext context, AuthPrincipal auth) async {
-  final repo = OrderRepo(context.read<Db>());
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final repo = OrderRepo(aw);
   final orders = await repo.findByCompany(auth.companyId);
   final stats = await repo.statsForCompany(auth.companyId);
 
@@ -51,15 +55,18 @@ Future<Response> _create(RequestContext context, AuthPrincipal auth) async {
     return badRequest('offer_id is required');
   }
 
-  final db = context.read<Db>();
-  final repo = OrderRepo(db);
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final repo = OrderRepo(aw);
   final escrow = context.read<EscrowService>();
   final email = context.read<EmailService>();
 
   // 1 — Fee rates come from platform_config, snapshotted onto the order.
   //     Seller-side rate varies by the seller's subscription plan.
-  final cfg = await ConfigRepo(db).get();
-  final subRepo = SubscriptionRepo(db);
+  final cfg = await ConfigRepo(aw).get();
+  final subRepo = SubscriptionRepo(aw);
   final subscription = await subRepo.findByCompany(auth.companyId);
   final sFeePct = cfg.sellerFeeForPlan(subscription?.plan ?? 'free');
   final bFeePct = cfg.buyerFee;
