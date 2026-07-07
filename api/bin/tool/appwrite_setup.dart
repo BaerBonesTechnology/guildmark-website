@@ -16,13 +16,17 @@ library;
 import 'dart:io';
 
 import 'package:dart_appwrite/dart_appwrite.dart';
+import 'package:dart_appwrite/enums.dart';
 
 import 'package:guildmark_api/appwrite/collections.dart';
 
-late final Databases _db;
+late final TablesDB _db;
 
 Future<void> main() async {
-  final endpoint = _env('APPWRITE_ENDPOINT', fallback: 'http://localhost:8444/v1');
+  final endpoint = _env(
+    'APPWRITE_ENDPOINT',
+    fallback: 'http://localhost:8444/v1',
+  );
   final projectId = _require('APPWRITE_PROJECT_ID');
   final apiKey = _require('APPWRITE_API_KEY');
 
@@ -30,7 +34,7 @@ Future<void> main() async {
       .setEndpoint(endpoint)
       .setProject(projectId)
       .setKey(apiKey);
-  _db = Databases(client);
+  _db = TablesDB(client);
 
   await _ensureDatabase(Aw.databaseId, 'GuildMark');
 
@@ -56,28 +60,34 @@ Future<void> _setupMailingList() async {
   // processes them asynchronously, so give them a moment on a cold project.
   await Future<void>.delayed(const Duration(seconds: 2));
 
-  await _index(c, 'email_unique', IndexType.unique, ['email']);
-  await _index(c, 'created_idx', IndexType.key, [r'$createdAt'], orders: ['DESC']);
+  await _index(c, 'email_unique', TablesDBIndexType.unique, ['email']);
+  await _index(
+    c,
+    'created_idx',
+    TablesDBIndexType.key,
+    [r'$createdAt'],
+    orders: [OrderBy.desc],
+  );
 }
 
 // ── Helpers (idempotent: swallow 409 "already exists") ──────────────────────
 
 Future<void> _ensureDatabase(String id, String name) => _ignoreConflict(
-      () => _db.create(databaseId: id, name: name),
-      '[setup] database $id',
-    );
+  () => _db.create(databaseId: id, name: name),
+  '[setup] database $id',
+);
 
 Future<void> _ensureCollection(String id, String name) => _ignoreConflict(
-      () => _db.createCollection(
-        databaseId: Aw.databaseId,
-        collectionId: id,
-        name: name,
-        // Server-side access via API key; tighten per-collection later.
-        permissions: [Permission.read(Role.any())],
-        documentSecurity: true,
-      ),
-      '[setup] collection $id',
-    );
+  () => _db.createTable(
+    databaseId: Aw.databaseId,
+    tableId: id,
+    name: name,
+    // Server-side access via API key; tighten per-collection later.
+    permissions: [Permission.read(Role.any())],
+    rowSecurity: true,
+  ),
+  '[setup] collection $id',
+);
 
 Future<void> _str(
   String collection,
@@ -85,59 +95,59 @@ Future<void> _str(
   required int size,
   required bool required,
   String? xdefault,
-}) =>
-    _ignoreConflict(
-      () => _db.createStringAttribute(
-        databaseId: Aw.databaseId,
-        collectionId: collection,
-        key: key,
-        size: size,
-        xrequired: required,
-        xdefault: xdefault,
-      ),
-      '[setup]   attr $collection.$key (string)',
-    );
+}) => _ignoreConflict(
+  () => _db.createTextColumn(
+    databaseId: Aw.databaseId,
+    tableId: collection,
+    key: key,
+    xrequired: required,
+    xdefault: xdefault,
+  ),
+  '[setup]   attr $collection.$key (string)',
+);
 
 Future<void> _email(String collection, String key, {required bool required}) =>
     _ignoreConflict(
-      () => _db.createEmailAttribute(
+      () => _db.createEmailColumn(
         databaseId: Aw.databaseId,
-        collectionId: collection,
+        tableId: collection,
         key: key,
         xrequired: required,
       ),
       '[setup]   attr $collection.$key (email)',
     );
 
-Future<void> _datetime(String collection, String key, {required bool required}) =>
-    _ignoreConflict(
-      () => _db.createDatetimeAttribute(
-        databaseId: Aw.databaseId,
-        collectionId: collection,
-        key: key,
-        xrequired: required,
-      ),
-      '[setup]   attr $collection.$key (datetime)',
-    );
+Future<void> _datetime(
+  String collection,
+  String key, {
+  required bool required,
+}) => _ignoreConflict(
+  () => _db.createDatetimeColumn(
+    databaseId: Aw.databaseId,
+    tableId: collection,
+    key: key,
+    xrequired: required,
+  ),
+  '[setup]   attr $collection.$key (datetime)',
+);
 
 Future<void> _index(
   String collection,
   String key,
-  IndexType type,
+  TablesDBIndexType type,
   List<String> attributes, {
-  List<String>? orders,
-}) =>
-    _ignoreConflict(
-      () => _db.createIndex(
-        databaseId: Aw.databaseId,
-        collectionId: collection,
-        key: key,
-        type: type,
-        attributes: attributes,
-        orders: orders,
-      ),
-      '[setup]   index $collection.$key',
-    );
+  List<OrderBy>? orders,
+}) => _ignoreConflict(
+  () => _db.createIndex(
+    databaseId: Aw.databaseId,
+    tableId: collection,
+    key: key,
+    type: type,
+    columns: attributes,
+    orders: orders,
+  ),
+  '[setup]   index $collection.$key',
+);
 
 Future<void> _ignoreConflict(Future<void> Function() op, String label) async {
   try {
