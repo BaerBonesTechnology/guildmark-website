@@ -614,13 +614,24 @@ Future<void> _setupPartnerPayouts() async {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Mirrors migration 0009's singleton seed: one config row with defaults.
-/// Column defaults fill the values; we only pin the row's `$id`.
+/// Values are explicit — Appwrite rejects createRow with empty data
+/// (column defaults only fill fields omitted from a non-empty write).
 Future<void> _seedPlatformConfig() => _ignoreConflict(
   () => _db.createRow(
     databaseId: Aw.databaseId,
     tableId: Aw.platformConfig,
     rowId: Aw.platformConfigRowId,
-    data: const <String, dynamic>{},
+    data: const <String, dynamic>{
+      'seller_fee_free': 0.08,
+      'seller_fee_starter': 0.06,
+      'seller_fee_growth': 0.05,
+      'seller_fee_pro': 0.03,
+      'buyer_fee': 0.03,
+      'deferral_fee': 0.013,
+      'data_wipe_price_cents': 800,
+      // WS2 feature flag — Net 30/60 stays OFF until financing partners exist.
+      'payment_terms_enabled': false,
+    },
   ),
   '[setup] seed platform_config/${Aw.platformConfigRowId}',
 );
