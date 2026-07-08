@@ -1,16 +1,21 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/config_repo.dart';
+import 'package:guildmark_api/repos/appwrite/config_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
   if (principal == null) return unauthorized();
   if (principal.role != 'admin') return forbidden();
 
-  final repo = ConfigRepo(context.read<Db>());
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
+  final repo = ConfigRepo(aw);
 
   switch (context.request.method) {
     case HttpMethod.get:
@@ -41,6 +46,15 @@ Future<Response> onRequest(RequestContext context) async {
       for (final k in required) {
         if (body[k] == null) return badRequest('Missing field: $k');
       }
+
+      // Feature flag — must be an explicit boolean when present; existing
+      // value is kept when the field is omitted (older devdash clients).
+      final ptRaw = body['payment_terms_enabled'];
+      if (ptRaw != null && ptRaw is! bool) {
+        return badRequest('payment_terms_enabled must be a boolean');
+      }
+      final paymentTermsEnabled =
+          ptRaw as bool? ?? (await repo.get()).paymentTermsEnabled;
 
       final sellerFeeFree = parse('seller_fee_free')!;
       final sellerFeeStarter = parse('seller_fee_starter')!;
@@ -77,6 +91,7 @@ Future<Response> onRequest(RequestContext context) async {
         buyerFee: buyerFee,
         deferralFee: deferralFee,
         dataWipePrice: dataWipePrice,
+        paymentTermsEnabled: paymentTermsEnabled,
         updatedBy: updatedBy,
       );
 

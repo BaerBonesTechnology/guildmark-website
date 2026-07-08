@@ -39,3 +39,7 @@ doppler.yaml
 .env.appwrite
 /data/keyfile/
 GCP_Migration_Plan.md
+api/POSTGRES_TO_APPWRITE.md
+PLAN.md
+/api/bin/.dart_tool
+/.claude

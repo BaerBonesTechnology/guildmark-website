@@ -7,6 +7,7 @@
 library;
 
 import 'package:dart_appwrite/dart_appwrite.dart';
+import 'package:dart_appwrite/models.dart';
 
 import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/appwrite/collections.dart';
@@ -39,7 +40,7 @@ class MailingListEntry {
 
   /// Build from an Appwrite document. `$id`/`$createdAt` are system fields;
   /// the rest come from `data`.
-  factory MailingListEntry.fromDocument(models.Document doc) {
+  factory MailingListEntry.fromDocument(Document doc) {
     final d = doc.data;
     final contacted = d['contacted_at'] as String?;
     return MailingListEntry(
@@ -123,7 +124,7 @@ class MailingListRepo {
       collectionId: Aw.mailingList,
       queries: queries,
     );
-    return res.documents.map(MailingListEntry.fromDocument).toList();
+    return res.documents.map<MailingListEntry>(MailingListEntry.fromDocument).toList();
   }
 
   Future<int> count({String? source}) async {

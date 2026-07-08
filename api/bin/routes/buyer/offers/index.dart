@@ -3,21 +3,25 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/lookups.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/offer_repo.dart';
+import 'package:guildmark_api/repos/appwrite/offer_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   switch (context.request.method) {
     case HttpMethod.get:
-      final offers = await OfferRepo(
-        context.read<Db>(),
-      ).findByBuyerCompany(auth.companyId);
+      final offers = await OfferRepo(aw).findByBuyerCompany(auth.companyId);
       return Response.json(body: offers.map((o) => o.toJson()).toList());
 
     case HttpMethod.post:
@@ -32,8 +36,7 @@ Future<Response> onRequest(RequestContext context) async {
       }
 
       try {
-        final db = context.read<Db>();
-        final offer = await OfferRepo(db).create(
+        final offer = await OfferRepo(aw).create(
           listingId: listingId,
           buyerCompanyId: auth.companyId,
           offerPrice: offerPrice,
@@ -41,29 +44,19 @@ Future<Response> onRequest(RequestContext context) async {
           message: message,
         );
 
-        // Notify seller (fire and forget)
+        // Notify seller (fire and forget). Was a 4-table JOIN — now stitched
+        // lookups via lib/appwrite/lookups.dart.
+        final emailService = context.read<EmailService>();
         unawaited(() async {
           try {
-            final rows = await db.query(
-              '''
-              SELECT u.email AS seller_email, a.model_name AS product_name
-              FROM listings l
-              JOIN companies c ON c.id = l.company_id
-              JOIN users u ON u.company_id = c.id
-              JOIN assets a ON a.id = l.asset_id
-              WHERE l.id = @lid
-              ORDER BY u.role = 'admin' DESC, u.created_at
-              LIMIT 1
-              ''',
-              parameters: {'lid': listingId},
-            );
-            if (rows.isEmpty) return;
-            final row = rows.first.toColumnMap();
-            final sellerEmail = row['seller_email'] as String?;
-            final productName = row['product_name'] as String? ?? 'IT Asset';
+            final sellerCompanyId =
+                await listingSellerCompanyId(aw, listingId);
+            if (sellerCompanyId == null) return;
+            final sellerEmail = await companyContactEmail(aw, sellerCompanyId);
             if (sellerEmail == null) return;
+            final productName =
+                await listingProductName(aw, listingId) ?? 'IT Asset';
 
-            final emailService = context.read<EmailService>();
             await emailService.sendOfferReceived(
               toEmail: sellerEmail,
               productName: productName,

@@ -8,12 +8,13 @@ library;
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:dart_appwrite/dart_appwrite.dart' show Query;
 import 'package:dart_frog/dart_frog.dart';
-import 'package:postgres/postgres.dart';
 
-import '../../lib/auth/password.dart';
-import '../../lib/db/pool.dart';
-import '../../lib/http_helpers.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/auth/password.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -29,50 +30,71 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('new_password must be at least 8 characters');
   }
 
-  final db   = context.read<Db>();
-  final hash = sha256.convert(utf8.encode(token)).toString();
-
-  // Validate and mark the token used atomically.
-  final userId = await db.tx<String?>((tx) async {
-    final rows = await tx.execute(
-      Sql.named('''
-        SELECT id, user_id FROM password_reset_tokens
-        WHERE token_hash = @hash
-          AND used_at IS NULL
-          AND expires_at > now()
-        FOR UPDATE
-      '''),
-      parameters: {'hash': hash},
-    );
-    if (rows.isEmpty) return null;
-
-    final row     = rows.first.toColumnMap();
-    final tokenId = row['id'] as String;
-    final uid     = row['user_id'] as String;
-
-    await tx.execute(
-      Sql.named('UPDATE password_reset_tokens SET used_at = now() WHERE id = @id'),
-      parameters: {'id': tokenId},
-    );
-
-    return uid;
-  });
-
-  if (userId == null) {
-    return jsonError(422, 'TOKEN_INVALID', 'Reset token is invalid or has expired');
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
+  final db = aw.tablesDB;
+  final hash = sha256.convert(utf8.encode(token)).toString();
+  final now = DateTime.now().toUtc();
+
+  // Look up a live token and mark it used. Appwrite has no transactions or
+  // FOR UPDATE: two concurrent redemptions of the SAME token could both pass
+  // the read. Accepted risk (token is secret, single email recipient) — the
+  // update below is the commit point and is idempotent.
+  final rows = await db.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.passwordResetTokens,
+    queries: [
+      Query.equal('token_hash', hash),
+      Query.isNull('used_at'),
+      Query.greaterThan('expires_at', now.toIso8601String()),
+      Query.limit(1),
+    ],
+  );
+  if (rows.rows.isEmpty) {
+    return jsonError(
+      422,
+      'TOKEN_INVALID',
+      'Reset token is invalid or has expired',
+    );
+  }
+  final tokenRow = rows.rows.first;
+  final userId = tokenRow.data['user_id'] as String;
+
+  await db.updateRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.passwordResetTokens,
+    rowId: tokenRow.$id,
+    data: {'used_at': now.toIso8601String()},
+  );
 
   final newHash = hashPassword(newPassword);
-  await db.query(
-    'UPDATE users SET password_hash = @h WHERE id = @uid',
-    parameters: {'h': newHash, 'uid': userId},
+  await db.updateRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.users,
+    rowId: userId,
+    data: {'password_hash': newHash},
   );
 
   // Revoke all existing refresh tokens so other sessions are invalidated.
-  await db.query(
-    'UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = @uid AND revoked_at IS NULL',
-    parameters: {'uid': userId},
+  final live = await db.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.refreshTokens,
+    queries: [
+      Query.equal('user_id', userId),
+      Query.isNull('revoked_at'),
+      Query.limit(100),
+    ],
   );
+  for (final row in live.rows) {
+    await db.updateRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.refreshTokens,
+      rowId: row.$id,
+      data: {'revoked_at': now.toIso8601String()},
+    );
+  }
 
   return Response.json(body: {'message': 'Password updated successfully'});
 }

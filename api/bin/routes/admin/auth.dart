@@ -1,13 +1,15 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:dart_appwrite/dart_appwrite.dart' show ID, Query;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/crypto_utils.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/webauthn/webauthn.dart';
 
@@ -28,69 +30,90 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
   // ── 1. Employee table lookup ─────────────────────────────────────────────
-  final rows = await db.query(
-    '''
-    SELECT id::text, email::text, password_hash, full_name, role::text
-    FROM guildmark_employees
-    WHERE email = @email AND is_active = true
-    LIMIT 1
-    ''',
-    parameters: {'email': email},
+  final rows = await db.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.guildmarkEmployees,
+    queries: [
+      Query.equal('email', email),
+      Query.equal('is_active', true),
+      Query.limit(1),
+    ],
   );
 
-  if (rows.isNotEmpty) {
-    final row = rows.first.toColumnMap();
-    final hash = row['password_hash'].toString();
+  if (rows.rows.isNotEmpty) {
+    final row = rows.rows.first;
+    final data = row.data;
+    final hash = data['password_hash'].toString();
 
-    if (!verifyPassword(password, hash))
+    if (!verifyPassword(password, hash)) {
       return unauthorized('Invalid credentials');
+    }
 
-    final id = row['id'].toString();
-    final role = row['full_name'] != null ? row['role'].toString() : 'admin';
-    final fullName = row['full_name']?.toString() ?? 'Employee';
+    final id = row.$id;
+    final role = data['full_name'] != null
+        ? data['role'].toString()
+        : 'admin';
+    final fullName = data['full_name']?.toString() ?? 'Employee';
 
     // Update last_login_at
-    await db.query(
-      'UPDATE guildmark_employees SET last_login_at = now() WHERE id = @id',
-      parameters: {'id': id},
+    await db.updateRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.guildmarkEmployees,
+      rowId: id,
+      data: {'last_login_at': DateTime.now().toUtc().toIso8601String()},
     );
 
     // ── Passkey 2FA (only when WEBAUTHN_RP_ID is configured) ────────────────
     if (cfg.webauthnRpId != null) {
-      // Check for existing passkeys
-      final pkRows = await db.query(
-        '''
-        SELECT credential_id
-        FROM employee_passkeys
-        WHERE employee_id = @eid
-        ORDER BY created_at ASC
-        ''',
-        parameters: {'eid': id},
+      // Check for existing passkeys (an employee has at most a handful).
+      final pkRows = await db.listRows(
+        databaseId: Aw.databaseId,
+        tableId: Aw.employeePasskeys,
+        queries: [
+          Query.equal('employee_id', id),
+          Query.orderAsc(r'$createdAt'),
+          Query.limit(100),
+        ],
       );
 
-      if (pkRows.isNotEmpty) {
+      if (pkRows.rows.isNotEmpty) {
         // ── Path A: employee has passkeys — issue authentication challenge ──
         final challengeBytes = _randomBytes(32);
         final challengeB64 = toBase64Url(challengeBytes);
 
-        final chalRows = await db.query(
-          '''
-          INSERT INTO employee_passkey_challenges
-            (employee_id, challenge, type)
-          VALUES (@eid, @chal, 'authentication')
-          RETURNING id::text
-          ''',
-          parameters: {'eid': id, 'chal': challengeB64},
+        // PG set expires_at via a column default (now() + 5 minutes);
+        // Appwrite has no expression defaults, so compute it here.
+        final chalRow = await db.createRow(
+          databaseId: Aw.databaseId,
+          tableId: Aw.employeePasskeyChallenges,
+          rowId: ID.unique(),
+          data: {
+            'employee_id': id,
+            'challenge': challengeB64,
+            'type': 'authentication',
+            'expires_at': DateTime.now()
+                .toUtc()
+                .add(const Duration(minutes: 5))
+                .toIso8601String(),
+          },
         );
-        final challengeId = chalRows.first.toColumnMap()['id'].toString();
+        final challengeId = chalRow.$id;
 
-        final allowCredentials = pkRows.map((r) {
-          final cred = r.toColumnMap()['credential_id'].toString();
-          return {'id': cred, 'type': 'public-key'};
-        }).toList();
+        final allowCredentials = pkRows.rows
+            .map(
+              (r) => {
+                'id': r.data['credential_id'].toString(),
+                'type': 'public-key',
+              },
+            )
+            .toList();
 
         return Response.json(
           body: {

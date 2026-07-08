@@ -17,6 +17,7 @@ class PlatformConfig {
     required this.buyerFee,
     required this.deferralFee,
     required this.dataWipePrice,
+    required this.paymentTermsEnabled,
     required this.updatedAt,
     this.updatedBy,
   });
@@ -29,6 +30,7 @@ class PlatformConfig {
     buyerFee:         numToDoubleOrNull(row['buyer_fee'])          ?? 0.0,
     deferralFee:      numToDoubleOrNull(row['deferral_fee'])       ?? 0.0,
     dataWipePrice:    numToDoubleOrNull(row['data_wipe_price'])    ?? 0.0,
+    paymentTermsEnabled: row['payment_terms_enabled'] as bool? ?? false,
     updatedAt:        (row['updated_at'] as DateTime).toUtc().toIso8601String(),
     updatedBy:        row['updated_by'] as String?,
   );
@@ -40,6 +42,11 @@ class PlatformConfig {
   final double buyerFee;
   final double deferralFee;
   final double dataWipePrice;
+
+  /// Feature flag: Net 30/60 deferred payment terms. Off until financing
+  /// partners exist — order routes reject net_30/net_60 while false.
+  final bool paymentTermsEnabled;
+
   final String updatedAt;
   final String? updatedBy;
 

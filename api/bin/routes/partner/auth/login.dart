@@ -1,11 +1,11 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/partner_repo.dart';
+import 'package:guildmark_api/repos/appwrite/partner_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -19,7 +19,11 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('email and password required');
   }
 
-  final repo = PartnerRepo(context.read<Db>());
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final repo = PartnerRepo(aw);
   final partner = await repo.findByEmail(email);
 
   // Same vague error either way — never disclose whether the email exists.

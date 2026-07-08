@@ -1,9 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/invoice_repo.dart';
+import 'package:guildmark_api/repos/appwrite/invoice_repo.dart';
 
 const _allowedTypes = {'disposal', 'loss', 'sale', 'donation'};
 
@@ -35,8 +35,13 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   try {
-    final invoice = await InvoiceRepo(context.read<Db>()).generate(
+    final invoice = await InvoiceRepo(aw).generate(
       companyId: auth.companyId,
       assetId: assetId,
       invoiceType: invoiceType,

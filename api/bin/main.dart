@@ -9,8 +9,6 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/migrations.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
@@ -19,11 +17,6 @@ import 'package:guildmark_api/services/square_service.dart';
 
 Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final cfg = AppConfig.fromEnv();
-  final db = await Db.connect(cfg.databaseUrl);
-
-  // Apply any pending SQL migrations before serving traffic.
-  final applied = await MigrationRunner(db).run();
-  if (applied > 0) stdout.writeln('[boot] applied $applied migration(s)');
 
   // ML service is optional — the API degrades gracefully when unavailable.
   // Routes that require ML must check for a null MlClient and return a 503.
@@ -37,15 +30,18 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     );
   }
 
-  // Appwrite is optional — enabled once APPWRITE_PROJECT_ID and APPWRITE_API_KEY
-  // are set. Runs alongside Postgres during the migration.
+  // Appwrite is THE datastore (Postgres was removed at the cutover — see
+  // api/POSTGRES_TO_APPWRITE.md). The provider stays nullable so the server
+  // can boot for diagnostics, but every data route returns 503 until
+  // APPWRITE_PROJECT_ID and APPWRITE_API_KEY are set.
   final appwrite = AppwriteService.fromConfig(cfg);
   if (appwrite == null) {
-    stdout.writeln(
-      '[boot] APPWRITE_PROJECT_ID/APPWRITE_API_KEY not set — Appwrite disabled.',
+    stderr.writeln(
+      '[boot] WARNING: APPWRITE_PROJECT_ID/APPWRITE_API_KEY not set — '
+      'no datastore; all data routes will return 503.',
     );
   } else {
-    stdout.writeln('[boot] Appwrite enabled → ${appwrite.endpoint}');
+    stdout.writeln('[boot] Appwrite datastore → ${appwrite.endpoint}');
   }
 
   final jwt = JwtService(
@@ -96,7 +92,6 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   // Inject singletons. Routes read via `context.read<T>()`.
   final wrapped = handler
       .use(provider<AppConfig>((_) => cfg))
-      .use(provider<Db>((_) => db))
       .use(provider<MlClient?>((_) => ml))
       .use(provider<AppwriteService?>((_) => appwrite))
       .use(provider<JwtService>((_) => jwt))

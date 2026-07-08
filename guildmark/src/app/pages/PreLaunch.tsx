@@ -354,7 +354,7 @@ export function PreLaunch() {
                 <strong>CSV bulk import</strong> — upload hundreds of assets at once; market value calculated automatically
               </FeatureItem>
               <FeatureItem>
-                <strong>The payment option you need</strong> — We are business tailored and offer a multitude of payment options: Escrow, Credit Card, ACH, and Net 30/60
+                <strong>The payment option you need</strong> — We are business tailored and offer secure payment options: Escrow, Credit Card, and ACH
               </FeatureItem>
               <FeatureItem>
                 <strong>Optional data wipe</strong> — ship to our Orlando facility, get paid on arrival; Certified to your needs such as NIST 800-88, R2v3, HIPAA, and DOD
@@ -385,7 +385,7 @@ export function PreLaunch() {
             {
               n: 3,
               title: "Get paid, securely",
-              body:"We offer multiple secure payment options through our trusted Payment Partners: Escrow, Credit Card, ACH, and Net 30/60",
+              body:"We offer multiple secure payment options through our trusted Payment Partners: Escrow, Credit Card, and ACH",
             },
           ].map(({ n, title, body }) => (
             <div key={n} className="flex gap-4">

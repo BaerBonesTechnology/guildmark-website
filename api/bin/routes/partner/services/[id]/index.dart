@@ -1,7 +1,10 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException;
+import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 // Valid status transitions: current → allowed next states.
@@ -34,25 +37,32 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   if (newStatus == null) return badRequest('status is required');
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
   // Fetch the current assignment — must belong to this partner.
-  final current = await db.query(
-    '''
-    SELECT id::text, status::text, service_type, cert_url, tracking_number
-    FROM   partner_service_assignments
-    WHERE  id = @id AND partner_id = @pid
-    LIMIT 1
-    ''',
-    parameters: {'id': id, 'pid': principal.partnerId},
-  );
-  if (current.isEmpty) {
+  final Row current;
+  try {
+    current = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.partnerServiceAssignments,
+      rowId: id,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) {
+      return jsonError(404, 'NOT_FOUND', 'Assignment not found');
+    }
+    rethrow;
+  }
+  if (current.data['partner_id'] != principal.partnerId) {
     return jsonError(404, 'NOT_FOUND', 'Assignment not found');
   }
 
-  final row = current.first.toColumnMap();
-  final currentStatus = row['status'].toString();
-  final serviceType = row['service_type'].toString();
+  final currentStatus = (current.data['status'] as String?) ?? 'available';
+  final serviceType = current.data['service_type'].toString();
 
   // Validate transition.
   final allowed = _transitions[currentStatus] ?? [];
@@ -75,7 +85,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   // cert_uploaded requires a cert URL.
   if (newStatus == 'cert_uploaded') {
-    final resolvedCert = certUrl ?? row['cert_url']?.toString();
+    final resolvedCert = certUrl ?? current.data['cert_url'] as String?;
     if (resolvedCert == null || resolvedCert.isEmpty) {
       return badRequest('cert_url is required to move to cert_uploaded');
     }
@@ -84,7 +94,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   // shipped requires tracking info.
   if (newStatus == 'shipped') {
     final resolvedTracking =
-        trackingNumber ?? row['tracking_number']?.toString();
+        trackingNumber ?? current.data['tracking_number'] as String?;
     final resolvedCarrier = carrier;
     if (resolvedTracking == null ||
         resolvedTracking.isEmpty ||
@@ -97,97 +107,65 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   final isComplete = newStatus == 'complete';
 
-  // Build the SET clause dynamically — only update provided evidence fields.
-  final setClauses = <String>[
-    'status = @status::partner_assignment_status',
-    'updated_at = now()',
-  ];
-  final parameters = <String, dynamic>{
+  // Only update provided evidence fields (was a dynamic SET clause).
+  // ⚠ Race window: the transition check above and the write below are not
+  // atomic (Postgres ran them in one guarded UPDATE); a concurrent update to
+  // the same assignment could interleave. Partner-scoped single-actor flow —
+  // accepted.
+  final data = <String, dynamic>{
     'status': newStatus,
-    'id': id,
-    'pid': principal.partnerId,
+    if (wipeMethod != null) 'wipe_method': wipeMethod,
+    if (reimageOs != null) 'reimage_os': reimageOs,
+    if (certUrl != null) 'cert_url': certUrl,
+    if (trackingNumber != null) 'tracking_number': trackingNumber,
+    if (carrier != null) 'carrier': carrier,
+    if (isComplete)
+      'completed_at': DateTime.now().toUtc().toIso8601String(),
   };
 
-  if (wipeMethod != null) {
-    setClauses.add('wipe_method = @wipe_method');
-    parameters['wipe_method'] = wipeMethod;
-  }
-  if (reimageOs != null) {
-    setClauses.add('reimage_os = @reimage_os');
-    parameters['reimage_os'] = reimageOs;
-  }
-  if (certUrl != null) {
-    setClauses.add('cert_url = @cert_url');
-    parameters['cert_url'] = certUrl;
-  }
-  if (trackingNumber != null) {
-    setClauses.add('tracking_number = @tracking_number');
-    parameters['tracking_number'] = trackingNumber;
-  }
-  if (carrier != null) {
-    setClauses.add('carrier = @carrier');
-    parameters['carrier'] = carrier;
-  }
-  if (isComplete) {
-    setClauses.add('completed_at = now()');
+  final Row updated;
+  try {
+    updated = await db.updateRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.partnerServiceAssignments,
+      rowId: id,
+      data: data,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) {
+      return jsonError(404, 'NOT_FOUND', 'Assignment not found');
+    }
+    rethrow;
   }
 
-  final setClause = setClauses.join(', ');
-
-  final updated = await db.query(
-    '''
-    UPDATE partner_service_assignments
-    SET    $setClause
-    WHERE  id = @id AND partner_id = @pid
-    RETURNING
-           id::text,
-           order_ref,
-           buyer_name,
-           buyer_city,
-           service_type,
-           item_count,
-           wipe_payout_cents,
-           reimage_payout_cents,
-           wipe_method,
-           reimage_os,
-           cert_url,
-           tracking_number,
-           carrier,
-           status::text,
-           claimed_at,
-           completed_at,
-           updated_at
-    ''',
-    parameters: parameters,
-  );
-
-  if (updated.isEmpty) {
-    return jsonError(404, 'NOT_FOUND', 'Assignment not found');
-  }
-
-  final r = updated.first.toColumnMap();
+  final r = updated.data;
   return Response.json(
     body: {
       'assignment': {
-        'id': r['id'].toString(),
+        'id': updated.$id,
         'order_ref': r['order_ref'].toString(),
-        'buyer_name': r['buyer_name'].toString(),
-        'buyer_city': r['buyer_city'].toString(),
+        'buyer_name': (r['buyer_name'] as String?) ?? '',
+        'buyer_city': (r['buyer_city'] as String?) ?? '',
         'service_type': r['service_type'].toString(),
         'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
         'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
         'reimage_payout_cents':
             (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
-        'wipe_method': r['wipe_method']?.toString(),
-        'reimage_os': r['reimage_os']?.toString(),
-        'cert_url': r['cert_url']?.toString(),
-        'tracking_number': r['tracking_number']?.toString(),
-        'carrier': r['carrier']?.toString(),
-        'status': r['status'].toString(),
-        'claimed_at': r['claimed_at']?.toString(),
-        'completed_at': r['completed_at']?.toString(),
-        'updated_at': r['updated_at'].toString(),
+        'wipe_method': r['wipe_method'] as String?,
+        'reimage_os': r['reimage_os'] as String?,
+        'cert_url': r['cert_url'] as String?,
+        'tracking_number': r['tracking_number'] as String?,
+        'carrier': r['carrier'] as String?,
+        'status': (r['status'] as String?) ?? 'available',
+        'claimed_at': _ts(r['claimed_at']),
+        'completed_at': _ts(r['completed_at']),
+        'updated_at': _ts(updated.$updatedAt),
       },
     },
   );
 }
+
+/// Appwrite datetimes are ISO strings; the Postgres version serialized
+/// DateTime.toString() — parse and re-stringify to keep the same format.
+String? _ts(Object? iso) =>
+    iso == null ? null : DateTime.parse(iso as String).toString();

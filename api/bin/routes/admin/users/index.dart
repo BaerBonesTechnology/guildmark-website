@@ -1,7 +1,10 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show Query, TablesDB;
+import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -19,83 +22,99 @@ Future<Response> onRequest(RequestContext context) async {
   final search = (params['q'] ?? '').trim();
   final plan = (params['plan'] ?? '').trim();
 
-  final db = context.read<Db>();
-
-  // Build a shared WHERE clause (reused for both the data query and the count).
-  final conditions = <String>[];
-  final baseParams = <String, dynamic>{};
-
-  if (search.isNotEmpty) {
-    conditions.add(
-      '(u.email ILIKE @search OR u.full_name ILIKE @search OR c.name ILIKE @search)',
-    );
-    baseParams['search'] = '%$search%';
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
-  if (plan.isNotEmpty) {
-    conditions.add('s.plan::text = @plan');
-    baseParams['plan'] = plan;
+  final db = aw.tablesDB;
+
+  // No joins in Appwrite (§1b) and the search/plan filters span joined fields
+  // (company name, subscription plan), so: page all three tables, stitch and
+  // filter in Dart, then apply offset/limit in memory (§1c fetch+reduce
+  // tradeoff — fine for a bounded, admin-scale dataset).
+  final userRows = await _listAll(db, Aw.users, [
+    Query.orderDesc(r'$createdAt'),
+  ]);
+  final companyRows = await _listAll(db, Aw.companies, []);
+  final subRows = await _listAll(db, Aw.subscriptions, []);
+
+  final companiesById = {for (final r in companyRows) r.$id: r};
+  final subsByCompany = {
+    for (final r in subRows) r.data['company_id'] as String: r,
+  };
+
+  final needle = search.toLowerCase();
+  final stitched = <Map<String, dynamic>>[];
+  for (final u in userRows) {
+    final companyId = u.data['company_id'] as String;
+    final company = companiesById[companyId];
+    // Mirror the INNER JOIN: skip users whose company row is missing.
+    if (company == null) continue;
+    final sub = subsByCompany[companyId];
+
+    final email = u.data['email'].toString();
+    final fullName = u.data['full_name'].toString();
+    final companyName = company.data['name'].toString();
+    final userPlan = (sub?.data['plan'] as String?) ?? 'free';
+    final subStatus = (sub?.data['status'] as String?) ?? 'active';
+
+    if (needle.isNotEmpty &&
+        !email.toLowerCase().contains(needle) &&
+        !fullName.toLowerCase().contains(needle) &&
+        !companyName.toLowerCase().contains(needle)) {
+      continue;
+    }
+    if (plan.isNotEmpty && userPlan != plan) continue;
+
+    stitched.add({
+      'id': u.$id,
+      'email': email,
+      'full_name': fullName,
+      'role': u.data['role'].toString(),
+      'created_at': u.$createdAt,
+      'company_id': company.$id,
+      'company_name': companyName,
+      'size_band': company.data['size_band'] as String?,
+      'industry': company.data['industry'] as String?,
+      'plan': userPlan,
+      'subscription_status': subStatus,
+    });
   }
 
-  final where = conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
-
-  final rows = await db.query(
-    '''
-    SELECT
-      u.id::text,
-      u.email::text,
-      u.full_name,
-      u.role::text,
-      u.created_at,
-      c.id::text  AS company_id,
-      c.name      AS company_name,
-      c.size_band,
-      c.industry,
-      COALESCE(s.plan::text,   'free')   AS plan,
-      COALESCE(s.status::text, 'active') AS subscription_status
-    FROM users u
-    JOIN  companies     c ON c.id = u.company_id
-    LEFT  JOIN subscriptions s ON s.company_id = c.id
-    $where
-    ORDER BY u.created_at DESC
-    LIMIT @limit OFFSET @offset
-    ''',
-    parameters: {...baseParams, 'limit': limit, 'offset': offset},
-  );
-
-  final countRows = await db.query(
-    '''
-    SELECT COUNT(*)::int AS total
-    FROM users u
-    JOIN  companies     c ON c.id = u.company_id
-    LEFT  JOIN subscriptions s ON s.company_id = c.id
-    $where
-    ''',
-    parameters: baseParams,
-  );
-
-  final total = countRows.first.toColumnMap()['total'] as int? ?? 0;
+  final total = stitched.length;
+  final pageItems = stitched.skip(offset).take(limit).toList();
 
   return Response.json(
     body: {
       'total': total,
       'limit': limit,
       'offset': offset,
-      'users': rows.map((r) {
-        final row = r.toColumnMap();
-        return {
-          'id': row['id'].toString(),
-          'email': row['email'].toString(),
-          'full_name': row['full_name'].toString(),
-          'role': row['role'].toString(),
-          'created_at': (row['created_at'] as DateTime).toIso8601String(),
-          'company_id': row['company_id'].toString(),
-          'company_name': row['company_name'].toString(),
-          'size_band': row['size_band']?.toString(),
-          'industry': row['industry']?.toString(),
-          'plan': row['plan'].toString(),
-          'subscription_status': row['subscription_status'].toString(),
-        };
-      }).toList(),
+      'users': pageItems,
     },
   );
+}
+
+/// Pages through an entire table (Appwrite caps page sizes; the old SQL was
+/// unbounded).
+Future<List<Row>> _listAll(
+  TablesDB db,
+  String tableId,
+  List<String> queries,
+) async {
+  final rows = <Row>[];
+  String? cursor;
+  while (true) {
+    final page = await db.listRows(
+      databaseId: Aw.databaseId,
+      tableId: tableId,
+      queries: [
+        ...queries,
+        Query.limit(100),
+        if (cursor != null) Query.cursorAfter(cursor),
+      ],
+    );
+    rows.addAll(page.rows);
+    if (page.rows.length < 100) return rows;
+    cursor = page.rows.last.$id;
+  }
 }

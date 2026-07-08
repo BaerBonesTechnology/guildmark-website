@@ -1,9 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/mdm_repo.dart';
+import 'package:guildmark_api/repos/appwrite/mdm_repo.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.post) {
@@ -12,10 +12,13 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   // Verify the connection exists and belongs to this company.
-  final connections = await MdmRepo(
-    context.read<Db>(),
-  ).findByCompany(auth.companyId);
+  final connections = await MdmRepo(aw).findByCompany(auth.companyId);
   final exists = connections.any((c) => c.id == id);
   if (!exists) return notFound('MDM connection $id not found');
 

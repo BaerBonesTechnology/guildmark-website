@@ -115,8 +115,8 @@ class MigrationRunner {
       }
 
       // ── Dollar-quoted block: $$...$$  ─────────────────────────────────────
-      if (ch == '\$' && i + 1 < n && sql[i + 1] == '\$') {
-        final close = sql.indexOf('\$\$', i + 2);
+      if (ch == r'$' && i + 1 < n && sql[i + 1] == r'$') {
+        final close = sql.indexOf(r'$$', i + 2);
         if (close >= 0) {
           buf.write(sql.substring(i, close + 2));
           i = close + 2;

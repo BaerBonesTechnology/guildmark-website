@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/subscription_repo.dart';
-import 'package:guildmark_api/repos/user_repo.dart';
+import 'package:guildmark_api/repos/appwrite/user_repo.dart';
 import 'package:guildmark_api/services/square_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -36,7 +36,7 @@ Future<Response> onRequest(RequestContext context) async {
     password,
     fullName,
     companyName,
-  ].any((v) => v == null || v!.isEmpty)) {
+  ].any((v) => v == null || v.isEmpty)) {
     return badRequest(
       'Email, password, full name and company name are required',
     );
@@ -48,9 +48,13 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   try {
-    final db = context.read<Db>();
-    final repo = UserRepo(db);
+    final repo = UserRepo(aw);
     if (await repo.findByEmail(email!) != null) {
       return jsonError(
         409,
@@ -59,6 +63,8 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
+    // Saga: creates company → user → free subscription, with compensation
+    // deletes on failure (see UserRepo.create).
     final user = await repo.create(
       email: email,
       passwordHash: hashPassword(password),
@@ -67,9 +73,6 @@ Future<Response> onRequest(RequestContext context) async {
       companySize: companySize,
       industry: industry,
     );
-
-    // Every new company starts on the free tier.
-    await SubscriptionRepo(db).createFree(user.companyId);
 
     // Create a Square Customer record so that payment history, saved cards,
     // and invoices are owned by Square rather than stored in our DB.
@@ -80,12 +83,14 @@ Future<Response> onRequest(RequestContext context) async {
         try {
           final customerId = await square.createCustomer(
             email: email,
-            companyName: companyName!,
+            companyName: companyName,
             referenceId: user.companyId,
           );
-          await db.query(
-            'UPDATE companies SET square_customer_id = @cid WHERE id = @id::uuid',
-            parameters: {'cid': customerId, 'id': user.companyId},
+          await aw.tablesDB.updateRow(
+            databaseId: Aw.databaseId,
+            tableId: Aw.companies,
+            rowId: user.companyId,
+            data: {'square_customer_id': customerId},
           );
         } catch (e) {
           stderr.writeln('[signup] Square customer creation failed: $e');

@@ -1,23 +1,26 @@
 import 'package:dart_frog/dart_frog.dart';
 
 import 'package:guildmark_api/models/asset.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
-import 'package:guildmark_api/repos/asset_repo.dart';
-import 'package:guildmark_api/repos/asset_valuation_repo.dart';
-import 'package:guildmark_api/repos/listing_repo.dart';
+import 'package:guildmark_api/repos/appwrite/asset_repo.dart';
+import 'package:guildmark_api/repos/appwrite/asset_valuation_repo.dart';
+import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   switch (context.request.method) {
     case HttpMethod.get:
-      final listings = await ListingRepo(
-        context.read<Db>(),
-      ).findByCompany(auth.companyId);
+      final listings = await ListingRepo(aw).findByCompany(auth.companyId);
       return Response.json(body: listings.map((l) => l.toJson()).toList());
 
     case HttpMethod.post:
@@ -42,7 +45,6 @@ Future<Response> onRequest(RequestContext context) async {
       }
       if (price <= 0) return badRequest('listed_price must be positive');
 
-      final db = context.read<Db>();
       final ml = context.read<MlClient?>();
 
       // Resolve or auto-create the asset record.
@@ -53,7 +55,7 @@ Future<Response> onRequest(RequestContext context) async {
         final ramRaw = body['ram_gb'];
         final storageRaw = body['storage_gb'];
         final cpuRaw = body['cpu_score'];
-        asset = await AssetRepo(db).create(
+        asset = await AssetRepo(aw).create(
           companyId: auth.companyId,
           modelName: modelName,
           assetType: assetType,
@@ -68,7 +70,7 @@ Future<Response> onRequest(RequestContext context) async {
         );
       } else {
         final found = await AssetRepo(
-          db,
+          aw,
         ).findById(id: assetId, companyId: auth.companyId);
         if (found == null) return notFound('Asset $assetId not found');
         asset = found;
@@ -110,7 +112,7 @@ Future<Response> onRequest(RequestContext context) async {
           )
           .ignore();
 
-      final listing = await ListingRepo(db).create(
+      final listing = await ListingRepo(aw).create(
         companyId: auth.companyId,
         assetId: asset.id,
         listedPrice: price,
@@ -120,7 +122,7 @@ Future<Response> onRequest(RequestContext context) async {
       // Record valuation history — fire-and-forget so a DB hiccup here
       // never rolls back the listing creation.
       if (fmv != null && mlVersion != null && mlConfidence != null) {
-        AssetValuationRepo(db)
+        AssetValuationRepo(aw)
             .record(
               assetId: asset.id,
               listingId: listing.id,

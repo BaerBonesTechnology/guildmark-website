@@ -1,8 +1,11 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show ID, Query;
+import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -10,28 +13,43 @@ Future<Response> onRequest(RequestContext context) async {
   if (principal == null) return unauthorized();
   if (principal.role != 'admin') return forbidden();
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
   switch (context.request.method) {
     case HttpMethod.get:
-      final rows = await db.query(
-        '''
-        SELECT id::text, email::text, full_name, role::text,
-               is_active, last_login_at, created_at
-        FROM guildmark_employees
-        ORDER BY created_at ASC
-        ''',
-      );
+      // The SQL was unbounded (SELECT … ORDER BY created_at ASC); Appwrite
+      // paginates, so page through the whole (small, staff-sized) table.
+      final rows = <Row>[];
+      String? cursor;
+      while (true) {
+        final page = await db.listRows(
+          databaseId: Aw.databaseId,
+          tableId: Aw.guildmarkEmployees,
+          queries: [
+            Query.orderAsc(r'$createdAt'),
+            Query.limit(100),
+            if (cursor != null) Query.cursorAfter(cursor),
+          ],
+        );
+        rows.addAll(page.rows);
+        if (page.rows.length < 100) break;
+        cursor = page.rows.last.$id;
+      }
+
       final employees = rows.map((r) {
-        final m = r.toColumnMap();
+        final d = r.data;
         return {
-          'id': m['id'].toString(),
-          'email': m['email'].toString(),
-          'full_name': m['full_name'].toString(),
-          'role': m['role'].toString(),
-          'is_active': m['is_active'] as bool,
-          'last_login_at': (m['last_login_at'] as DateTime?)?.toIso8601String(),
-          'created_at': (m['created_at'] as DateTime).toIso8601String(),
+          'id': r.$id,
+          'email': d['email'].toString(),
+          'full_name': d['full_name'].toString(),
+          'role': d['role'].toString(),
+          'is_active': (d['is_active'] as bool?) ?? true,
+          'last_login_at': d['last_login_at'] as String?,
+          'created_at': r.$createdAt,
         };
       }).toList();
       return Response.json(body: employees);
@@ -54,29 +72,28 @@ Future<Response> onRequest(RequestContext context) async {
       if (!validRoles.contains(role)) return badRequest('Invalid role');
 
       final hash = hashPassword(password);
-      final result = await db.query(
-        '''
-        INSERT INTO guildmark_employees (email, password_hash, full_name, role)
-        VALUES (@email, @hash, @name, @role::employee_role)
-        RETURNING id::text, email::text, full_name, role::text, is_active, created_at
-        ''',
-        parameters: {
+      // A duplicate email hits the unique index (409) and propagates as a 500,
+      // matching the old PG unique-violation behavior.
+      final row = await db.createRow(
+        databaseId: Aw.databaseId,
+        tableId: Aw.guildmarkEmployees,
+        rowId: ID.unique(),
+        data: {
           'email': email,
-          'hash': hash,
-          'name': fullName,
+          'password_hash': hash,
+          'full_name': fullName,
           'role': role,
         },
       );
-      final row = result.first.toColumnMap();
       return Response.json(
         statusCode: 201,
         body: {
-          'id': row['id'].toString(),
-          'email': row['email'].toString(),
-          'full_name': row['full_name'].toString(),
-          'role': row['role'].toString(),
-          'is_active': row['is_active'] as bool,
-          'created_at': (row['created_at'] as DateTime).toIso8601String(),
+          'id': row.$id,
+          'email': row.data['email'].toString(),
+          'full_name': row.data['full_name'].toString(),
+          'role': row.data['role'].toString(),
+          'is_active': (row.data['is_active'] as bool?) ?? true,
+          'created_at': row.$createdAt,
         },
       );
 

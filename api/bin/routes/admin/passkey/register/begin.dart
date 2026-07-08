@@ -1,11 +1,14 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException, ID;
+import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/webauthn/webauthn.dart';
 
@@ -16,7 +19,11 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
   if (cfg.webauthnRpId == null) {
     return serverError('WebAuthn not configured (WEBAUTHN_RP_ID missing)');
@@ -34,30 +41,42 @@ Future<Response> onRequest(RequestContext context) async {
   final employeeId = claims.userId;
 
   // ── Look up the employee for user info ───────────────────────────────────
-  final empRows = await db.query(
-    'SELECT email::text, full_name FROM guildmark_employees WHERE id = @id LIMIT 1',
-    parameters: {'id': employeeId},
-  );
-  if (empRows.isEmpty) return unauthorized('Employee not found');
+  Row emp;
+  try {
+    emp = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.guildmarkEmployees,
+      rowId: employeeId,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) return unauthorized('Employee not found');
+    rethrow;
+  }
 
-  final emp = empRows.first.toColumnMap();
-  final email = emp['email'].toString();
-  final fullName = emp['full_name']?.toString() ?? email;
+  final email = emp.data['email'].toString();
+  final fullName = emp.data['full_name']?.toString() ?? email;
 
   // ── Generate challenge ───────────────────────────────────────────────────
   final challengeBytes = _randomBytes(32);
   final challengeB64 = toBase64Url(challengeBytes);
 
-  final chalRows = await db.query(
-    '''
-    INSERT INTO employee_passkey_challenges
-      (employee_id, challenge, type)
-    VALUES (@eid, @chal, 'registration')
-    RETURNING id::text
-    ''',
-    parameters: {'eid': employeeId, 'chal': challengeB64},
+  // PG set expires_at via a column default (now() + 5 minutes); Appwrite has
+  // no expression defaults, so compute it here.
+  final chalRow = await db.createRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.employeePasskeyChallenges,
+    rowId: ID.unique(),
+    data: {
+      'employee_id': employeeId,
+      'challenge': challengeB64,
+      'type': 'registration',
+      'expires_at': DateTime.now()
+          .toUtc()
+          .add(const Duration(minutes: 5))
+          .toIso8601String(),
+    },
   );
-  final challengeId = chalRows.first.toColumnMap()['id'].toString();
+  final challengeId = chalRow.$id;
 
   return Response.json(
     body: {

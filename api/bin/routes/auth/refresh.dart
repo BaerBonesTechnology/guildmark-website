@@ -1,10 +1,10 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/user_repo.dart';
+import 'package:guildmark_api/repos/appwrite/user_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -14,8 +14,12 @@ Future<Response> onRequest(RequestContext context) async {
   final oldToken = _readRefreshCookie(context);
   if (oldToken == null) return unauthorized('No refresh token');
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
   final cfg = context.read<AppConfig>();
-  final repo = UserRepo(context.read<Db>());
+  final repo = UserRepo(aw);
   final newPlain = generateRefreshTokenPlaintext();
   final newExpiresAt = DateTime.now().toUtc().add(cfg.refreshTokenTtl);
 

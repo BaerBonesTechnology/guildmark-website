@@ -1,8 +1,11 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException, Query;
+import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/webauthn/webauthn.dart';
 
@@ -13,7 +16,11 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
   if (cfg.webauthnRpId == null) {
     return serverError('WebAuthn not configured (WEBAUTHN_RP_ID missing)');
@@ -37,47 +44,62 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  // ── Consume challenge — identifies the employee ───────────────────────────
-  final chalRows = await db.query(
-    '''
-    DELETE FROM employee_passkey_challenges
-    WHERE id = @cid
-      AND type = 'authentication'
-      AND expires_at > now()
-    RETURNING challenge, employee_id::text
-    ''',
-    parameters: {'cid': challengeId},
-  );
-  if (chalRows.isEmpty) {
+  // ── Load challenge — identifies the employee ──────────────────────────────
+  // PG did DELETE … RETURNING (consume-first). Appwrite has no conditional
+  // delete-returning, so we read it here and delete it AFTER the assertion
+  // verifies (the consume step). Race window: a failed attempt leaves the
+  // challenge live until its 5-minute expiry, and two concurrent completes
+  // could both pass the read — the deleteRow below is the commit point and
+  // rejects the loser with a 404.
+  Row chalRow;
+  try {
+    chalRow = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.employeePasskeyChallenges,
+      rowId: challengeId,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) {
+      return badRequest(
+        'Challenge not found, expired, or already used',
+        code: 'INVALID_CHALLENGE',
+      );
+    }
+    rethrow;
+  }
+  final chalData = chalRow.data;
+  final chalExpires = DateTime.parse(chalData['expires_at'] as String);
+  final employeeIdRaw = chalData['employee_id'] as String?;
+  if (chalData['type'] != 'authentication' ||
+      employeeIdRaw == null ||
+      !chalExpires.isAfter(DateTime.now().toUtc())) {
     return badRequest(
       'Challenge not found, expired, or already used',
       code: 'INVALID_CHALLENGE',
     );
   }
-
-  final chalRow = chalRows.first.toColumnMap();
-  final expectedChallenge = chalRow['challenge'].toString();
-  final employeeId = chalRow['employee_id'].toString();
+  final expectedChallenge = chalData['challenge'].toString();
+  final employeeId = employeeIdRaw;
 
   // ── Look up the passkey by credential_id ─────────────────────────────────
-  final pkRows = await db.query(
-    '''
-    SELECT id::text, public_key_x, public_key_y, sign_count
-    FROM employee_passkeys
-    WHERE employee_id = @eid AND credential_id = @cred
-    LIMIT 1
-    ''',
-    parameters: {'eid': employeeId, 'cred': credentialId},
+  final pkRows = await db.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.employeePasskeys,
+    queries: [
+      Query.equal('employee_id', employeeId),
+      Query.equal('credential_id', credentialId),
+      Query.limit(1),
+    ],
   );
-  if (pkRows.isEmpty) {
+  if (pkRows.rows.isEmpty) {
     return unauthorized('Passkey not found for this employee');
   }
 
-  final pk = pkRows.first.toColumnMap();
-  final passkeyRowId = pk['id'].toString();
-  final storedCount = (pk['sign_count'] as num).toInt();
-  final pkX = fromBase64Url(pk['public_key_x'].toString());
-  final pkY = fromBase64Url(pk['public_key_y'].toString());
+  final pk = pkRows.rows.first;
+  final passkeyRowId = pk.$id;
+  final storedCount = (pk.data['sign_count'] as num? ?? 0).toInt();
+  final pkX = fromBase64Url(pk.data['public_key_x'].toString());
+  final pkY = fromBase64Url(pk.data['public_key_y'].toString());
 
   // ── Verify clientDataJSON ─────────────────────────────────────────────────
   final clientDataBytes = fromBase64Url(clientDataB64);
@@ -108,8 +130,9 @@ Future<Response> onRequest(RequestContext context) async {
 
   // ── Replay / clone detection via sign count ───────────────────────────────
   // Parse signCount from authData bytes [33-36]
+  int? newCount;
   if (authDataBytes.length >= 37) {
-    final newCount =
+    newCount =
         (authDataBytes[33] << 24) |
         (authDataBytes[34] << 16) |
         (authDataBytes[35] << 8) |
@@ -118,41 +141,67 @@ Future<Response> onRequest(RequestContext context) async {
       // Possible cloned authenticator — reject
       return unauthorized('Sign count replay detected');
     }
-    await db.query(
-      '''
-      UPDATE employee_passkeys
-      SET sign_count = @sc, last_used_at = now()
-      WHERE id = @id
-      ''',
-      parameters: {'sc': newCount, 'id': passkeyRowId},
+  }
+
+  // ── Consume the challenge (single-use commit point) ───────────────────────
+  try {
+    await db.deleteRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.employeePasskeyChallenges,
+      rowId: challengeId,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) {
+      // A concurrent request consumed it first — reject this one.
+      return badRequest(
+        'Challenge not found, expired, or already used',
+        code: 'INVALID_CHALLENGE',
+      );
+    }
+    rethrow;
+  }
+
+  final nowIso = DateTime.now().toUtc().toIso8601String();
+  if (newCount != null) {
+    await db.updateRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.employeePasskeys,
+      rowId: passkeyRowId,
+      data: {'sign_count': newCount, 'last_used_at': nowIso},
     );
   } else {
     // Authenticator doesn't implement counter — just update last_used_at
-    await db.query(
-      'UPDATE employee_passkeys SET last_used_at = now() WHERE id = @id',
-      parameters: {'id': passkeyRowId},
+    await db.updateRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.employeePasskeys,
+      rowId: passkeyRowId,
+      data: {'last_used_at': nowIso},
     );
   }
 
   // ── Issue full access JWT ─────────────────────────────────────────────────
-  final empRows = await db.query(
-    '''
-    SELECT email::text, full_name, role::text
-    FROM guildmark_employees WHERE id = @id LIMIT 1
-    ''',
-    parameters: {'id': employeeId},
-  );
-  if (empRows.isEmpty) return serverError('Employee not found');
+  Row emp;
+  try {
+    emp = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.guildmarkEmployees,
+      rowId: employeeId,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) return serverError('Employee not found');
+    rethrow;
+  }
 
-  final emp = empRows.first.toColumnMap();
-  final email = emp['email'].toString();
-  final fullName = emp['full_name']?.toString() ?? email;
-  final role = emp['role']?.toString() ?? 'admin';
+  final email = emp.data['email'].toString();
+  final fullName = emp.data['full_name']?.toString() ?? email;
+  final role = emp.data['role']?.toString() ?? 'admin';
 
   // Update last_login_at
-  await db.query(
-    'UPDATE guildmark_employees SET last_login_at = now() WHERE id = @id',
-    parameters: {'id': employeeId},
+  await db.updateRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.guildmarkEmployees,
+    rowId: employeeId,
+    data: {'last_login_at': nowIso},
   );
 
   final token = jwt.issueAccessToken(

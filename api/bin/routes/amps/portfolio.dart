@@ -1,9 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/portfolio_repo.dart';
+import 'package:guildmark_api/repos/appwrite/portfolio_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -15,7 +15,12 @@ Future<Response> onRequest(RequestContext context) async {
   final q = context.request.uri.queryParameters;
   final trendMonths = int.tryParse(q['trend_months'] ?? '12') ?? 12;
 
-  final summary = await PortfolioRepo(context.read<Db>()).summarize(
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
+  final summary = await PortfolioRepo(aw).summarize(
     companyId: auth.companyId,
     trendMonths: trendMonths.clamp(1, 36),
   );

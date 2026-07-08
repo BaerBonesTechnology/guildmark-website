@@ -1,14 +1,17 @@
 import 'dart:async';
 
+import 'package:dart_appwrite/dart_appwrite.dart'
+    show AppwriteException, ID, Query, TablesDB;
+import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
-import 'package:postgres/postgres.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/models/json_helpers.dart';
-import 'package:guildmark_api/repos/order_repo.dart';
-import 'package:guildmark_api/repos/subscription_repo.dart';
+import 'package:guildmark_api/repos/appwrite/config_repo.dart';
+import 'package:guildmark_api/repos/appwrite/order_repo.dart';
+import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 import 'package:guildmark_api/services/square_service.dart';
@@ -36,37 +39,34 @@ Future<Response> onRequest(RequestContext context, String id) async {
     );
   }
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
   final square = context.read<SquareService?>()!;
   final escrow = context.read<EscrowService>();
   final email = context.read<EmailService>();
 
-  // ── 1. Fetch listing + validate ──────────────────────────────────────────
-  final listingRows = await db.query(
-    '''
-    SELECT l.id, l.company_id AS seller_company_id, l.listed_price,
-           l.buyer_ask_price, l.status,
-           a.quantity, a.model_name,
-           c.name AS seller_company_name,
-           u.email AS seller_email
-    FROM listings l
-    JOIN assets a    ON a.id = l.asset_id
-    JOIN companies c ON c.id = l.company_id
-    LEFT JOIN users u ON u.company_id = l.company_id AND u.role = \'admin\'
-    WHERE l.id = @id AND l.status = \'active\'
-    LIMIT 1
-    ''',
-    parameters: {'id': id},
-  );
-
-  if (listingRows.isEmpty) {
+  // ── 1. Fetch listing + validate (was a 4-table JOIN; now stitched) ───────
+  final Row listingRow;
+  try {
+    listingRow = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.listings,
+      rowId: id,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) {
+      return notFound('Listing not found or no longer active');
+    }
+    rethrow;
+  }
+  if (listingRow.data['status'] != 'active') {
     return notFound('Listing not found or no longer active');
   }
 
-  final listing = listingRows.first.toColumnMap();
-  final sellerCompanyId = listing['seller_company_id'].toString();
-  final productName = listing['model_name']?.toString() ?? 'IT Asset';
-  final sellerEmail = listing['seller_email']?.toString();
+  final sellerCompanyId = listingRow.data['company_id'] as String;
 
   // Prevent buying your own listing.
   if (sellerCompanyId == auth.companyId) {
@@ -77,27 +77,70 @@ Future<Response> onRequest(RequestContext context, String id) async {
     );
   }
 
-  final listedPrice =
-      numToDoubleOrNull(listing['listed_price']) ??
-      numToDoubleOrNull(listing['buyer_ask_price']) ??
-      0.0;
-  if (listedPrice <= 0) {
+  // Stitch the asset (quantity, product name).
+  Row? assetRow;
+  try {
+    assetRow = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.assets,
+      rowId: listingRow.data['asset_id'] as String,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code != 404) rethrow;
+  }
+  final productName =
+      assetRow?.data['model_name'] as String? ?? 'IT Asset';
+
+  // Seller admin email (was LEFT JOIN users … role = 'admin').
+  final sellerAdmins = await db.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.users,
+    queries: [
+      Query.equal('company_id', sellerCompanyId),
+      Query.equal('role', 'admin'),
+      Query.limit(1),
+    ],
+  );
+  final sellerEmail = sellerAdmins.rows.isEmpty
+      ? null
+      : sellerAdmins.rows.first.data['email'] as String?;
+
+  final listedCents =
+      (listingRow.data['listed_price_cents'] as num?)?.toInt() ??
+      (listingRow.data['buyer_ask_price_cents'] as num?)?.toInt() ??
+      0;
+  if (listedCents <= 0) {
     return jsonError(422, 'NO_PRICE', 'This listing has no active price');
   }
+  final listedPrice = listedCents / 100;
 
   final quantity =
-      numToIntOrNull(body?['quantity']) ??
-      numToIntOrNull(listing['quantity']) ??
+      (body?['quantity'] as num?)?.toInt() ??
+      (assetRow?.data['quantity'] as num?)?.toInt() ??
       1;
 
   final amount = listedPrice * quantity;
+  final amountCents = listedCents * quantity;
 
-  // ── 2. Determine fee rates ────────────────────────────────────────────────
-  final subRepo = SubscriptionRepo(db);
-  final sellerSub = await subRepo.findByCompany(sellerCompanyId);
-  final sFeePct = sellerFeePct(sellerSub?.plan ?? 'free');
-  const bFeePct = kBuyerFeePct;
-  final dFeePct = paymentTerms != 'immediate' ? kDeferralFeePct : 0.0;
+  // ── 2. Determine fee rates (from platform_config, snapshotted onto the
+  //       order) and enforce the payment-terms feature flag ─────────────────
+  final cfg = await ConfigRepo(aw).get();
+
+  // Net 30/60 is feature-flagged off until financing partners are in place.
+  // Server-side check — must happen before the Square charge below.
+  if (paymentTerms != 'immediate' && !cfg.paymentTermsEnabled) {
+    return jsonError(
+      403,
+      'PAYMENT_TERMS_DISABLED',
+      'Deferred payment terms are not currently available. '
+          'Use immediate payment.',
+    );
+  }
+
+  final sellerSub = await SubscriptionRepo(aw).findByCompany(sellerCompanyId);
+  final sFeePct = cfg.sellerFeeForPlan(sellerSub?.plan ?? 'free');
+  final bFeePct = cfg.buyerFee;
+  final dFeePct = paymentTerms != 'immediate' ? cfg.deferralFee : 0.0;
 
   final buyerFee = double.parse((amount * bFeePct).toStringAsFixed(2));
   final deferralF = double.parse((amount * dFeePct).toStringAsFixed(2));
@@ -121,24 +164,34 @@ Future<Response> onRequest(RequestContext context, String id) async {
     return jsonError(502, 'PAYMENT_FAILED', e.detail);
   }
 
-  // ── 4. Create offer + order atomically ───────────────────────────────────
+  // ── 4. Create offer + order (saga — no transactions in Appwrite) ─────────
+  // Order of writes: offer first, order last (the order row is the commit
+  // point — its unique offer_id index also dedupes double-submits). If the
+  // order write fails, the offer is compensated with a best-effort delete.
+  // There is no listing row-lock: two concurrent buyers can both pass the
+  // 'active' check; the second order still succeeds against a different
+  // offer. Listing status is flipped by the seller flow on completion —
+  // pre-launch volume makes this race acceptable; revisit with a
+  // status-guarded update if needed.
   final Order order;
   try {
     order = await _buyNow(
       db: db,
+      aw: aw,
       listingId: id,
+      sellerCompanyId: sellerCompanyId,
       buyerCompanyId: auth.companyId,
-      listedPrice: listedPrice,
+      listedCents: listedCents,
+      amountCents: amountCents,
       quantity: quantity,
       sFeePct: sFeePct,
       bFeePct: bFeePct,
       paymentTerms: paymentTerms,
       dFeePct: dFeePct,
-      squarePaymentId: squarePayment.id,
     );
   } catch (e) {
-    // If order creation fails after the Square charge, log for manual reconciliation.
-    // In production, this should trigger a Square refund.
+    // If order creation fails after the Square charge, log for manual
+    // reconciliation. In production, this should trigger a Square refund.
     return jsonError(
       500,
       'ORDER_FAILED',
@@ -152,13 +205,18 @@ Future<Response> onRequest(RequestContext context, String id) async {
   unawaited(
     Future(() async {
       try {
-        final buyerEmailRows = await db.query(
-          "SELECT email FROM users WHERE company_id = @cid AND role = 'admin' LIMIT 1",
-          parameters: {'cid': auth.companyId},
+        final buyerAdmins = await db.listRows(
+          databaseId: Aw.databaseId,
+          tableId: Aw.users,
+          queries: [
+            Query.equal('company_id', auth.companyId),
+            Query.equal('role', 'admin'),
+            Query.limit(1),
+          ],
         );
-        final buyerEmail = buyerEmailRows.isEmpty
+        final buyerEmail = buyerAdmins.rows.isEmpty
             ? null
-            : buyerEmailRows.first.toColumnMap()['email']?.toString();
+            : buyerAdmins.rows.first.data['email'] as String?;
 
         if (escrow.isConfigured && sellerEmail != null && buyerEmail != null) {
           final tx = await escrow.createTransaction(
@@ -168,22 +226,20 @@ Future<Response> onRequest(RequestContext context, String id) async {
             description: '$productName — Order ${order.id}',
           );
           if (tx != null) {
-            await OrderRepo(db).setEscrow(
+            await OrderRepo(aw).setEscrow(
               id: order.id,
               escrowTransactionId: tx.id,
               escrowStatus: tx.status,
               escrowPaymentUrl: tx.paymentUrl,
             );
-            if (buyerEmail != null) {
-              unawaited(
-                email.sendOrderEscrowCreated(
-                  toEmail: buyerEmail,
-                  productName: productName,
-                  amount: order.escrowAmount,
-                  paymentUrl: tx.paymentUrl ?? '',
-                ),
-              );
-            }
+            unawaited(
+              email.sendOrderEscrowCreated(
+                toEmail: buyerEmail,
+                productName: productName,
+                amount: order.escrowAmount,
+                paymentUrl: tx.paymentUrl ?? '',
+              ),
+            );
           }
         }
       } catch (_) {}
@@ -194,112 +250,103 @@ Future<Response> onRequest(RequestContext context, String id) async {
 }
 
 Future<Order> _buyNow({
-  required Db db,
+  required TablesDB db,
+  required AppwriteService aw,
   required String listingId,
+  required String sellerCompanyId,
   required String buyerCompanyId,
-  required double listedPrice,
+  required int listedCents,
+  required int amountCents,
   required int quantity,
   required double sFeePct,
   required double bFeePct,
   required String paymentTerms,
   required double dFeePct,
-  required String squarePaymentId,
 }) async {
-  return db.tx<Order>((tx) async {
-    // Lock listing row to prevent race conditions.
-    final listingCheck = await tx.execute(
-      Sql.named(
-        "SELECT id FROM listings WHERE id = @id AND status = 'active' FOR UPDATE",
-      ),
-      parameters: {'id': listingId},
-    );
-    if (listingCheck.isEmpty) {
-      throw StateError('Listing $listingId is no longer active');
-    }
+  // Re-check the listing is still active as late as possible (replaces the
+  // SELECT … FOR UPDATE row lock; see race note at the call site).
+  final listing = await db.getRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.listings,
+    rowId: listingId,
+  );
+  if (listing.data['status'] != 'active') {
+    throw StateError('Listing $listingId is no longer active');
+  }
 
-    // Get seller company_id from listing
-    final sellerRow = await tx.execute(
-      Sql.named('SELECT company_id FROM listings WHERE id = @id'),
-      parameters: {'id': listingId},
-    );
-    final sellerCompanyId = sellerRow.first
-        .toColumnMap()['company_id']
-        .toString();
+  // Step 1 — offer at listed price, pre-accepted (buy-now).
+  final offer = await db.createRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.buyerOffers,
+    rowId: ID.unique(),
+    data: {
+      'listing_id': listingId,
+      'buyer_company_id': buyerCompanyId,
+      'offer_price_cents': listedCents,
+      'quantity': quantity,
+      'status': 'accepted',
+      'expires_at': DateTime.now()
+          .toUtc()
+          .add(const Duration(days: 30))
+          .toIso8601String(),
+    },
+  );
 
-    // Insert offer at listed price, status = 'accepted'
-    final offerResult = await tx.execute(
-      Sql.named('''
-        INSERT INTO buyer_offers
-          (listing_id, buyer_company_id, offer_price, quantity, status,
-           expires_at)
-        VALUES
-          (@lid, @buyer, @price, @qty, \'accepted\',
-           now() + INTERVAL \'30 days\')
-        RETURNING id
-      '''),
-      parameters: {
-        'lid': listingId,
-        'buyer': buyerCompanyId,
-        'price': listedPrice,
-        'qty': quantity,
+  // Fee snapshot (same rounding as the PG version: dollars to 2dp → cents).
+  final amount = amountCents / 100;
+  final sellerFee = double.parse((amount * sFeePct).toStringAsFixed(2));
+  final buyerFee = double.parse((amount * bFeePct).toStringAsFixed(2));
+  final platformFee = double.parse((sellerFee + buyerFee).toStringAsFixed(2));
+  final escrowAmt = double.parse((amount - sellerFee).toStringAsFixed(2));
+  final deferralFee = double.parse((amount * dFeePct).toStringAsFixed(2));
+
+  DateTime? paymentDueAt;
+  if (paymentTerms == 'net_30') {
+    paymentDueAt = DateTime.now().toUtc().add(const Duration(days: 30));
+  } else if (paymentTerms == 'net_60') {
+    paymentDueAt = DateTime.now().toUtc().add(const Duration(days: 60));
+  }
+
+  // Step 2 — the order row: commit point. Square already captured payment,
+  // so the order is born 'funded'.
+  final Row orderRow;
+  try {
+    orderRow = await db.createRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.orders,
+      rowId: ID.unique(),
+      data: {
+        'offer_id': offer.$id,
+        'seller_company_id': sellerCompanyId,
+        'buyer_company_id': buyerCompanyId,
+        'amount_cents': amountCents,
+        'quantity': quantity,
+        'seller_fee_pct': sFeePct,
+        'seller_fee_cents': (sellerFee * 100).round(),
+        'buyer_fee_pct': bFeePct,
+        'buyer_fee_cents': (buyerFee * 100).round(),
+        'platform_fee_cents': (platformFee * 100).round(),
+        'escrow_amount_cents': (escrowAmt * 100).round(),
+        'payment_terms': paymentTerms,
+        'deferral_fee_pct': dFeePct,
+        'deferral_fee_cents': (deferralFee * 100).round(),
+        if (paymentDueAt != null)
+          'payment_due_at': paymentDueAt.toIso8601String(),
+        'status': 'funded',
       },
     );
-    final offerId = offerResult.first.toColumnMap()['id'].toString();
+  } catch (e) {
+    // Compensation: unwind the offer so a retry starts clean.
+    try {
+      await db.deleteRow(
+        databaseId: Aw.databaseId,
+        tableId: Aw.buyerOffers,
+        rowId: offer.$id,
+      );
+    } catch (_) {}
+    rethrow;
+  }
 
-    // Calculate fee snapshot.
-    final amount = listedPrice * quantity;
-    final sellerFee = double.parse((amount * sFeePct).toStringAsFixed(2));
-    final buyerFee = double.parse((amount * bFeePct).toStringAsFixed(2));
-    final platformFee = double.parse((sellerFee + buyerFee).toStringAsFixed(2));
-    final escrowAmt = double.parse((amount - sellerFee).toStringAsFixed(2));
-    final deferralFee = double.parse((amount * dFeePct).toStringAsFixed(2));
-
-    DateTime? paymentDueAt;
-    if (paymentTerms == 'net_30') {
-      paymentDueAt = DateTime.now().toUtc().add(const Duration(days: 30));
-    } else if (paymentTerms == 'net_60') {
-      paymentDueAt = DateTime.now().toUtc().add(const Duration(days: 60));
-    }
-
-    // Create order row.
-    final orderResult = await tx.execute(
-      Sql.named('''
-        INSERT INTO orders (
-          offer_id, seller_company_id, buyer_company_id, amount, quantity,
-          seller_fee_pct, seller_fee, buyer_fee_pct, buyer_fee,
-          platform_fee, escrow_amount,
-          payment_terms, deferral_fee_pct, deferral_fee, payment_due_at,
-          status
-        ) VALUES (
-          @oid, @seller, @buyer, @amount, @qty,
-          @sfeepct, @sfee, @bfeepct, @bfee,
-          @pfee, @escrowamt,
-          @pterms, @dfeepct, @dfee, @pdue,
-          \'funded\'
-        )
-        RETURNING id
-      '''),
-      parameters: {
-        'oid': offerId,
-        'seller': sellerCompanyId,
-        'buyer': buyerCompanyId,
-        'amount': amount,
-        'qty': quantity,
-        'sfeepct': sFeePct,
-        'sfee': sellerFee,
-        'bfeepct': bFeePct,
-        'bfee': buyerFee,
-        'pfee': platformFee,
-        'escrowamt': escrowAmt,
-        'pterms': paymentTerms,
-        'dfeepct': dFeePct,
-        'dfee': deferralFee,
-        'pdue': paymentDueAt,
-      },
-    );
-
-    final orderId = orderResult.first.toColumnMap()['id'].toString();
-    final order = await OrderRepo(db).findById(orderId);
-    return order!;
-  });
+  final order = await OrderRepo(aw).findById(orderRow.$id);
+  return order!;
 }

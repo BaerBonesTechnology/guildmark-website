@@ -1,11 +1,11 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
-import 'package:guildmark_api/repos/asset_repo.dart';
-import 'package:guildmark_api/repos/listing_repo.dart';
+import 'package:guildmark_api/repos/appwrite/asset_repo.dart';
+import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.post) {
@@ -14,11 +14,14 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
   final ml = context.read<MlClient>();
 
   // Validate the asset belongs to this company.
-  final asset = await AssetRepo(db).findById(id: id, companyId: auth.companyId);
+  final asset = await AssetRepo(aw).findById(id: id, companyId: auth.companyId);
   if (asset == null) return notFound('Asset $id not found');
 
   // Request fair market value from the ML service.
@@ -52,7 +55,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
     );
   }
 
-  final listing = await ListingRepo(db).create(
+  final listing = await ListingRepo(aw).create(
     companyId: auth.companyId,
     assetId: id,
     listedPrice: listedPrice,
