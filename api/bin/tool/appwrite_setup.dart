@@ -800,6 +800,12 @@ Future<void> _ignoreConflict(Future<void> Function() op, String label) async {
       stderr.writeln('$label FAILED: ${e.code} ${e.message}');
       rethrow;
     }
+  } on NoSuchMethodError catch (e) {
+    // dart_appwrite 25.x mis-parses some self-hosted 1.9 success responses
+    // (e.g. Database.fromMap assumes Cloud-only fields like backupPolicies).
+    // By the time fromMap runs, the server-side create has ALREADY succeeded —
+    // treat as success. A re-run sees 409 for the same resource anyway.
+    stdout.writeln('$label ✓ (SDK response-parse bug ignored: $e)');
   }
 }
 
