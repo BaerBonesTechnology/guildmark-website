@@ -152,7 +152,7 @@ Future<void> _setupAssets() async {
   ], required: true);
   await _enum(c, 'condition_grade', ['A', 'B', 'C'], xdefault: 'B');
   await _int(c, 'quantity', required: false, xdefault: 1);
-  await _str(c, 'reason_for_offload', required: false);
+  await _text(c, 'reason_for_offload', required: false);
   await _datetime(c, 'purchase_date', required: false);
   await _int(c, 'original_purchase_price_cents', required: false);
   await _str(c, 'os_version', required: false);
@@ -225,7 +225,7 @@ Future<void> _setupBuyerOffers() async {
     xdefault: 'pending',
   );
   await _int(c, 'counter_price_cents', required: false);
-  await _str(c, 'message', required: false);
+  await _text(c, 'message', required: false);
   await _datetime(c, 'expires_at', required: true);
   _index(c, 'listing_id_idx', TablesDBIndexType.key, ['listing_id']);
   _index(c, 'buyer_company_id_idx', TablesDBIndexType.key, [
@@ -241,13 +241,14 @@ Future<void> _setupMdmConnections() async {
   await _enum(c, 'mdm_type', ['jamf_pro', 'jamf_school', 'intune'],
       required: true);
   await _bool(c, 'sync_enabled', required: false, xdefault: true);
-  // BYTEA cipher/nonce → base64 strings (encrypted at the app layer)
-  await _str(c, 'credentials_cipher_b64', required: true);
-  await _str(c, 'credentials_nonce_b64', required: true);
+  // BYTEA cipher/nonce → base64 strings (encrypted at the app layer).
+  // The cipher can be KBs → text (never indexed); the nonce is 12 bytes.
+  await _text(c, 'credentials_cipher_b64', required: true);
+  await _str(c, 'credentials_nonce_b64', required: true, size: 64);
   await _datetime(c, 'last_sync_at', required: false);
   await _enum(c, 'last_sync_status', ['success', 'partial', 'failed'],
       required: false);
-  await _str(c, 'last_sync_error', required: false);
+  await _text(c, 'last_sync_error', required: false);
   await _int(c, 'device_count', required: false);
   _index(c, 'company_mdm_unique', TablesDBIndexType.unique, [
     'company_id', 'mdm_type',
@@ -270,7 +271,7 @@ Future<void> _setupTaxInvoices() async {
   await _int(c, 'market_value_at_disposal_cents', required: true);
   await _int(c, 'write_off_amount_cents', required: true);
   await _int(c, 'market_anchor_ebay_cents', required: false);
-  await _str(c, 'pdf_storage_path', required: false);
+  await _str(c, 'pdf_storage_path', required: false, size: 512);
   _index(c, 'invoice_number_unique', TablesDBIndexType.unique, [
     'invoice_number',
   ]);
@@ -296,7 +297,7 @@ Future<void> _setupMailingList() async {
   const c = Aw.mailingList;
   await _ensureTable(c, 'Mailing List');
   await _str(c, 'source', required: false, xdefault: 'waitlist');
-  await _str(c, 'notes', required: false);
+  await _text(c, 'notes', required: false);
   await _email(c, 'email', required: true);
   await _datetime(c, 'contacted_at', required: false);
   _index(c, 'email_unique', TablesDBIndexType.unique, ['email']);
@@ -320,7 +321,7 @@ Future<void> _setupOrders() async {
   // Escrow.com integration
   await _str(c, 'escrow_transaction_id', required: false);
   await _str(c, 'escrow_status', required: false);
-  await _str(c, 'escrow_payment_url', required: false);
+  await _str(c, 'escrow_payment_url', required: false, size: 512);
   // Shipping / FedEx
   await _str(c, 'carrier', required: false, xdefault: 'fedex');
   await _str(c, 'tracking_number', required: false);
@@ -384,7 +385,7 @@ Future<void> _setupSubscriptionInvoices() async {
   await _int(c, 'amount_cents', required: true);
   await _str(c, 'currency', required: false, xdefault: 'USD');
   await _str(c, 'status', required: false, xdefault: 'paid');
-  await _str(c, 'receipt_url', required: false);
+  await _str(c, 'receipt_url', required: false, size: 512);
   await _datetime(c, 'period_start', required: true);
   await _datetime(c, 'period_end', required: true);
   _index(c, 'company_id_idx', TablesDBIndexType.key, ['company_id']);
@@ -425,7 +426,7 @@ Future<void> _setupEmployeeGroups() async {
   const c = Aw.employeeGroups;
   await _ensureTable(c, 'Employee Groups');
   await _str(c, 'name', required: true);
-  await _str(c, 'description', required: false);
+  await _text(c, 'description', required: false);
   _index(c, 'name_unique', TablesDBIndexType.unique, ['name']);
 }
 
@@ -580,7 +581,7 @@ Future<void> _setupPartnerServiceAssignments() async {
   await _int(c, 'reimage_payout_cents', required: false, xdefault: 0);
   await _str(c, 'wipe_method', required: false);
   await _str(c, 'reimage_os', required: false);
-  await _str(c, 'cert_url', required: false);
+  await _str(c, 'cert_url', required: false, size: 512);
   await _str(c, 'tracking_number', required: false);
   await _str(c, 'carrier', required: false);
   await _enum(c, 'status', [
@@ -645,7 +646,30 @@ Future<void> _ensureTable(String id, String name) => _ignoreConflict(
   '[setup] table $id',
 );
 
+/// Bounded string column (varchar). Default 255 keeps every index —
+/// including composites — under Appwrite's 1024 index-length ceiling.
+/// Unbounded text columns are NOT indexable; use [_text] for long fields.
 Future<void> _str(
+  String table,
+  String key, {
+  required bool required,
+  int size = 255,
+  String? xdefault,
+}) => _ignoreConflict(
+  () => _db.createVarcharColumn(
+    databaseId: Aw.databaseId,
+    tableId: table,
+    key: key,
+    size: size,
+    xrequired: required,
+    xdefault: xdefault,
+  ),
+  '[setup]   col $table.$key (varchar $size)',
+);
+
+/// Unbounded text column — for long free-form fields only (notes, messages,
+/// encrypted blobs). Never index these: max index length is 1024.
+Future<void> _text(
   String table,
   String key, {
   required bool required,
