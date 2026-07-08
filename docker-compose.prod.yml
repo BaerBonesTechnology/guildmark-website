@@ -1,16 +1,11 @@
 # GuildMark — Production Docker Compose
 # ---------------------------------------------------------------------------
-# Each service is exposed on its own port directly to the host.
-# Cloudflare routes each subdomain to the correct port via Origin Rules.
-#
-# Port map:
-#   guildmark.co          →  nginx  :444  (fronts the React app)
-#   api.guildmark.co      →  api    :8443 (Dart Frog — Cloudflare proxied HTTPS port)
-#   devdash.guildmark.co  →  devdash:2053 (Cloudflare proxied HTTPS port)
-#
-# Cloudflare Origin Rules (free plan):
-#   Hostname: api.guildmark.co      → Override origin port: 8443
-#   Hostname: devdash.guildmark.co  → Override origin port: 2053
+# Single ingress: nginx terminates TLS on 443 (Cloudflare origin cert) and
+# proxies every public hostname — guildmark.co, api., devdash., ml-qv., and
+# db. (Appwrite via traefik on guildmark-net). Cloudflare dials the origin
+# on 443 only; NO Origin Rules and no other public ports are required.
+# (Ports 8443/2053 remain published for direct LAN/debug access only —
+# Cloudflare would attempt TLS on them and fail, so don't route to them.)
 #
 # Manual usage:
 #   docker compose -f docker-compose.prod.yml up -d
@@ -114,7 +109,7 @@ services:
     networks:
       - guildmark-net
 
-  # ── GuildMark marketplace frontend — served via nginx on 444 ─────────────
+  # ── GuildMark marketplace frontend — served via nginx on 443 ─────────────
   guildmark:
     build:
       context:    ./guildmark
@@ -145,7 +140,7 @@ services:
     networks:
       - guildmark-net
 
-  # ── NGINX — serves guildmark.co on 80/444 only ───────────────────────────
+  # ── NGINX — single TLS ingress for all public hostnames (80/443) ─────────
   nginx:
     build:
       context:    ./nginx
@@ -155,7 +150,7 @@ services:
       - guildmark
     ports:
       - "80:80"
-      - "444:444"
+      - "443:443"
     volumes:
       - ./nginx/certs:/etc/nginx/certs:ro
     networks:
