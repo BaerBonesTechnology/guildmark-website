@@ -825,22 +825,38 @@ class _IndexSpec {
 }
 
 Future<void> _ignoreConflict(Future<void> Function() op, String label) async {
-  try {
-    await op();
-    stdout.writeln('$label ✓');
-  } on AppwriteException catch (e) {
-    if (e.code == 409) {
-      stdout.writeln('$label (exists)');
-    } else {
+  const maxAttempts = 4;
+  for (var attempt = 1; ; attempt++) {
+    try {
+      await op();
+      stdout.writeln('$label ✓');
+      return;
+    } on AppwriteException catch (e) {
+      if (e.code == 409) {
+        stdout.writeln('$label (exists)');
+        return;
+      }
+      // Transient gateway/overload errors (Cloudflare 502/504, Appwrite 503,
+      // rate limits) — retry with backoff. Everything else is a real failure.
+      final transient =
+          e.code == 429 || e.code == 502 || e.code == 503 || e.code == 504;
+      if (transient && attempt < maxAttempts) {
+        stdout.writeln(
+          '$label transient ${e.code} — retry $attempt/${maxAttempts - 1}…',
+        );
+        await Future<void>.delayed(Duration(seconds: 2 * attempt));
+        continue;
+      }
       stderr.writeln('$label FAILED: ${e.code} ${e.message}');
       rethrow;
+    } on NoSuchMethodError catch (e) {
+      // dart_appwrite 25.x mis-parses some self-hosted 1.9 success responses
+      // (e.g. Database.fromMap assumes Cloud-only fields like backupPolicies).
+      // By the time fromMap runs, the server-side create has ALREADY
+      // succeeded — treat as success. A re-run sees 409 anyway.
+      stdout.writeln('$label ✓ (SDK response-parse bug ignored: $e)');
+      return;
     }
-  } on NoSuchMethodError catch (e) {
-    // dart_appwrite 25.x mis-parses some self-hosted 1.9 success responses
-    // (e.g. Database.fromMap assumes Cloud-only fields like backupPolicies).
-    // By the time fromMap runs, the server-side create has ALREADY succeeded —
-    // treat as success. A re-run sees 409 for the same resource anyway.
-    stdout.writeln('$label ✓ (SDK response-parse bug ignored: $e)');
   }
 }
 
