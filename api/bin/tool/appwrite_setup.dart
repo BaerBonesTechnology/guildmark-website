@@ -78,7 +78,7 @@ Future<void> main() async {
 
   // ── Pass 2: indexes (after columns settle) ───────────────────────────────
   stdout.writeln('[setup] waiting for columns to become available…');
-  await Future<void>.delayed(const Duration(seconds: 5));
+  await Future<void>.delayed(const Duration(seconds: 15));
   for (final ix in _pendingIndexes) {
     await _applyIndex(ix);
   }
@@ -825,7 +825,7 @@ class _IndexSpec {
 }
 
 Future<void> _ignoreConflict(Future<void> Function() op, String label) async {
-  const maxAttempts = 4;
+  const maxAttempts = 7;
   for (var attempt = 1; ; attempt++) {
     try {
       await op();
@@ -837,14 +837,22 @@ Future<void> _ignoreConflict(Future<void> Function() op, String label) async {
         return;
       }
       // Transient gateway/overload errors (Cloudflare 502/504, Appwrite 503,
-      // rate limits) — retry with backoff. Everything else is a real failure.
-      final transient =
-          e.code == 429 || e.code == 502 || e.code == 503 || e.code == 504;
+      // rate limits) — retry with backoff. 'column_not_available' means the
+      // async column worker hasn't finished yet — same treatment, longer
+      // waits. Everything else is a real failure.
+      final notReady = e.type == 'column_not_available';
+      final transient = notReady ||
+          e.code == 429 ||
+          e.code == 502 ||
+          e.code == 503 ||
+          e.code == 504;
       if (transient && attempt < maxAttempts) {
+        final delay = Duration(seconds: (notReady ? 5 : 2) * attempt);
         stdout.writeln(
-          '$label transient ${e.code} — retry $attempt/${maxAttempts - 1}…',
+          '$label ${notReady ? 'column not ready' : 'transient ${e.code}'}'
+          ' — retry $attempt/${maxAttempts - 1} in ${delay.inSeconds}s…',
         );
-        await Future<void>.delayed(Duration(seconds: 2 * attempt));
+        await Future<void>.delayed(delay);
         continue;
       }
       stderr.writeln('$label FAILED: ${e.code} ${e.message}');
