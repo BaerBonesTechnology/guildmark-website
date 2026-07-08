@@ -1,33 +1,26 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
 
 Handler middleware(Handler handler) {
   return (context) async {
     final auth = context.read<AuthPrincipal?>();
     if (auth == null) return unauthorized();
 
+    final aw = context.read<AppwriteService?>();
+    if (aw == null) {
+      return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+    }
+
     // Look up this company's subscription status.
-    final db = context.read<Db>();
-    final rows = await db.query(
-      '''
-      SELECT plan::text, status::text
-      FROM subscriptions
-      WHERE company_id = @cid
-      LIMIT 1
-      ''',
-      parameters: {'cid': auth.companyId},
-    );
+    final sub = await SubscriptionRepo(aw).findByCompany(auth.companyId);
 
     // No subscription row → treat as free.
-    final plan = rows.isEmpty
-        ? 'free'
-        : rows.first.toColumnMap()['plan'].toString();
-    final status = rows.isEmpty
-        ? 'active'
-        : rows.first.toColumnMap()['status'].toString();
+    final plan = sub?.plan ?? 'free';
+    final status = sub?.status ?? 'active';
 
     // Free plan is not allowed on AMPS routes.
     if (plan == 'free') {

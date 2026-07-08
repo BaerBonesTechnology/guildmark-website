@@ -6,10 +6,10 @@ library;
 
 import 'package:dart_frog/dart_frog.dart';
 
-import '../../../lib/context.dart';
-import '../../../lib/db/pool.dart';
-import '../../../lib/http_helpers.dart';
-import '../../../lib/repos/asset_repo.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/repos/appwrite/asset_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -28,7 +28,12 @@ Future<Response> onRequest(RequestContext context) async {
     pageSize:       int.tryParse(q['page_size'] ?? '50')   ?? 50,
   );
 
-  final result = await AssetRepo(context.read<Db>()).searchAmps(
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
+  final result = await AssetRepo(aw).searchAmps(
     companyId: auth.companyId,
     filters:   filters,
   );

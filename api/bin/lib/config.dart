@@ -3,7 +3,6 @@ import 'dart:io';
 class AppConfig {
   AppConfig({
     required this.port,
-    required this.databaseUrl,
     required this.jwtAccessSecret,
     required this.jwtRefreshSecret,
     required this.accessTokenTtl,
@@ -104,7 +103,6 @@ class AppConfig {
 
     return AppConfig(
       port: int.tryParse(Platform.environment['API_PORT'] ?? '') ?? 8080,
-      databaseUrl: require('DATABASE_URL'),
       jwtAccessSecret: require('JWT_ACCESS_SECRET'),
       jwtRefreshSecret: require('JWT_REFRESH_SECRET'),
       accessTokenTtl: Duration(seconds: requireInt('JWT_ACCESS_TTL_SECONDS')),
@@ -198,7 +196,9 @@ class AppConfig {
   }
 
   final int port;
-  final String databaseUrl;
+  // DATABASE_URL was removed at the Appwrite cutover — the API no longer
+  // connects to Postgres. The backfill tools read it from the environment
+  // directly while the legacy data migration window is open.
   final String jwtAccessSecret;
   final String jwtRefreshSecret;
   final Duration accessTokenTtl;

@@ -1,7 +1,10 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show Query;
+import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -12,37 +15,45 @@ Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<PartnerPrincipal?>();
   if (principal == null) return unauthorized();
 
-  final db = context.read<Db>();
-  final rows = await db.query(
-    '''
-    SELECT id::text,
-           order_ref,
-           buyer_name,
-           buyer_city,
-           service_type,
-           item_count,
-           wipe_payout_cents,
-           reimage_payout_cents,
-           created_at
-    FROM   partner_service_assignments
-    WHERE  status = 'available'
-      AND  partner_id IS NULL
-    ORDER BY created_at DESC
-    ''',
-  );
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
+
+  // The Postgres query was unbounded — page explicitly (design doc §8).
+  const pageSize = 100;
+  final rows = <Row>[];
+  var offset = 0;
+  while (true) {
+    final res = await db.listRows(
+      databaseId: Aw.databaseId,
+      tableId: Aw.partnerServiceAssignments,
+      queries: [
+        Query.equal('status', 'available'),
+        Query.isNull('partner_id'),
+        Query.orderDesc(r'$createdAt'),
+        Query.limit(pageSize),
+        Query.offset(offset),
+      ],
+    );
+    rows.addAll(res.rows);
+    if (res.rows.length < pageSize) break;
+    offset += pageSize;
+  }
 
   final items = rows.map((row) {
-    final r = row.toColumnMap();
+    final r = row.data;
     return {
-      'id': r['id'].toString(),
+      'id': row.$id,
       'order_ref': r['order_ref'].toString(),
-      'buyer_name': r['buyer_name'].toString(),
-      'buyer_city': r['buyer_city'].toString(),
+      'buyer_name': (r['buyer_name'] as String?) ?? '',
+      'buyer_city': (r['buyer_city'] as String?) ?? '',
       'service_type': r['service_type'].toString(),
       'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
       'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
       'reimage_payout_cents': (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
-      'created_at': r['created_at'].toString(),
+      'created_at': DateTime.parse(row.$createdAt).toString(),
     };
   }).toList();
 

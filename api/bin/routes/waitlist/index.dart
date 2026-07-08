@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/mailing_list_repo.dart';
+import 'package:guildmark_api/repos/appwrite/mailing_list_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -60,7 +60,12 @@ Future<Response> onRequest(RequestContext context) async {
     if (parts.isNotEmpty) notes = parts.join(' | ');
   }
 
-  final repo = MailingListRepo(context.read<Db>());
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
+  final repo = MailingListRepo(aw);
   final entry = await repo.subscribe(
     email: email,
     source: source,

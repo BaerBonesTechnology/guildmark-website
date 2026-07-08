@@ -1,9 +1,9 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/listing_repo.dart';
+import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.patch) {
@@ -25,8 +25,13 @@ Future<Response> onRequest(RequestContext context, String id) async {
     return badRequest('listed_price must be a positive number');
   }
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   try {
-    final listing = await ListingRepo(context.read<Db>()).updatePrice(
+    final listing = await ListingRepo(aw).updatePrice(
       id: id,
       companyId: auth.companyId,
       listedPrice: listedPrice,

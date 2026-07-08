@@ -1,7 +1,10 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException, Query;
+import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -12,83 +15,76 @@ Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<PartnerPrincipal?>();
   if (principal == null) return unauthorized();
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
   // Partner profile + running balance.
-  final partnerRows = await db.query(
-    '''
-    SELECT id::text,
-           email::text,
-           company_name,
-           partner_code,
-           status::text,
-           rating::float8,
-           total_jobs_completed,
-           available_balance::float8,
-           service_radius_miles,
-           city,
-           state,
-           created_at
-    FROM   partners
-    WHERE  id = @pid
-    LIMIT 1
-    ''',
-    parameters: {'pid': principal.partnerId},
-  );
-  if (partnerRows.isEmpty) return unauthorized('Partner not found');
-  final p = partnerRows.first.toColumnMap();
+  final Row partner;
+  try {
+    partner = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.partners,
+      rowId: principal.partnerId,
+    );
+  } on AppwriteException catch (e) {
+    if (e.code == 404) return unauthorized('Partner not found');
+    rethrow;
+  }
+  final p = partner.data;
 
   // Most recent 20 payouts.
-  final payoutRows = await db.query(
-    '''
-    SELECT id::text,
-           payout_ref,
-           amount_cents,
-           method,
-           status::text,
-           paid_at,
-           created_at
-    FROM   partner_payouts
-    WHERE  partner_id = @pid
-    ORDER BY created_at DESC
-    LIMIT 20
-    ''',
-    parameters: {'pid': principal.partnerId},
+  final payoutRows = await db.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.partnerPayouts,
+    queries: [
+      Query.equal('partner_id', principal.partnerId),
+      Query.orderDesc(r'$createdAt'),
+      Query.limit(20),
+    ],
   );
 
-  final payouts = payoutRows.map((row) {
-    final r = row.toColumnMap();
+  final payouts = payoutRows.rows.map((row) {
+    final r = row.data;
     return {
-      'id': r['id'].toString(),
+      'id': row.$id,
       'payout_ref': r['payout_ref'].toString(),
       'amount_cents': (r['amount_cents'] as num?)?.toInt() ?? 0,
-      'method': r['method'].toString(),
-      'status': r['status'].toString(),
-      'paid_at': r['paid_at']?.toString(),
-      'created_at': r['created_at'].toString(),
+      'method': (r['method'] as String?) ?? 'bank_transfer',
+      'status': (r['status'] as String?) ?? 'pending',
+      'paid_at': _ts(r['paid_at']),
+      'created_at': _ts(row.$createdAt),
     };
   }).toList();
 
   return Response.json(
     body: {
       'partner': {
-        'id': p['id'].toString(),
+        'id': partner.$id,
         'email': p['email'].toString(),
         'company_name': p['company_name'].toString(),
         'partner_code': p['partner_code'].toString(),
-        'status': p['status'].toString(),
+        'status': (p['status'] as String?) ?? 'pending',
         'rating': (p['rating'] as num?)?.toDouble() ?? 5.0,
         'total_jobs_completed':
             (p['total_jobs_completed'] as num?)?.toInt() ?? 0,
+        // Money is stored as integer cents; the API surfaces dollars.
         'available_balance':
-            (p['available_balance'] as num?)?.toDouble() ?? 0.0,
+            ((p['available_balance_cents'] as num?)?.toInt() ?? 0) / 100.0,
         'service_radius_miles':
             (p['service_radius_miles'] as num?)?.toInt() ?? 50,
-        'city': p['city']?.toString(),
-        'state': p['state']?.toString(),
-        'created_at': p['created_at'].toString(),
+        'city': p['city'] as String?,
+        'state': p['state'] as String?,
+        'created_at': _ts(partner.$createdAt),
       },
       'payouts': payouts,
     },
   );
 }
+
+/// Appwrite datetimes are ISO strings; the Postgres version serialized
+/// DateTime.toString() — parse and re-stringify to keep the same format.
+String? _ts(Object? iso) =>
+    iso == null ? null : DateTime.parse(iso as String).toString();

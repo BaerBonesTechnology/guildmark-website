@@ -1,14 +1,19 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/config_repo.dart';
+import 'package:guildmark_api/repos/appwrite/config_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'GET only');
   }
 
-  final cfg = await ConfigRepo(context.read<Db>()).get();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
+  final cfg = await ConfigRepo(aw).get();
   return Response.json(body: cfg.toJson());
 }

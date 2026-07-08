@@ -1,10 +1,13 @@
 import 'dart:math';
 
+import 'package:dart_appwrite/dart_appwrite.dart'
+    show AppwriteException, ID;
+import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
-import 'package:postgres/postgres.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -15,87 +18,47 @@ Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<PartnerPrincipal?>();
   if (principal == null) return unauthorized();
 
-  final db = context.read<Db>();
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final db = aw.tablesDB;
 
-  // Fetch partner inside a transaction so balance can't change mid-read.
-  final result = await db.tx<Map<String, dynamic>?>((tx) async {
-    final partnerRows = await tx.execute(
-      Sql.named(
-        '''
-        SELECT status::text,
-               available_balance::float8,
-               total_jobs_completed
-        FROM   partners
-        WHERE  id = @pid
-        FOR UPDATE
-        ''',
-      ),
-      parameters: {'pid': principal.partnerId},
+  // Postgres wrapped read + deduct + insert in a transaction with FOR UPDATE
+  // so the balance couldn't change mid-read. Appwrite has neither, so this is
+  // a §1a saga: create the payout row first, then zero the balance (the
+  // commit point); if zeroing fails, compensate by deleting the payout.
+  //
+  // ⚠ Race window: two concurrent withdrawals can both read the same
+  // balance and both create a payout before either zeroes it — a double
+  // payout for the same funds. Acceptable at current partner volume (one
+  // partner clicking twice, sub-second window); revisit with a conditional
+  // update / single-writer queue before high-volume money movement.
+  final Row partner;
+  try {
+    partner = await db.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.partners,
+      rowId: principal.partnerId,
     );
-    if (partnerRows.isEmpty) return null;
+  } on AppwriteException catch (e) {
+    if (e.code == 404) return unauthorized('Partner not found');
+    rethrow;
+  }
 
-    final p = partnerRows.first.toColumnMap();
-    final status = p['status'].toString();
-    final balanceDbl = (p['available_balance'] as num?)?.toDouble() ?? 0.0;
-    // Convert dollars to cents, rounding down.
-    final amountCents = (balanceDbl * 100).floor();
+  final status = (partner.data['status'] as String?) ?? 'pending';
+  // Balance is already stored as integer cents (money convention §2).
+  final amountCents =
+      (partner.data['available_balance_cents'] as num?)?.toInt() ?? 0;
 
-    if (status != 'active') return {'error': 'PARTNER_NOT_ACTIVE'};
-    if (amountCents <= 0) return {'error': 'INSUFFICIENT_BALANCE'};
-
-    // Generate a human-readable payout reference, e.g. "PO-0042".
-    final rng = Random.secure();
-    final ref = 'PO-${rng.nextInt(9000) + 1000}';
-
-    // Deduct balance and create payout row atomically.
-    await tx.execute(
-      Sql.named(
-        'UPDATE partners SET available_balance = 0, updated_at = now() WHERE id = @pid',
-      ),
-      parameters: {'pid': principal.partnerId},
-    );
-
-    final inserted = await tx.execute(
-      Sql.named(
-        '''
-        INSERT INTO partner_payouts
-            (partner_id, payout_ref, amount_cents, method, status)
-        VALUES (@pid, @ref, @cents, 'bank_transfer', 'pending')
-        RETURNING id::text, payout_ref, amount_cents, method, status::text, created_at
-        ''',
-      ),
-      parameters: {
-        'pid': principal.partnerId,
-        'ref': ref,
-        'cents': amountCents,
-      },
-    );
-
-    final r = inserted.first.toColumnMap();
-    return {
-      'payout': {
-        'id': r['id'].toString(),
-        'payout_ref': r['payout_ref'].toString(),
-        'amount_cents': (r['amount_cents'] as num?)?.toInt() ?? 0,
-        'method': r['method'].toString(),
-        'status': r['status'].toString(),
-        'paid_at': null,
-        'created_at': r['created_at'].toString(),
-      },
-    };
-  });
-
-  if (result == null) return unauthorized('Partner not found');
-
-  final error = result['error'] as String?;
-  if (error == 'PARTNER_NOT_ACTIVE') {
+  if (status != 'active') {
     return jsonError(
       403,
       'PARTNER_NOT_ACTIVE',
       'Account must be active to withdraw.',
     );
   }
-  if (error == 'INSUFFICIENT_BALANCE') {
+  if (amountCents <= 0) {
     return jsonError(
       422,
       'INSUFFICIENT_BALANCE',
@@ -103,5 +66,54 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  return Response.json(body: result);
+  // Generate a human-readable payout reference, e.g. "PO-0042".
+  final rng = Random.secure();
+  final ref = 'PO-${rng.nextInt(9000) + 1000}';
+
+  // Step 1 — payout row.
+  final payout = await db.createRow(
+    databaseId: Aw.databaseId,
+    tableId: Aw.partnerPayouts,
+    rowId: ID.unique(),
+    data: {
+      'partner_id': principal.partnerId,
+      'payout_ref': ref,
+      'amount_cents': amountCents,
+      'method': 'bank_transfer',
+      'status': 'pending',
+    },
+  );
+
+  // Step 2 — zero the balance (commit point); compensate on failure.
+  try {
+    await db.updateRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.partners,
+      rowId: principal.partnerId,
+      data: {'available_balance_cents': 0},
+    );
+  } catch (_) {
+    try {
+      await db.deleteRow(
+        databaseId: Aw.databaseId,
+        tableId: Aw.partnerPayouts,
+        rowId: payout.$id,
+      );
+    } catch (_) {}
+    rethrow;
+  }
+
+  return Response.json(
+    body: {
+      'payout': {
+        'id': payout.$id,
+        'payout_ref': ref,
+        'amount_cents': amountCents,
+        'method': 'bank_transfer',
+        'status': 'pending',
+        'paid_at': null,
+        'created_at': DateTime.parse(payout.$createdAt).toString(),
+      },
+    },
+  );
 }

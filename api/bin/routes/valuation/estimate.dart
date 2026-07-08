@@ -1,10 +1,10 @@
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
-import 'package:guildmark_api/repos/asset_valuation_repo.dart';
+import 'package:guildmark_api/repos/appwrite/asset_valuation_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -57,9 +57,13 @@ Future<Response> onRequest(RequestContext context) async {
     );
 
     // Persist valuation history when the caller identifies the asset.
-    // Fire-and-forget — never blocks the estimate response.
-    if (assetId != null) {
-      AssetValuationRepo(context.read<Db>())
+    // Fire-and-forget — never blocks the estimate response. Recording was
+    // already best-effort (.ignore() swallowed DB errors), so when the
+    // datastore is not configured the estimate still succeeds — we just skip
+    // the history write instead of returning 503.
+    final aw = context.read<AppwriteService?>();
+    if (assetId != null && aw != null) {
+      AssetValuationRepo(aw)
           .record(
             assetId: assetId,
             source: 'estimate',

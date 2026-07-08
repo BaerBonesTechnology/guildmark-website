@@ -1,8 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/db/pool.dart';
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/partner_repo.dart';
+import 'package:guildmark_api/repos/appwrite/partner_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -12,7 +12,12 @@ Future<Response> onRequest(RequestContext context) async {
   final raw = context.request.headers['cookie'];
   final token = _extract(raw, 'partner_refresh');
   if (token != null) {
-    await PartnerRepo(context.read<Db>()).revokeRefreshToken(token);
+    final aw = context.read<AppwriteService?>();
+    // Logout must always succeed client-side; skip revocation if the
+    // datastore is unavailable — the token expires on its own.
+    if (aw != null) {
+      await PartnerRepo(aw).revokeRefreshToken(token);
+    }
   }
 
   return Response.json(

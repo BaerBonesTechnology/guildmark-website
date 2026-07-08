@@ -1,9 +1,11 @@
+import 'package:dart_appwrite/dart_appwrite.dart' show Query;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/subscription_repo.dart';
+import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -13,8 +15,11 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final db = context.read<Db>();
-  final repo = SubscriptionRepo(db);
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  final repo = SubscriptionRepo(aw);
 
   final sub = await repo.findByCompany(auth.companyId);
   if (sub == null) {
@@ -23,30 +28,28 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   // Fetch billing invoices (latest 24)
-  final invoiceRows = await db.query(
-    '''
-    SELECT id::text, plan::text, amount_cents, currency, status,
-           receipt_url, period_start, period_end, created_at
-    FROM subscription_invoices
-    WHERE company_id = @cid
-    ORDER BY created_at DESC
-    LIMIT 24
-    ''',
-    parameters: {'cid': auth.companyId},
+  final invoiceRows = await aw.tablesDB.listRows(
+    databaseId: Aw.databaseId,
+    tableId: Aw.subscriptionInvoices,
+    queries: [
+      Query.equal('company_id', auth.companyId),
+      Query.orderDesc(r'$createdAt'),
+      Query.limit(24),
+    ],
   );
 
-  final invoices = invoiceRows.map((r) {
-    final row = r.toColumnMap();
+  final invoices = invoiceRows.rows.map((r) {
+    final row = r.data;
     return {
-      'id': row['id'].toString(),
+      'id': r.$id,
       'plan': row['plan'].toString(),
-      'amount_cents': row['amount_cents'] as int,
-      'currency': row['currency'].toString(),
-      'status': row['status'].toString(),
-      'receipt_url': row['receipt_url']?.toString(),
-      'period_start': (row['period_start'] as DateTime?)?.toIso8601String(),
-      'period_end': (row['period_end'] as DateTime?)?.toIso8601String(),
-      'created_at': (row['created_at'] as DateTime).toIso8601String(),
+      'amount_cents': (row['amount_cents'] as num).toInt(),
+      'currency': (row['currency'] as String?) ?? 'USD',
+      'status': (row['status'] as String?) ?? 'paid',
+      'receipt_url': row['receipt_url'] as String?,
+      'period_start': _iso(row['period_start']),
+      'period_end': _iso(row['period_end']),
+      'created_at': DateTime.parse(r.$createdAt).toIso8601String(),
     };
   }).toList();
 
@@ -59,3 +62,8 @@ Future<Response> onRequest(RequestContext context) async {
     },
   );
 }
+
+/// Normalize an Appwrite datetime string to the same DateTime
+/// .toIso8601String() format the Postgres version emitted.
+String? _iso(Object? v) =>
+    v == null ? null : DateTime.parse(v as String).toIso8601String();

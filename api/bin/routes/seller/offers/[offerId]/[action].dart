@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException;
 import 'package:dart_frog/dart_frog.dart';
 
+import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/appwrite/lookups.dart';
 import 'package:guildmark_api/context.dart';
-import 'package:guildmark_api/db/pool.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/offer_repo.dart';
+import 'package:guildmark_api/repos/appwrite/offer_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
 const _allowedActions = {'accept', 'reject', 'counter'};
@@ -35,8 +38,13 @@ Future<Response> onRequest(
     }
   }
 
+  final aw = context.read<AppwriteService?>();
+  if (aw == null) {
+    return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+
   try {
-    final offer = await OfferRepo(context.read<Db>()).respond(
+    final offer = await OfferRepo(aw).respond(
       offerId: offerId,
       sellerCompanyId: auth.companyId,
       action: action,
@@ -45,12 +53,9 @@ Future<Response> onRequest(
 
     // Fire-and-forget: notify the buyer of the offer status change.
     final email = context.read<EmailService>();
-    final db = context.read<Db>();
-    // Look up buyer email + product name via a JOIN — the BuyerOffer model
-    // doesn't carry these fields to avoid regenerating Freezed artifacts.
     unawaited(
       _notifyBuyer(
-        db: db,
+        aw: aw,
         email: email,
         offerId: offerId,
         action: action,
@@ -67,32 +72,30 @@ Future<Response> onRequest(
 }
 
 Future<void> _notifyBuyer({
-  required Db db,
+  required AppwriteService aw,
   required EmailService email,
   required String offerId,
   required String action,
   double? counterPrice,
 }) async {
   try {
-    final rows = await db.query(
-      '''
-      SELECT u.email AS buyer_email, a.model_name AS product_name
-      FROM buyer_offers bo
-      JOIN companies bc ON bc.id = bo.buyer_company_id
-      JOIN users u ON u.company_id = bc.id
-      JOIN listings l ON l.id = bo.listing_id
-      JOIN assets a ON a.id = l.asset_id
-      WHERE bo.id = @oid
-      ORDER BY u.role = 'admin' DESC, u.created_at
-      LIMIT 1
-      ''',
-      parameters: {'oid': offerId},
+    // Was a 5-table JOIN — now stitched: offer → buyer company contact,
+    // offer → listing → asset model name.
+    final offerRow = await aw.tablesDB.getRow(
+      databaseId: Aw.databaseId,
+      tableId: Aw.buyerOffers,
+      rowId: offerId,
     );
-    if (rows.isEmpty) return;
-    final row = rows.first.toColumnMap();
-    final buyerEmail = row['buyer_email'] as String?;
-    final productName = row['product_name'] as String? ?? 'IT Asset';
+    final buyerEmail = await companyContactEmail(
+      aw,
+      offerRow.data['buyer_company_id'] as String,
+    );
     if (buyerEmail == null) return;
+    final productName = await listingProductName(
+          aw,
+          offerRow.data['listing_id'] as String,
+        ) ??
+        'IT Asset';
 
     await email.sendOfferStatus(
       toEmail: buyerEmail,
@@ -105,6 +108,10 @@ Future<void> _notifyBuyer({
       counterPrice: counterPrice,
       offersUrl: 'https://app.guildmark.co/orders',
     );
+  } on AppwriteException catch (e) {
+    if (e.code != 404) {
+      stderr.writeln('[offer] Failed to send buyer notification: $e');
+    }
   } catch (e) {
     // Best-effort — email failure must never affect the response.
     stderr.writeln('[offer] Failed to send buyer notification: $e');
