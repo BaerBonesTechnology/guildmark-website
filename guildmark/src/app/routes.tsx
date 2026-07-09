@@ -26,6 +26,7 @@ import { Settings } from "./pages/amps/Settings";
 import { InsightPage } from "./pages/Insights";
 import { PreLaunch } from "./pages/PreLaunch";
 import { Blog } from "./pages/Blog";
+import { BlogArticle } from "./pages/BlogArticle";
 import { Contact } from "./pages/Contact";
 import { TermsOfService } from "./pages/compliance/TermsOfService";
 import { PrivacyPolicy } from "./pages/compliance/PrivacyPolicy";
@@ -154,8 +155,9 @@ export const preLaunchRouter = createBrowserRouter([
     children: [
       { index: true, Component: PreLaunch },
       { path: "blog", Component: Blog },
-      // Market research moved from the drawer to the dedicated /blog page.
-      { path: "insights", element: <Navigate to="/blog" replace /> },
+      { path: "blog/:slug", Component: BlogArticle },
+      // Market research is now a blog post rather than a drawer.
+      { path: "insights", element: <Navigate to="/blog/it-hardware-lifecycle-gap" replace /> },
       { path: "contact", Component: Contact },
     ],
   },
