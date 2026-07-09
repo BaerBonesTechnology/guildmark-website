@@ -14,9 +14,10 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import {
   ArrowLeft, Building2, Cpu, HardDrive, MemoryStick, Package, Loader2, CheckCircle2, AlertTriangle,
-  Laptop, Monitor, Server, Smartphone, Tablet, Network, ShieldCheck,
+  Laptop, Monitor, Server, Smartphone, Tablet, Network, ShieldCheck, GitCompare,
 } from "lucide-react";
 import { MarketSignal } from "../components/MarketSignal";
+import { useCompare } from "../components/CompareContext";
 import { useListing, useMakeOffer } from "../lib/apiHooks";
 import type { MarketplaceListing } from "../models/marketplace";
 
@@ -65,13 +66,15 @@ export function ProductDetail() {
   const { data: listing, isPending, isError, error } = useListing(id);
 
   const makeOffer = useMakeOffer();
+  const { toggle, isCompared, atMax } = useCompare();
   const [offerPrice, setOfferPrice] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
 
   useEffect(() => {
-    if (listing) { setOfferPrice(String(listing.listed_price ?? "")); setQuantity("1"); setFormError(null); setSubmitted(false); }
+    if (listing) { setOfferPrice(String(listing.listed_price ?? "")); setQuantity("1"); setFormError(null); setSubmitted(false); setImgIdx(0); }
   }, [listing]);
 
   if (isPending) {
@@ -106,6 +109,9 @@ export function ProductDetail() {
   const available = listing.quantity ?? 1;
   const Icon = CATEGORY_ICON[listing.asset_type ?? ""] ?? Package;
   const grade = listing.condition_grade;
+  const images = listing.product_images ?? [];
+  const compared = isCompared(listing.id);
+  const disabledCompare = atMax(listing);
 
   function submitOffer(atList = false) {
     const p = atList ? price : parseFloat(offerPrice);
@@ -121,11 +127,11 @@ export function ProductDetail() {
       <BackLink />
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
-        {/* Left — media + specs */}
+        {/* Left — media gallery + specs */}
         <div className="space-y-4">
           <div className="border border-border h-[360px] relative flex items-center justify-center overflow-hidden" style={{ background: "var(--secondary)" }}>
-            {listing.photo_url
-              ? <img src={listing.photo_url} alt={listing.model_name ?? "Listing"} className="w-full h-full object-cover" />
+            {images.length > 0
+              ? <img src={images[Math.min(imgIdx, images.length - 1)]} alt={listing.model_name ?? "Listing"} className="w-full h-full object-cover" />
               : <Icon size={64} className="opacity-25" style={{ color: "var(--muted-foreground)" }} />}
             <div className="absolute top-3 left-3 flex gap-1.5">
               {grade && (
@@ -138,6 +144,19 @@ export function ProductDetail() {
               </span>
             </div>
           </div>
+
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div className="flex gap-2 flex-wrap">
+              {images.map((src, i) => (
+                <button key={i} onClick={() => setImgIdx(i)}
+                  className="w-16 h-16 border overflow-hidden transition-colors"
+                  style={{ borderColor: i === imgIdx ? "var(--primary)" : "var(--border)" }}>
+                  <img src={src} alt={`${listing.model_name ?? "Listing"} ${i + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-px border border-border" style={{ background: "var(--border)" }}>
             {listing.ram_gb != null && <SpecTile icon={MemoryStick} label="RAM" value={`${listing.ram_gb} GB`} />}
@@ -158,6 +177,12 @@ export function ProductDetail() {
               </h1>
               <MarketSignal strength={demandSignal(listing)} />
             </div>
+            <button onClick={() => { if (!disabledCompare) toggle(listing); }} disabled={disabledCompare}
+              title={disabledCompare ? "Max 4 per category" : undefined}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] tracking-wider mb-3 transition-colors disabled:opacity-40"
+              style={{ fontFamily: MONO, border: `1px solid ${compared ? "var(--primary)" : "var(--border)"}`, color: compared ? "#fff" : "var(--muted-foreground)", background: compared ? "var(--primary)" : "transparent" }}>
+              <GitCompare size={11} /> {compared ? "ADDED TO COMPARE" : "ADD TO COMPARE"}
+            </button>
             <p className="text-xs flex items-center gap-1.5 mb-5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>
               <Building2 size={11} />
               {listing.seller_name ?? "B2B Seller"}

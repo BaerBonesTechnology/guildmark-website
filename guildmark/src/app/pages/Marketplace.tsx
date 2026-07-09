@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
 import {
   Search, ChevronLeft, ChevronRight, ChevronRight as Arrow, Building2,
-  Laptop, Monitor, Server, Smartphone, Tablet, Network, Package, TrendingUp,
+  Laptop, Monitor, Server, Smartphone, Tablet, Network, Package, TrendingUp, GitCompare,
 } from "lucide-react";
 import { SpecPill } from "../components/SpecPill";
 import { MarketSignal } from "../components/MarketSignal";
+import { useCompare } from "../components/CompareContext";
 import { useMarketplaceListings } from "../lib/apiHooks";
 import { api } from "../lib/api";
 import type { MarketplaceListing } from "../models/marketplace";
@@ -85,19 +86,24 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
 // ── Listing card (links to PDP) ──────────────────────────────────────────────
 
 function ListingCard({ listing }: { listing: MarketplaceListing }) {
+  const { toggle, isCompared, atMax } = useCompare();
+  const compared = isCompared(listing.id);
   const price = listing.listed_price ?? listing.buyer_ask_price ?? 0;
   const qty = listing.quantity ?? 1;
   const specs = buildSpecs(listing);
   const Icon = CATEGORY_ICON[listing.asset_type ?? ""] ?? Package;
   const grade = listing.condition_grade;
   const isNew = daysAgo(listing.created_at) <= 3;
+  const photo = listing.product_images?.[0];
+  const disabledCompare = atMax(listing);
 
   return (
-    <Link to={`/pre/marketplace/${listing.id}`} className="border border-border flex flex-col group hover:border-primary transition-colors" style={{ background: "var(--card)" }}>
+    <Link to={`/pre/marketplace/${listing.id}`} className="border flex flex-col group hover:border-primary transition-colors"
+      style={{ background: "var(--card)", borderColor: compared ? "var(--primary)" : "var(--border)" }}>
       {/* Photo (or category placeholder) */}
       <div className="h-32 relative flex items-center justify-center overflow-hidden" style={{ background: "var(--secondary)" }}>
-        {listing.photo_url
-          ? <img src={listing.photo_url} alt={listing.model_name ?? "Listing"} className="w-full h-full object-cover" loading="lazy" />
+        {photo
+          ? <img src={photo} alt={listing.model_name ?? "Listing"} className="w-full h-full object-cover" loading="lazy" />
           : <Icon size={30} className="opacity-30" style={{ color: "var(--muted-foreground)" }} />}
         <div className="absolute top-2 left-2 flex gap-1">
           {grade && (
@@ -112,6 +118,15 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
           )}
         </div>
         <div className="absolute top-2 right-2"><MarketSignal strength={demandSignal(listing)} /></div>
+        {/* Compare toggle — don't trigger the card link */}
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!disabledCompare) toggle(listing); }}
+          disabled={disabledCompare}
+          title={disabledCompare ? "Max 4 per category" : compared ? "Remove from compare" : "Add to compare"}
+          className={`absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 text-[9px] tracking-wider transition-all ${compared ? "opacity-100" : "opacity-0 group-hover:opacity-100"} disabled:opacity-30`}
+          style={{ fontFamily: MONO, color: "#fff", background: compared ? "var(--primary)" : "rgba(0,0,0,0.65)" }}>
+          <GitCompare size={9} /> {compared ? "ADDED" : "COMPARE"}
+        </button>
       </div>
 
       <div className="p-4 flex flex-col flex-1">
