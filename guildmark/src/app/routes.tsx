@@ -3,6 +3,7 @@ import { ExecutiveDashboard } from "./pages/ExecutiveDashboard";
 import { MarketCalculator } from "./pages/MarketCalculator";
 import { OffloadWorkflow } from "./pages/OffloadWorkflow";
 import { Marketplace } from "./pages/Marketplace";
+import { ProductDetail } from "./pages/ProductDetail";
 import { MyListings } from "./pages/MyListings";
 import { Orders } from "./pages/Orders";
 import { OrderDetail } from "./pages/OrderDetail";
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: "reset-password", Component: ResetPassword },
       { path: "how-it-works", Component: HowItWorks },
       { path: "marketplace", Component: Marketplace },
+      { path: "marketplace/:id", Component: ProductDetail },
       { path: "insights", Component: InsightPage },
       { path: "contact", Component: Contact },
       {
@@ -179,6 +181,7 @@ export const preLaunchRouter = createBrowserRouter([
       { path: "reset-password", Component: ResetPassword },
       { path: "how-it-works", Component: HowItWorks },
       { path: "marketplace", Component: Marketplace },
+      { path: "marketplace/:id", Component: ProductDetail },
       { path: "insights", Component: InsightPage },
       { path: "contact", Component: Contact },
       {

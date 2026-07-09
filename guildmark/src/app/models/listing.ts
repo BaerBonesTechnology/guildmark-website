@@ -28,6 +28,8 @@ export interface Listing {
   status:                 ListingStatus;
   last_valued_at:         string | null;
   created_at:             string;
+  // Optional listing photo (URL). Listings without one fall back to a placeholder.
+  photo_url?:             string | null;
   // Joined from asset
   model_name?:            string;
   asset_type?:            AssetType;

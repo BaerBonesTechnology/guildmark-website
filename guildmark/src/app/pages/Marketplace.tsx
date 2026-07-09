@@ -1,571 +1,306 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, TrendingUp, ChevronLeft, ChevronRight, Building2, Package, Cpu, HardDrive, MemoryStick } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Button } from "../components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Badge } from "../components/ui/badge";
+import { Link } from "react-router";
+import {
+  Search, ChevronLeft, ChevronRight, ChevronRight as Arrow, Building2,
+  Laptop, Monitor, Server, Smartphone, Tablet, Network, Package, TrendingUp,
+} from "lucide-react";
 import { SpecPill } from "../components/SpecPill";
 import { MarketSignal } from "../components/MarketSignal";
-import { useMarketplaceListings, useMakeOffer } from "../lib/apiHooks";
+import { useMarketplaceListings } from "../lib/apiHooks";
 import { api } from "../lib/api";
 import type { MarketplaceListing } from "../models/marketplace";
-import type { AssetType } from "../models/asset";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const DISPLAY = "'Barlow Condensed', sans-serif";
+const BODY = "'DM Sans', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
+const PAGE_SIZE = 12;
 
-function daysAgo(isoDate: string): number {
-  return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86_400_000);
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function daysAgo(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+function ageLabel(iso: string): string {
+  const d = daysAgo(iso);
+  return d <= 0 ? "today" : d === 1 ? "1d ago" : `${d}d ago`;
+}
+function buildSpecs(l: MarketplaceListing): string[] {
+  const p: string[] = [];
+  if (l.ram_gb)     p.push(`${l.ram_gb} GB RAM`);
+  if (l.storage_gb) p.push(`${l.storage_gb} GB SSD`);
+  if (l.cpu_score)  p.push(`CPU ${l.cpu_score}`);
+  if (l.asset_type) p.push(l.asset_type);
+  return p;
+}
+function demandSignal(l: MarketplaceListing): 1 | 2 | 3 | 4 | 5 {
+  const newBoost = daysAgo(l.created_at) <= 3 ? 1 : 0;
+  const base: Record<string, number> = { distressed: 4, standard: 3, insufficient_data: 2, seller_overpriced: 1 };
+  return Math.min(5, Math.max(1, (base[l.valuation_flag] ?? 2) + newBoost)) as 1 | 2 | 3 | 4 | 5;
 }
 
-function buildSpecs(listing: MarketplaceListing): string[] {
-  const parts: string[] = [];
-  if (listing.ram_gb)     parts.push(`${listing.ram_gb} GB RAM`);
-  if (listing.storage_gb) parts.push(`${listing.storage_gb} GB SSD`);
-  if (listing.cpu_score)  parts.push(`CPU ${listing.cpu_score}`);
-  if (listing.asset_type) parts.push(listing.asset_type);
-  return parts;
-}
-
-/** Derive a 1–5 demand signal from the valuation flag + listing age. */
-function demandSignal(listing: MarketplaceListing): 1 | 2 | 3 | 4 | 5 {
-  const age = daysAgo(listing.created_at);
-  const newBoost = age <= 3 ? 1 : 0;
-  const base: Record<string, number> = {
-    distressed:        4,
-    standard:          3,
-    insufficient_data: 2,
-    seller_overpriced: 1,
-  };
-  const score = (base[listing.valuation_flag] ?? 2) + newBoost;
-  return Math.min(5, Math.max(1, score)) as 1 | 2 | 3 | 4 | 5;
-}
-
+const GRADE_COLOR: Record<string, string> = { A: "var(--grade-a)", B: "var(--grade-b)", C: "var(--grade-c)" };
 const conditionLabel: Record<string, string> = { A: "Grade A", B: "Grade B", C: "Grade C" };
-
-const categoryToAssetType: Record<string, AssetType | undefined> = {
-  all:        undefined,
-  laptops:    "laptop",
-  desktops:   "desktop",
-  servers:    "server",
-  phones:     "phone",
-  tablets:    "tablet",
-  networking: "networking",
+const CATEGORY_ICON: Record<string, React.ElementType> = {
+  laptop: Laptop, desktop: Monitor, server: Server, phone: Smartphone,
+  tablet: Tablet, networking: Network, monitor: Monitor,
 };
 
-// ---------------------------------------------------------------------------
-// Skeleton card shown during initial load
-// ---------------------------------------------------------------------------
+// asset_type value → label. Multi-select filters operate on these keys.
+const CATEGORIES: { type: string; label: string }[] = [
+  { type: "laptop", label: "Laptops" },
+  { type: "desktop", label: "Desktops" },
+  { type: "server", label: "Servers" },
+  { type: "phone", label: "Phones" },
+  { type: "tablet", label: "Tablets" },
+  { type: "networking", label: "Networking" },
+];
+const GRADES = [
+  { grade: "A", label: "Grade A" },
+  { grade: "B", label: "Grade B" },
+  { grade: "C", label: "Grade C" },
+];
 
-function ListingSkeleton() {
+// ── Filter sidebar (multi-select checkboxes) ─────────────────────────────────
+
+function FilterRow({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
   return (
-    <Card className="font-sans animate-pulse">
-      <CardHeader>
-        <div className="h-4 bg-muted rounded w-2/3 mb-2" />
-        <div className="h-3 bg-muted rounded w-1/2" />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-1.5">
-          {[60, 80, 50].map((w) => (
-            <div key={w} className="h-5 bg-muted rounded" style={{ width: w }} />
-          ))}
-        </div>
-        <div className="h-16 bg-muted/60 rounded-lg" />
-        <div className="h-10 bg-muted/40 rounded" />
-      </CardContent>
-    </Card>
+    <button onClick={onToggle} className="flex items-center gap-2 w-full text-left group py-0.5">
+      <span className="w-3.5 h-3.5 border flex items-center justify-center shrink-0 transition-colors"
+        style={{ borderColor: checked ? "var(--primary)" : "var(--border)", background: checked ? "var(--primary)" : "transparent" }}>
+        {checked && <span className="w-1.5 h-1.5" style={{ background: "#fff" }} />}
+      </span>
+      <span className="text-xs group-hover:text-foreground transition-colors" style={{ color: checked ? "var(--foreground)" : "var(--muted-foreground)", fontFamily: BODY }}>{label}</span>
+    </button>
+  );
+}
+function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-b border-border py-4">
+      <p className="text-[10px] tracking-[0.15em] uppercase mb-3" style={{ color: "var(--foreground)", fontFamily: MONO }}>{title}</p>
+      <div className="space-y-1.5">{children}</div>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Details dialog
-// ---------------------------------------------------------------------------
+// ── Listing card (links to PDP) ──────────────────────────────────────────────
 
-function ListingDetailDialog({ listing, onClose, onOffer }: {
-  listing:  MarketplaceListing | null;
-  onClose:  () => void;
-  onOffer:  (l: MarketplaceListing) => void;
-}) {
-  if (!listing) return null;
+function ListingCard({ listing }: { listing: MarketplaceListing }) {
   const price = listing.listed_price ?? listing.buyer_ask_price ?? 0;
+  const qty = listing.quantity ?? 1;
+  const specs = buildSpecs(listing);
+  const Icon = CATEGORY_ICON[listing.asset_type ?? ""] ?? Package;
+  const grade = listing.condition_grade;
+  const isNew = daysAgo(listing.created_at) <= 3;
+
   return (
-    <Dialog open={!!listing} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg font-sans">
-        <DialogHeader>
-          <DialogTitle className="font-sans">{listing.model_name ?? "Listing"}</DialogTitle>
-          <DialogDescription className="font-sans text-xs flex items-center gap-1">
-            <Building2 className="w-3 h-3" />
-            {listing.seller_name ?? "B2B Seller"}
-            {listing.seller_industry ? ` · ${listing.seller_industry}` : ""}
-            {listing.seller_size_band ? ` · ${listing.seller_size_band}` : ""}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-3">
-            {listing.condition_grade && (
-              <div className="bg-muted/50 rounded p-3">
-                <p className="text-xs text-muted-foreground mb-1">Condition</p>
-                <p className="font-sans">{conditionLabel[listing.condition_grade]}</p>
-              </div>
-            )}
-            <div className="bg-muted/50 rounded p-3">
-              <p className="text-xs text-muted-foreground mb-1">Quantity</p>
-              <p className="font-sans">{listing.quantity ?? 1} units</p>
-            </div>
-            {listing.ram_gb && (
-              <div className="bg-muted/50 rounded p-3 flex items-center gap-2">
-                <MemoryStick className="w-3 h-3 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">RAM</p>
-                  <p className="font-sans">{listing.ram_gb} GB</p>
-                </div>
-              </div>
-            )}
-            {listing.storage_gb && (
-              <div className="bg-muted/50 rounded p-3 flex items-center gap-2">
-                <HardDrive className="w-3 h-3 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Storage</p>
-                  <p className="font-sans">{listing.storage_gb} GB</p>
-                </div>
-              </div>
-            )}
-            {listing.cpu_score && (
-              <div className="bg-muted/50 rounded p-3 flex items-center gap-2">
-                <Cpu className="w-3 h-3 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">CPU Score</p>
-                  <p className="font-sans">{listing.cpu_score}</p>
-                </div>
-              </div>
-            )}
-            {listing.asset_type && (
-              <div className="bg-muted/50 rounded p-3 flex items-center gap-2">
-                <Package className="w-3 h-3 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Type</p>
-                  <p className="font-sans capitalize">{listing.asset_type}</p>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="border-t pt-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">Listed Price / Unit</p>
-              <p className="text-2xl font-sans text-foreground">
-                {price > 0 ? `$${price.toLocaleString()}` : "—"}
-              </p>
-            </div>
-            <Button
-              className="bg-primary hover:bg-primary/90 text-white font-sans"
-              onClick={() => { onClose(); onOffer(listing); }}
-            >
-              Make Offer
-            </Button>
-          </div>
+    <Link to={`/pre/marketplace/${listing.id}`} className="border border-border flex flex-col group hover:border-primary transition-colors" style={{ background: "var(--card)" }}>
+      {/* Photo (or category placeholder) */}
+      <div className="h-32 relative flex items-center justify-center overflow-hidden" style={{ background: "var(--secondary)" }}>
+        {listing.photo_url
+          ? <img src={listing.photo_url} alt={listing.model_name ?? "Listing"} className="w-full h-full object-cover" loading="lazy" />
+          : <Icon size={30} className="opacity-30" style={{ color: "var(--muted-foreground)" }} />}
+        <div className="absolute top-2 left-2 flex gap-1">
+          {grade && (
+            <span className="text-[9px] px-1.5 py-0.5" style={{ color: GRADE_COLOR[grade], border: `1px solid color-mix(in srgb, ${GRADE_COLOR[grade]} 30%, transparent)`, background: "rgba(0,0,0,0.35)", fontFamily: MONO }}>
+              {conditionLabel[grade]}
+            </span>
+          )}
+          {isNew && (
+            <span className="text-[9px] px-1.5 py-0.5 flex items-center gap-0.5" style={{ color: "#fff", border: "1px solid color-mix(in srgb, var(--primary) 40%, transparent)", background: "var(--primary)", fontFamily: MONO }}>
+              <TrendingUp size={8} /> NEW
+            </span>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+        <div className="absolute top-2 right-2"><MarketSignal strength={demandSignal(listing)} /></div>
+      </div>
+
+      <div className="p-4 flex flex-col flex-1">
+        <p className="text-sm font-medium leading-snug mb-1 truncate" style={{ fontFamily: BODY }}>{listing.model_name ?? "Unknown Model"}</p>
+        <p className="text-[10px] flex items-center gap-1 mb-3 truncate" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>
+          <Building2 size={9} className="shrink-0" />
+          {listing.seller_name ?? "B2B Seller"}{listing.seller_industry ? ` · ${listing.seller_industry}` : ""}
+        </p>
+        {specs.length > 0 && <div className="flex gap-1.5 flex-wrap mb-4">{specs.slice(0, 3).map((s) => <SpecPill key={s}>{s}</SpecPill>)}</div>}
+        <div className="flex items-end justify-between pt-3 border-t border-border mt-auto">
+          <div>
+            <div className="text-lg leading-none" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{price > 0 ? `$${price.toLocaleString()}` : "—"}</div>
+            <div className="text-[10px] mt-1" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>×{qty} · {ageLabel(listing.created_at)}</div>
+          </div>
+          <span className="flex items-center gap-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--primary)", fontFamily: MONO }}>View <Arrow size={11} /></span>
+        </div>
+      </div>
+    </Link>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Make Offer dialog
-// ---------------------------------------------------------------------------
-
-function MakeOfferDialog({ listing, onClose }: {
-  listing: MarketplaceListing | null;
-  onClose: () => void;
-}) {
-  const [offerPrice, setOfferPrice] = useState("");
-  const [quantity,   setQuantity]   = useState("1");
-  const [error,      setError]      = useState<string | null>(null);
-  const [submitted,  setSubmitted]  = useState(false);
-  const makeOffer = useMakeOffer();
-
-  useEffect(() => {
-    if (listing) {
-      setOfferPrice(String(listing.listed_price ?? ""));
-      setQuantity("1");
-      setError(null);
-      setSubmitted(false);
-    }
-  }, [listing]);
-
-  function handleSubmit() {
-    const price = parseFloat(offerPrice);
-    const qty   = parseInt(quantity, 10);
-    if (isNaN(price) || price <= 0) { setError("Enter a valid offer price"); return; }
-    if (isNaN(qty)   || qty   <= 0) { setError("Enter a valid quantity"); return; }
-    makeOffer.mutate(
-      { listing_id: listing!.id, offer_price: price, quantity: qty },
-      { onSuccess: () => setSubmitted(true) },
-    );
-  }
-
+function CardSkeleton() {
   return (
-    <Dialog open={!!listing} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm font-sans">
-        <DialogHeader>
-          <DialogTitle className="font-sans">Make an Offer</DialogTitle>
-          <DialogDescription className="font-sans text-xs truncate">
-            {listing?.model_name} · {listing?.seller_name ?? "B2B Seller"}
-          </DialogDescription>
-        </DialogHeader>
-        {submitted ? (
-          <div className="py-6 text-center space-y-2">
-            <p className="text-primary font-sans text-sm">✓ Offer submitted</p>
-            <p className="text-xs text-muted-foreground">The seller will be notified and can accept, counter, or decline.</p>
-            <Button className="mt-4 font-sans" onClick={onClose}>Close</Button>
-          </div>
-        ) : (
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <Label className="font-sans text-xs uppercase tracking-wide">Offer Price / Unit (USD)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                <Input
-                  className="pl-6 font-sans"
-                  type="number" min="0.01" step="0.01"
-                  value={offerPrice}
-                  onChange={(e) => { setOfferPrice(e.target.value); setError(null); }}
-                  autoFocus
-                />
-              </div>
-              {listing?.listed_price && (
-                <p className="text-xs text-muted-foreground font-sans">
-                  Listed at ${listing.listed_price.toLocaleString()}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label className="font-sans text-xs uppercase tracking-wide">Quantity</Label>
-              <Input
-                className="font-sans"
-                type="number" min="1" step="1"
-                value={quantity}
-                onChange={(e) => { setQuantity(e.target.value); setError(null); }}
-              />
-              {listing?.quantity && (
-                <p className="text-xs text-muted-foreground font-sans">
-                  {listing.quantity} units available
-                </p>
-              )}
-            </div>
-            {error && <p className="text-xs text-red-500 font-sans">{error}</p>}
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" className="font-sans" onClick={onClose} disabled={makeOffer.isPending}>
-                Cancel
-              </Button>
-              <Button
-                className="bg-primary hover:bg-primary/90 text-white font-sans"
-                onClick={handleSubmit}
-                disabled={makeOffer.isPending}
-              >
-                {makeOffer.isPending ? "Submitting…" : "Submit Offer"}
-              </Button>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <div className="border border-border animate-pulse" style={{ background: "var(--card)" }}>
+      <div className="h-32" style={{ background: "var(--secondary)" }} />
+      <div className="p-4 space-y-3">
+        <div className="h-3 w-2/3" style={{ background: "var(--secondary)" }} />
+        <div className="h-2 w-1/2" style={{ background: "var(--secondary)" }} />
+        <div className="h-6 w-1/3" style={{ background: "var(--secondary)" }} />
+      </div>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Listing card
-// ---------------------------------------------------------------------------
-
-function ListingCard({ listing, onDetails, onOffer }: {
-  listing:   MarketplaceListing;
-  onDetails: (l: MarketplaceListing) => void;
-  onOffer:   (l: MarketplaceListing) => void;
-}) {
-  const price    = listing.listed_price ?? listing.buyer_ask_price ?? 0;
-  const quantity = listing.quantity ?? 1;
-  const total    = price * quantity;
-  const specs    = buildSpecs(listing);
-  const signal   = demandSignal(listing);
-  const age      = daysAgo(listing.created_at);
-
-  return (
-    <Card className="font-sans hover:border-primary/50 transition-colors">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <CardTitle className="text-base truncate">
-                {listing.model_name ?? "Unknown Model"}
-              </CardTitle>
-              {listing.condition_grade && (
-                <Badge
-                  variant="secondary"
-                  className={
-                    listing.condition_grade === "A"
-                      ? "text-grade-a-text bg-grade-a-subtle border-grade-a/20"
-                      : listing.condition_grade === "B"
-                      ? "text-grade-b-text bg-grade-b-subtle border-grade-b/20"
-                      : "text-grade-c-text bg-grade-c-subtle border-grade-c/20"
-                  }
-                >
-                  {conditionLabel[listing.condition_grade]}
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-              <Building2 className="w-3 h-3 shrink-0" />
-              {listing.seller_name ?? "B2B Seller"}
-              {listing.seller_industry ? ` · ${listing.seller_industry}` : ""}
-            </p>
-          </div>
-          <MarketSignal strength={signal} />
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {specs.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap">
-            {specs.map((spec) => <SpecPill key={spec}>{spec}</SpecPill>)}
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
-          <div>
-            <p className="text-xs text-muted-foreground">Price / Unit</p>
-            <p className="text-lg font-sans text-foreground">
-              {price > 0 ? `$${price.toLocaleString()}` : "—"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Quantity</p>
-            <p className="text-lg font-sans">{quantity} {quantity === 1 ? "unit" : "units"}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-2 border-t">
-          <div>
-            <p className="text-xs text-muted-foreground">Total Value</p>
-            <p className="text-xl font-sans text-foreground">
-              {total > 0 ? `$${total.toLocaleString()}` : "—"}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="font-sans" onClick={() => onDetails(listing)}>
-              Details
-            </Button>
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-sans" onClick={() => onOffer(listing)}>
-              Make Offer
-            </Button>
-          </div>
-        </div>
-
-        {age <= 3 && (
-          <div className="flex items-center gap-2 text-xs text-primary">
-            <TrendingUp className="w-3 h-3" />
-            <span>New listing · {age === 0 ? "today" : `${age}d ago`}</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export function Marketplace() {
-  const [search, setSearch]               = useState("");
-  const [debouncedSearch, setDebounced]   = useState("");
-  const [category, setCategory]           = useState("all");
-  const [condition, setCondition]         = useState("all");
-  const [sortBy, setSortBy]               = useState("newest");
-  const [page, setPage]                   = useState(1);
-  const [detailListing, setDetailListing] = useState<MarketplaceListing | null>(null);
-  const [offerListing,  setOfferListing]  = useState<MarketplaceListing | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebounced] = useState("");
+  const [categories, setCategories] = useState<Set<string>>(new Set());
+  const [grades, setGrades] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState("newest");
+  const [page, setPage] = useState(1);
 
-  const [stats, setStats] = useState({
-    totalListings: 0, totalUnits: 0,
-    avgPricePerUnit: "0", totalMarketValue: "0",
-  });
+  const [stats, setStats] = useState({ totalListings: 0, totalUnits: 0, avgPricePerUnit: "0", totalMarketValue: "0" });
 
-  // Debounce search input — 350 ms
   useEffect(() => {
     const t = setTimeout(() => { setDebounced(search); setPage(1); }, 350);
     return () => clearTimeout(t);
   }, [search]);
+  useEffect(() => { setPage(1); }, [categories, grades, sortBy]);
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1); }, [category, condition]);
-
-  // Stats (lightweight, separate fetch)
   useEffect(() => {
-    api.get<{ totalListings: number; totalUnits: number; avgPricePerUnit: number; totalMarketValue: number }>(
-      "/marketplace/stats"
-    )
+    api.get<{ totalListings: number; totalUnits: number; avgPricePerUnit: number; totalMarketValue: number }>("/marketplace/stats")
       .then((r) => setStats({
-        totalListings:    r.totalListings,
-        totalUnits:       r.totalUnits,
-        avgPricePerUnit:  r.avgPricePerUnit.toLocaleString("en-US", { maximumFractionDigits: 0 }),
+        totalListings: r.totalListings, totalUnits: r.totalUnits,
+        avgPricePerUnit: r.avgPricePerUnit.toLocaleString("en-US", { maximumFractionDigits: 0 }),
         totalMarketValue: r.totalMarketValue.toLocaleString("en-US", { maximumFractionDigits: 0 }),
-      }))
-      .catch(() => {});
+      })).catch(() => {});
   }, []);
 
+  // Search is server-side; category/condition are multi-select and filtered
+  // client-side, so we pull a generous page. Fine pre-launch — revisit with
+  // server-side multi-value filters if the catalog grows past a few hundred.
   const { data, isLoading, isError } = useMarketplaceListings({
-    search:          debouncedSearch || undefined,
-    asset_type:      categoryToAssetType[category],
-    condition_grade: condition !== "all" ? condition.toUpperCase() : undefined,
-    page,
-    page_size: 12,
+    search: debouncedSearch || undefined,
+    page: 1, page_size: 100,
   });
 
-  const listings    = data?.data ?? [];
-  const totalPages  = data?.total_pages ?? 1;
-  const totalCount  = data?.total ?? 0;
+  const all = data?.data ?? [];
 
-  // Client-side sort within the current page
-  const sorted = useMemo(() => {
-    if (!listings.length) return listings;
-    return [...listings].sort((a, b) => {
+  const toggle = (set: Set<string>, key: string, setter: (s: Set<string>) => void) => {
+    const next = new Set(set);
+    next.has(key) ? next.delete(key) : next.add(key);
+    setter(next);
+  };
+
+  const filtered = useMemo(() => {
+    const list = all.filter((l) => {
+      const catOk = categories.size === 0 || (l.asset_type != null && categories.has(l.asset_type));
+      const gradeOk = grades.size === 0 || (l.condition_grade != null && grades.has(l.condition_grade));
+      return catOk && gradeOk;
+    });
+    return [...list].sort((a, b) => {
       const ap = a.listed_price ?? a.buyer_ask_price ?? 0;
       const bp = b.listed_price ?? b.buyer_ask_price ?? 0;
-      if (sortBy === "price-low")  return ap - bp;
+      if (sortBy === "price-low") return ap - bp;
       if (sortBy === "price-high") return bp - ap;
-      if (sortBy === "demand")     return demandSignal(b) - demandSignal(a);
-      return 0; // newest — backend already sorts by created_at DESC
+      if (sortBy === "demand") return demandSignal(b) - demandSignal(a);
+      return 0; // newest — backend already returns created_at DESC
     });
-  }, [listings, sortBy]);
+  }, [all, categories, grades, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const anyFilter = categories.size > 0 || grades.size > 0;
+
+  const STATS = [
+    { label: "Listings", value: stats.totalListings.toLocaleString() },
+    { label: "Units", value: stats.totalUnits.toLocaleString() },
+    { label: "Avg / Unit", value: `$${stats.avgPricePerUnit}` },
+    { label: "Market Value", value: `$${stats.totalMarketValue}` },
+  ];
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header */}
-      <div className="mb-6 justify-items-center">
-        <h1 className="text-3xl font-sans font-semibold mb-2">Browse the <span className="text-primary">GuildMarket</span></h1>
-        <p className="text-muted-foreground font-sans text-sm">
-          Discover enterprise hardware from verified B2B sellers across the country
-        </p>
-      </div>
-
-      {/* Filters */}
-      <Card className="font-sans">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-5 gap-4">
-            <div className="col-span-2 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search assets..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 font-sans"
-              />
+    <div className="px-6 py-6 max-w-[1600px] mx-auto" style={{ fontFamily: BODY }}>
+      {/* Header + stats */}
+      <div className="mb-6">
+        <p className="text-[10px] tracking-[0.2em] uppercase mb-1" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>GuildMarket</p>
+        <h1 className="tracking-tight mb-4" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.2rem, 4vw, 3.2rem)" }}>
+          Certified enterprise hardware,<br />from verified B2B sellers.
+        </h1>
+        <div className="flex flex-wrap gap-px border border-border w-fit" style={{ background: "var(--border)" }}>
+          {STATS.map((s) => (
+            <div key={s.label} className="px-5 py-2.5" style={{ background: "var(--card)" }}>
+              <span className="text-[10px] tracking-widest uppercase mr-2" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{s.label}</span>
+              <span className="text-sm" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.value}</span>
             </div>
-
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="font-sans"><SelectValue placeholder="Category" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all"        className="font-sans">All Categories</SelectItem>
-                <SelectItem value="laptops"    className="font-sans">Laptops</SelectItem>
-                <SelectItem value="desktops"   className="font-sans">Desktops</SelectItem>
-                <SelectItem value="servers"    className="font-sans">Servers</SelectItem>
-                <SelectItem value="phones"     className="font-sans">Phones</SelectItem>
-                <SelectItem value="tablets"    className="font-sans">Tablets</SelectItem>
-                <SelectItem value="networking" className="font-sans">Networking</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={condition} onValueChange={setCondition}>
-              <SelectTrigger className="font-sans"><SelectValue placeholder="Condition" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="font-sans">All Conditions</SelectItem>
-                <SelectItem value="a"   className="font-sans">Grade A</SelectItem>
-                <SelectItem value="b"   className="font-sans">Grade B</SelectItem>
-                <SelectItem value="c"   className="font-sans">Grade C</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="font-sans"><SelectValue placeholder="Sort by" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest"     className="font-sans">Newest First</SelectItem>
-                <SelectItem value="price-low"  className="font-sans">Price: Low to High</SelectItem>
-                <SelectItem value="price-high" className="font-sans">Price: High to Low</SelectItem>
-                <SelectItem value="demand"     className="font-sans">High Demand</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <ListingSkeleton key={i} />)}
-        </div>
-      ) : isError ? (
-        <Card className="font-sans">
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-sm">Failed to load listings. Please try again.</p>
-          </CardContent>
-        </Card>
-      ) : sorted.length === 0 ? (
-        <Card className="font-sans">
-          <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-base font-sans mb-1">No listings found</p>
-            <p className="text-sm">Try adjusting your filters or search term.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {sorted.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              onDetails={setDetailListing}
-              onOffer={setOfferListing}
-            />
           ))}
         </div>
-      )}
+      </div>
 
-      {/* Pagination */}
-      {!isLoading && !isError && totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-muted-foreground font-sans">
-            Page {page} of {totalPages} · {totalCount.toLocaleString()} listings
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline" size="sm" className="font-sans"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-            </Button>
-            <Button
-              variant="outline" size="sm" className="font-sans"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+      <div className="grid lg:grid-cols-[220px_1fr] gap-6">
+        {/* Sidebar filters */}
+        <aside className="hidden lg:block">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Filters</p>
+            {anyFilter && (
+              <button onClick={() => { setCategories(new Set()); setGrades(new Set()); }}
+                className="text-[10px] hover:text-foreground transition-colors" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Clear</button>
+            )}
           </div>
-        </div>
-      )}
-      <ListingDetailDialog
-        listing={detailListing}
-        onClose={() => setDetailListing(null)}
-        onOffer={(l) => { setDetailListing(null); setOfferListing(l); }}
-      />
+          <FilterSection title="Category">
+            {CATEGORIES.map((c) => <FilterRow key={c.type} label={c.label} checked={categories.has(c.type)} onToggle={() => toggle(categories, c.type, setCategories)} />)}
+          </FilterSection>
+          <FilterSection title="Condition">
+            {GRADES.map((g) => <FilterRow key={g.grade} label={g.label} checked={grades.has(g.grade)} onToggle={() => toggle(grades, g.grade, setGrades)} />)}
+          </FilterSection>
+        </aside>
 
-      <MakeOfferDialog
-        listing={offerListing}
-        onClose={() => setOfferListing(null)}
-      />
+        {/* Main */}
+        <div>
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assets…"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary transition-colors"
+                style={{ fontFamily: BODY, background: "var(--input-background)" }} />
+            </div>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary appearance-none"
+              style={{ fontFamily: BODY, background: "var(--input-background)" }}>
+              <option value="newest">Newest First</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="demand">High Demand</option>
+            </select>
+          </div>
+
+          {isLoading ? (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}</div>
+          ) : isError ? (
+            <div className="border border-border py-16 text-center text-sm" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>Failed to load listings. Please try again.</div>
+          ) : pageItems.length === 0 ? (
+            <div className="border border-border py-16 text-center" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>
+              <p className="text-sm font-medium mb-1">No listings found</p>
+              <p className="text-xs">Try adjusting your filters or search term.</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">{pageItems.map((l) => <ListingCard key={l.id} listing={l} />)}</div>
+          )}
+
+          {!isLoading && !isError && totalPages > 1 && (
+            <div className="flex items-center justify-between pt-6">
+              <p className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Page {page} of {totalPages} · {filtered.length.toLocaleString()} listings</p>
+              <div className="flex items-center gap-2">
+                <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border hover:border-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: BODY }}>
+                  <ChevronLeft size={14} /> Prev
+                </button>
+                <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border hover:border-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: BODY }}>
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
