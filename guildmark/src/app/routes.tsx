@@ -25,6 +25,7 @@ import { Invoices } from "./pages/amps/Invoices";
 import { Settings } from "./pages/amps/Settings";
 import { InsightPage } from "./pages/Insights";
 import { PreLaunch } from "./pages/PreLaunch";
+import { Blog } from "./pages/Blog";
 import { Contact } from "./pages/Contact";
 import { TermsOfService } from "./pages/compliance/TermsOfService";
 import { PrivacyPolicy } from "./pages/compliance/PrivacyPolicy";
@@ -152,8 +153,9 @@ export const preLaunchRouter = createBrowserRouter([
     Component: PreLaunchLayout,
     children: [
       { index: true, Component: PreLaunch },
-      // Redirect /insights to the bottom sheet so direct URL navigation works
-      { path: "insights", element: <Navigate to="/?sheet=insights" replace /> },
+      { path: "blog", Component: Blog },
+      // Market research moved from the drawer to the dedicated /blog page.
+      { path: "insights", element: <Navigate to="/blog" replace /> },
       { path: "contact", Component: Contact },
     ],
   },

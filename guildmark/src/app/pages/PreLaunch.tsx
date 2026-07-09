@@ -12,18 +12,15 @@
  */
 
 import { useState } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useTheme } from "../hooks/useTheme";
 import {
   ArrowRight, CheckCircle2, Sun, Moon, BookOpen,
   Server, RefreshCw, Users, BarChart3, ShieldCheck, Zap, Globe, Award,
 } from "lucide-react";
 import { apiUrl } from "../config";
+import { usePlatformFees, formatFeeRate } from "../lib/apiHooks";
 import logoLong from "../../logo-long.svg";
-
-interface PreLaunchContext {
-  openInsights: () => void;
-}
 
 const DISPLAY = "'Barlow Condensed', sans-serif";
 const BODY = "'DM Sans', sans-serif";
@@ -121,6 +118,8 @@ function ITTeamsSection() {
   const [org, setOrg] = useState("");
   const [size, setSize] = useState("");
   const { status, error, submit } = useWaitlist();
+  const { data: fees } = usePlatformFees();
+  const sellerFee = formatFeeRate(fees?.seller_fee_free);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -155,7 +154,7 @@ function ITTeamsSection() {
                 {[
                   "Instant valuations against live market data",
                   "Certified listings — graded, spec-disclosed",
-                  "8% platform fee. $0 to list.",
+                  `${sellerFee} platform fee. $0 to list.`,
                 ].map((pt) => (
                   <div key={pt} className="flex items-center gap-2.5">
                     <div className="w-1 h-1 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
@@ -223,6 +222,7 @@ function SupplySection() {
   const [role, setRole] = useState("");
   const [volume, setVolume] = useState("");
   const { status, error, submit } = useWaitlist();
+  const { data: fees } = usePlatformFees();
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -307,7 +307,7 @@ function SupplySection() {
             ))}
             <div className="py-6">
               <div className="grid grid-cols-2 gap-4 max-w-xs">
-                {[{ val: "$0", label: "To list" }, { val: "8%", label: "On sale only" }].map((s) => (
+                {[{ val: "$0", label: "To list" }, { val: formatFeeRate(fees?.seller_fee_free), label: "On sale only" }].map((s) => (
                   <div key={s.label} className="text-center">
                     <div className="text-3xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.val}</div>
                     <div className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase" style={{ fontFamily: MONO }}>{s.label}</div>
@@ -475,7 +475,7 @@ function PartnerNetworkSection() {
 
 // ── Header / footer (page owns its own chrome) ──────────────────────────────
 
-function PreLaunchHeader({ openInsights }: { openInsights: () => void }) {
+function PreLaunchHeader() {
   const { theme, toggleTheme } = useTheme();
   return (
     <header className="border-b border-border sticky top-0 z-50" style={{ background: "var(--background)", backdropFilter: "blur(8px)" }}>
@@ -487,12 +487,12 @@ function PreLaunchHeader({ openInsights }: { openInsights: () => void }) {
           </span>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <button onClick={openInsights}
+          <Link to="/blog"
             className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             style={{ fontFamily: BODY }}>
             <BookOpen size={14} />
-            Market Research
-          </button>
+            Blog
+          </Link>
           <div className="w-px h-4 bg-border hidden md:block" />
           <span className="text-[10px] font-mono tracking-widest items-center gap-1.5 hidden sm:flex" style={{ color: "var(--primary)", fontFamily: MONO }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--primary)" }} />
@@ -515,7 +515,7 @@ function PreLaunchHeader({ openInsights }: { openInsights: () => void }) {
   );
 }
 
-function PreLaunchFooter({ openInsights }: { openInsights: () => void }) {
+function PreLaunchFooter() {
   return (
     <footer className="border-t border-border">
       <div className="max-w-[1600px] mx-auto px-8 md:px-20 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -524,9 +524,9 @@ function PreLaunchFooter({ openInsights }: { openInsights: () => void }) {
             © {new Date().getFullYear()} Baerhous Media Group, LLC — GuildMark™
           </p>
           <div className="flex gap-5 mt-1">
-            <button onClick={openInsights} className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
-              Market Research
-            </button>
+            <Link to="/blog" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
+              Blog
+            </Link>
             <a href="/compliance/privacy-policy" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
               Privacy Policy
             </a>
@@ -551,14 +551,13 @@ function PreLaunchFooter({ openInsights }: { openInsights: () => void }) {
 // ── Root ────────────────────────────────────────────────────────────────────
 
 export function PreLaunch() {
-  const { openInsights } = useOutletContext<PreLaunchContext>();
   return (
     <>
-      <PreLaunchHeader openInsights={openInsights} />
+      <PreLaunchHeader />
       <ITTeamsSection />
       <SupplySection />
       <PartnerNetworkSection />
-      <PreLaunchFooter openInsights={openInsights} />
+      <PreLaunchFooter />
     </>
   );
 }

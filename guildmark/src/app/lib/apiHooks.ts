@@ -104,14 +104,14 @@ export function useListing(id: string) {
 export function useMyListings() {
   return useQuery({
     queryKey: queryKeys.myListings(),
-    queryFn:  () => api.get<Listing[]>("/pre/seller/listings"),
+    queryFn:  () => api.get<Listing[]>("/seller/listings"),
   });
 }
 
 export function useMyOffers() {
   return useQuery({
     queryKey: queryKeys.myOffers(),
-    queryFn:  () => api.get<BuyerOffer[]>("/pre/buyer/offers"),
+    queryFn:  () => api.get<BuyerOffer[]>("/buyer/offers"),
   });
 }
 
@@ -126,7 +126,7 @@ export function useCreateListing() {
       quantity:     number;
       listed_price: number;
       reason?:      string;
-    }) => api.post<Listing>("/pre/seller/listings", data),
+    }) => api.post<Listing>("/seller/listings", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.myListings() });
       qc.invalidateQueries({ queryKey: queryKeys.marketplace() });
@@ -176,7 +176,7 @@ export function useMakeOffer() {
       listing_id:  string;
       offer_price: number;
       quantity:    number;
-    }) => api.post<BuyerOffer>("/pre/buyer/offers", data),
+    }) => api.post<BuyerOffer>("/buyer/offers", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.myOffers() });
     },
@@ -212,7 +212,7 @@ export function useRespondToOffer() {
 export function useAssets(filters?: object) {
   return useQuery({
     queryKey: queryKeys.assets(filters),
-    queryFn:  () => api.get<Asset[]>("/pre/assets"),
+    queryFn:  () => api.get<Asset[]>("/assets"),
   });
 }
 
@@ -223,7 +223,7 @@ export function useAssets(filters?: object) {
 export function usePortfolioSummary() {
   return useQuery({
     queryKey: queryKeys.portfolio(),
-    queryFn:  () => api.get<PortfolioSummary>("/pre/amps/portfolio"),
+    queryFn:  () => api.get<PortfolioSummary>("/amps/portfolio"),
     staleTime: 5 * 60 * 1000,   // 5 minutes — updated nightly, no point polling hard
   });
 }
@@ -269,7 +269,7 @@ export function useQuickListAsset() {
 export function useMdmConnections() {
   return useQuery({
     queryKey: queryKeys.mdmConnections(),
-    queryFn:  () => api.get<MdmConnection[]>("/pre/amps/mdm/connections"),
+    queryFn:  () => api.get<MdmConnection[]>("/amps/mdm/connections"),
   });
 }
 
@@ -277,7 +277,7 @@ export function useConnectMdm() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: MdmConnectRequest) =>
-      api.post<MdmConnection>("/pre/amps/mdm/connect", data),
+      api.post<MdmConnection>("/amps/mdm/connect", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.mdmConnections() });
     },
@@ -318,7 +318,7 @@ export function useTriggerMdmSync() {
 export function useInvoices() {
   return useQuery({
     queryKey: queryKeys.invoices(),
-    queryFn:  () => api.get<TaxInvoice[]>("/pre/amps/invoices"),
+    queryFn:  () => api.get<TaxInvoice[]>("/amps/invoices"),
   });
 }
 
@@ -336,7 +336,7 @@ export function useGenerateInvoice() {
         write_off_amount: number;
         market_value:     number;
         pdf_path:         string | null;
-      }>("/pre/amps/invoices/generate", data),
+      }>("/amps/invoices/generate", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.invoices() });
     },
@@ -384,7 +384,7 @@ export interface DashboardData {
 export function useDashboard() {
   return useQuery({
     queryKey: queryKeys.dashboard(),
-    queryFn:  () => api.get<DashboardData>("/pre/dashboard"),
+    queryFn:  () => api.get<DashboardData>("/dashboard"),
     staleTime: 60 * 1000,   // 1 minute
   });
 }
@@ -403,7 +403,7 @@ export function useValuationEstimate(req: ValuationEstimateRequest | undefined) 
   return useQuery({
     queryKey: ["valuation-estimate", req] as const,
     queryFn:  () =>
-      api.post<ValuationEstimateResponse>("/pre/valuation/estimate", req!),
+      api.post<ValuationEstimateResponse>("/valuation/estimate", req!),
     enabled:   !!req,
     staleTime: 5 * 60 * 1000,   // 5 minutes — same input → same model output
     retry:     1,               // ML service may be cold-starting; retry once
@@ -458,7 +458,7 @@ export interface SubscriptionData {
 export function useSubscription() {
   return useQuery({
     queryKey: ["subscription"] as const,
-    queryFn:  () => api.get<SubscriptionData>("/pre/subscriptions/current"),
+    queryFn:  () => api.get<SubscriptionData>("/subscriptions/current"),
     staleTime: 60 * 1000,
   });
 }
@@ -481,7 +481,7 @@ export function useSubscriptionCheckout() {
       };
     }) =>
       api.post<{ plan: string; status: string; invoice: SubscriptionInvoice }>(
-        "/pre/subscriptions/checkout",
+        "/subscriptions/checkout",
         data,
       ),
     onSuccess: () => {
@@ -495,7 +495,7 @@ export function useSubscriptionCheckout() {
 export function useCancelSubscription() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post<{ cancelled: boolean }>("/pre/subscriptions/cancel", {}),
+    mutationFn: () => api.post<{ cancelled: boolean }>("/subscriptions/cancel", {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscription"] });
     },
@@ -525,9 +525,19 @@ export interface PlatformFees {
 export function usePlatformFees() {
   return useQuery({
     queryKey: ["platform-fees"] as const,
-    queryFn:  () => api.get<PlatformFees>("/pre/config/fees"),
+    queryFn:  () => api.get<PlatformFees>("/config/fees"),
     staleTime: 60 * 1000,   // 1 minute — admin changes should be visible quickly
   });
+}
+
+/**
+ * Format a decimal fee rate (0.08) as a percent string ("8%"). Returns "—"
+ * while the rate is still loading so callers never fall back to a hardcoded
+ * number — the sale % must always come from the API.
+ */
+export function formatFeeRate(rate: number | null | undefined): string {
+  if (rate == null) return "—";
+  return `${parseFloat((rate * 100).toFixed(2))}%`;
 }
 
 // ---------------------------------------------------------------------------
@@ -538,7 +548,7 @@ export function usePlatformFees() {
 export function useOrders() {
   return useQuery({
     queryKey: queryKeys.orders(),
-    queryFn:  () => api.get<OrdersResponse>("/pre/orders"),
+    queryFn:  () => api.get<OrdersResponse>("/orders"),
     staleTime: 60 * 1000,   // 1 minute
   });
 }
@@ -625,7 +635,7 @@ export interface ValuationStatus {
 export function useValuationStatus() {
   return useQuery({
     queryKey: queryKeys.valuationStatus(),
-    queryFn:  () => api.get<ValuationStatus>("/pre/amps/valuation-status"),
+    queryFn:  () => api.get<ValuationStatus>("/amps/valuation-status"),
     // Poll aggressively while the job is in-flight; back off otherwise.
     refetchInterval: (query) =>
       query.state.data?.status === "running" ? 3000 : false,
@@ -644,7 +654,7 @@ export function useTriggerValuation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      api.post<{ status: string; asset_count: number }>("/pre/amps/valuate", {}),
+      api.post<{ status: string; asset_count: number }>("/amps/valuate", {}),
     onSuccess: () => {
       // Immediately refresh the status so the banner appears without waiting
       // for the next scheduled poll interval.
