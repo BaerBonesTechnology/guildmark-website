@@ -12,7 +12,7 @@
  */
 
 import { useState } from "react";
-import { Link, useOutletContext } from "react-router";
+import { Link, useNavigate, useOutletContext } from "react-router";
 import { useTheme } from "../hooks/useTheme";
 import {
   ArrowRight, CheckCircle2, Sun, Moon, BookOpen,
@@ -306,8 +306,8 @@ function SupplySection() {
               </div>
             ))}
             <div className="py-6">
-              <div className="grid grid-cols-3 gap-4">
-                {[{ val: "$0", label: "To list" }, { val: "8%", label: "On sale only" }, { val: "48hr", label: "Avg. time to sale" }].map((s) => (
+              <div className="grid grid-cols-2 gap-4 max-w-xs">
+                {[{ val: "$0", label: "To list" }, { val: "8%", label: "On sale only" }].map((s) => (
                   <div key={s.label} className="text-center">
                     <div className="text-3xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.val}</div>
                     <div className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase" style={{ fontFamily: MONO }}>{s.label}</div>
@@ -332,20 +332,29 @@ const PARTNER_PERKS = [
 ];
 
 function PartnerNetworkSection() {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [services, setServices] = useState("");
   const [coverage, setCoverage] = useState("");
-  const { status, error, submit } = useWaitlist();
+  const [accepted, setAccepted] = useState(false);
+
+  const canApply = name.trim() !== "" && email.trim() !== "" && accepted;
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || status === "loading") return;
-    void submit({
-      email: email.trim(),
-      source: "partner",
-      company: company.trim() || undefined,
-      partner_type: [services, coverage].filter(Boolean).join(" · ") || undefined,
+    if (!canApply) return;
+    // Hand off to the LOI flow — the partner reviews and signs the Letter of
+    // Intent, which POSTs /waitlist with loi_accepted: true on signature.
+    navigate("/compliance/partner-loi", {
+      state: {
+        name: name.trim(),
+        company: company.trim(),
+        partnerType: [services, coverage].filter(Boolean).join(" · "),
+        email: email.trim(),
+        phone: "",
+      },
     });
   }
 
@@ -395,49 +404,62 @@ function PartnerNetworkSection() {
                   We review ITAD providers individually. Certified Partners are listed in the GuildMark
                   directory and receive inbound referrals at launch.
                 </p>
-                {status === "success" ? (
-                  <SubmitSuccess audience="ITAD partner" />
-                ) : (
-                  <form onSubmit={onSubmit} className="space-y-4">
-                    <div>
-                      <label className={labelClass}>Work email</label>
-                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@itadcompany.com" className={fieldClass} style={fieldStyle} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Company name</label>
-                      <input type="text" value={company} onChange={(e) => setCompany(e.target.value)}
-                        placeholder="ITAD provider name" className={fieldClass} style={fieldStyle} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Services offered</label>
-                      <select value={services} onChange={(e) => setServices(e.target.value)}
-                        className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                        <option value="">Select primary service</option>
-                        <option>Full ITAD — pickup, wipe, resale</option>
-                        <option>Data destruction only</option>
-                        <option>Logistics & pickup</option>
-                        <option>Refurbishment & remarketing</option>
-                        <option>End-of-life recycling (R2/e-Stewards)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelClass}>Geographic coverage</label>
-                      <select value={coverage} onChange={(e) => setCoverage(e.target.value)}
-                        className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                        <option value="">Select coverage</option>
-                        <option>National</option>
-                        <option>Regional — Northeast</option>
-                        <option>Regional — Southeast</option>
-                        <option>Regional — Midwest</option>
-                        <option>Regional — West</option>
-                        <option>International</option>
-                      </select>
-                    </div>
-                    {status === "error" && <FormError msg={error} />}
-                    <SubmitButton status={status} label="Apply to Partner Network" />
-                  </form>
-                )}
+                <form onSubmit={onSubmit} className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Contact name</label>
+                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                      placeholder="Full name" className={fieldClass} style={fieldStyle} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Work email</label>
+                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@itadcompany.com" className={fieldClass} style={fieldStyle} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Company name</label>
+                    <input type="text" value={company} onChange={(e) => setCompany(e.target.value)}
+                      placeholder="ITAD provider name" className={fieldClass} style={fieldStyle} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Services offered</label>
+                    <select value={services} onChange={(e) => setServices(e.target.value)}
+                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                      <option value="">Select primary service</option>
+                      <option>Full ITAD — pickup, wipe, resale</option>
+                      <option>Data destruction only</option>
+                      <option>Logistics & pickup</option>
+                      <option>Refurbishment & remarketing</option>
+                      <option>End-of-life recycling (R2/e-Stewards)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Geographic coverage</label>
+                    <select value={coverage} onChange={(e) => setCoverage(e.target.value)}
+                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                      <option value="">Select coverage</option>
+                      <option>National</option>
+                      <option>Regional — Northeast</option>
+                      <option>Regional — Southeast</option>
+                      <option>Regional — Midwest</option>
+                      <option>Regional — West</option>
+                      <option>International</option>
+                    </select>
+                  </div>
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
+                    <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)}
+                      className="mt-0.5 shrink-0 accent-[var(--primary)]" style={{ width: 15, height: 15 }} />
+                    <span className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY }}>
+                      I have read and agree to review and sign the GuildMark Partner Letter of Intent
+                      before proceeding.
+                    </span>
+                  </label>
+                  <button type="submit" disabled={!canApply}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ background: "var(--primary)", color: "#fff", fontFamily: BODY }}>
+                    Continue to Letter of Intent
+                    <ArrowRight size={14} />
+                  </button>
+                </form>
               </div>
               <p className="text-[10px] text-muted-foreground mt-4 leading-relaxed px-1" style={{ fontFamily: BODY }}>
                 Partner listings are reviewed within 5 business days. We verify certifications
