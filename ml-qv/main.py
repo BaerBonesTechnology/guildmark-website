@@ -8,13 +8,14 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from models.depreciation import DepreciationModel
 from models.depreciation import MODEL_VERSION as DEP_VERSION
 from models.valuation import MODEL_VERSION as VAL_VERSION
 from models.valuation import ValuationFeatures, ValuationModel
+from retrain import last_run, run_retrain, start_scheduler
 from schemas import (
     DepreciationPoint,
     DepreciationRequest,
@@ -49,7 +50,14 @@ async def lifespan(app: FastAPI):
     ValuationModel.load()
     DepreciationModel.load()
     log.info("ML models loaded; service ready")
-    yield
+
+    # Daily in-process retrain (drops + reloads the singletons on success).
+    scheduler = start_scheduler()
+    try:
+        yield
+    finally:
+        if scheduler is not None:
+            scheduler.shutdown(wait=False)
 
 
 app = FastAPI(
@@ -102,6 +110,23 @@ def predict_depreciation(req: DepreciationRequest) -> DepreciationResponse:
         forecast=[DepreciationPoint(month=m, projected_value=v) for m, v in points],
         model_version=DEP_VERSION,
     )
+
+
+@app.post("/admin/retrain", status_code=202)
+def trigger_retrain(background: BackgroundTasks) -> JSONResponse:
+    """Kick off a retrain now (internal-only; same work as the daily cron).
+
+    Returns 202 immediately and runs in the background; the models hot-swap
+    when it finishes. Poll GET /admin/retrain for the last run's status.
+    """
+    background.add_task(run_retrain, trigger="manual")
+    return JSONResponse(status_code=202, content={"status": "retrain_started"})
+
+
+@app.get("/admin/retrain")
+def retrain_status() -> dict[str, object]:
+    """Status of the most recent retrain (scheduled or manual)."""
+    return last_run()
 
 
 @app.post("/data/track", status_code=202)

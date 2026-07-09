@@ -145,6 +145,8 @@ services:
       EBAY_APP_ID:  ${EBAY_APP_ID:-}
       EBAY_CERT_ID: ${EBAY_CERT_ID:-}
       RETRAIN:      ${RETRAIN:-0}
+      # Daily in-app retrain (cron, UTC). "off" to disable. Default 03:00.
+      ML_RETRAIN_CRON: ${ML_RETRAIN_CRON:-0 3 * * *}
     ports:
       - "8001:8001"
     volumes:
