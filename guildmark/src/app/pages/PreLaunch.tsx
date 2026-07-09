@@ -1,476 +1,542 @@
 /**
- * Pre-launch hero page — shown for all routes when didLaunch === false.
+ * Pre-launch hero — the canonical GuildMark landing experience.
  *
- * Two sign-up paths:
- *   1. Waitlist  — IT teams wanting early access (source: "waitlist")
- *   2. Partner   — resellers, MSPs, refurbishers, etc. (source: "partner")
+ * Three full-height audience panels (IT teams / supply side / partner
+ * network), each with its own early-access form wired to the real
+ * POST /waitlist endpoint. The backend stores `source` plus the extra
+ * fields (company / role / services…) as notes, so every submission is
+ * segmentable by audience.
+ *
+ * Design language: Barlow Condensed display, DM Sans body, JetBrains Mono
+ * labels; sharp borders; layered section backgrounds (--section-1/2/3).
  */
 
 import { useState } from "react";
-import { useOutletContext, useNavigate } from "react-router";
-import { useTranslation, Trans } from "react-i18next";
+import { Link, useOutletContext } from "react-router";
+import { useTheme } from "../hooks/useTheme";
 import {
-  ArrowRight, Mail, Check, AlertCircle,
-  Layers, Store, Truck, Shield, BarChart2,
-  Lock, Zap, CheckCircle2, Users, Handshake,
+  ArrowRight, CheckCircle2, Sun, Moon, BookOpen,
+  Server, RefreshCw, Users, BarChart3, ShieldCheck, Zap, Globe, Award,
 } from "lucide-react";
 import { apiUrl } from "../config";
+import logoLong from "../../logo-long.svg";
 
 interface PreLaunchContext {
   openInsights: () => void;
 }
 
-async function submitWaitlist(email: string): Promise<void> {
-  const res = await fetch(`${apiUrl}/waitlist`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, source: "waitlist" }),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data?.error ?? "Something went wrong. Please try again.");
-  }
-}
-// Small shared components
-// ---------------------------------------------------------------------------
+const DISPLAY = "'Barlow Condensed', sans-serif";
+const BODY = "'DM Sans', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
 
-function FeatureItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2 text-sm text-muted-foreground">
-      <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-      <span>{children}</span>
-    </li>
-  );
-}
+// ── Waitlist wiring ─────────────────────────────────────────────────────────
 
-function TrustBadge({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
-  return (
-    <div className="flex items-center gap-1.5 text-xs  text-white bg-primary border rounded-full px-3 py-2">
-      <Icon className="w-3.5 h-3.5 text-primary fill-white" />
-      {text}
-    </div>
-  );
+interface WaitlistPayload {
+  email: string;
+  source: string;
+  company?: string;
+  partner_type?: string;
 }
 
 type Status = "idle" | "loading" | "success" | "error";
 
-function WaitlistForm() {
-  const { t } = useTranslation();
-  const [email,   setEmail]   = useState("");
-  const [status,  setStatus]  = useState<Status>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
+function useWaitlist() {
+  const [status, setStatus] = useState<Status>("idle");
+  const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || status === "loading") return;
+  async function submit(payload: WaitlistPayload) {
     setStatus("loading");
-    setErrorMsg("");
+    setError("");
     try {
-      await submitWaitlist(email.trim());
+      const res = await fetch(`${apiUrl}/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error ?? "Something went wrong. Please try again.");
+      }
       setStatus("success");
     } catch (err) {
       setStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     }
   }
 
-  if (status === "success") {
-    return (
-      <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-xl px-5 py-4">
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-          <Check className="w-4 h-4 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground font-sans">{t("prelaunch.successTitle")}</p>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">{t("prelaunch.successBody")}</p>
-        </div>
-      </div>
-    );
-  }
+  return { status, error, submit };
+}
 
+function SubmitSuccess({ audience }: { audience: string }) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2">
-        <div className="flex-1 relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder={t("prelaunch.emailPlaceholder")}
-            required
-            disabled={status === "loading"}
-            className="w-full bg-input-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-sans rounded-lg transition-colors flex items-center gap-2 shrink-0"
-        >
-          {status === "loading" ? (
-            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <>
-              {t("prelaunch.joinButton")}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </>
-          )}
-        </button>
-      </div>
-      {status === "error" && (
-        <p className="flex items-center gap-1.5 text-red-400 text-xs font-sans ml-1">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          {errorMsg}
+    <div className="border border-border p-5 flex items-start gap-4 mt-2" style={{ background: "var(--card)" }}>
+      <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
+      <div>
+        <p className="text-sm font-medium mb-1" style={{ fontFamily: BODY }}>You're on the list.</p>
+        <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY }}>
+          We'll reach out as {audience} access opens. Expect a short onboarding call.
         </p>
-      )}
-      <p className="text-xs text-muted-foreground font-sans ml-1">{t("prelaunch.noSpam")}</p>
-    </form>
+      </div>
+    </div>
   );
 }
 
-const PARTNER_TYPES = [
-  { value: "reseller",   label: "Reseller / VAR" },
-  { value: "msp",        label: "Managed Service Provider (MSP)" },
-  { value: "refurbisher",label: "Hardware Refurbisher" },
-  { value: "itservices", label: "IT Services / Consultancy" },
-  { value: "other",      label: "Other" },
+const fieldClass =
+  "w-full px-3 py-2.5 text-sm border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors";
+const fieldStyle = { fontFamily: BODY, background: "var(--input-background)" } as const;
+const labelClass = "block text-[10px] font-mono tracking-widest text-muted-foreground uppercase mb-2";
+
+function FormError({ msg }: { msg: string }) {
+  return <p className="text-xs text-destructive" style={{ fontFamily: BODY }}>{msg}</p>;
+}
+
+function SubmitButton({ status, label, filled = true }: { status: Status; label: string; filled?: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={status === "loading"}
+      className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-60"
+      style={{
+        background: filled ? "var(--primary)" : "var(--secondary)",
+        color: filled ? "#fff" : "var(--foreground)",
+        fontFamily: BODY,
+      }}
+    >
+      {status === "loading" ? (
+        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+      ) : (
+        <>
+          {label}
+          <ArrowRight size={14} />
+        </>
+      )}
+    </button>
+  );
+}
+
+// ── Section 1 — IT Teams (waitlist) ─────────────────────────────────────────
+
+function ITTeamsSection() {
+  const [email, setEmail] = useState("");
+  const [org, setOrg] = useState("");
+  const [size, setSize] = useState("");
+  const { status, error, submit } = useWaitlist();
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || status === "loading") return;
+    void submit({
+      email: email.trim(),
+      source: "waitlist",
+      company: org.trim() || undefined,
+      partner_type: size ? `Refresh size: ${size}` : undefined,
+    });
+  }
+
+  return (
+    <section className="flex flex-col" style={{ background: "var(--section-1)" }}>
+      <div className="flex-1 flex items-center">
+        <div className="max-w-[1600px] mx-auto px-8 md:px-20 w-full py-24">
+          <div className="grid md:grid-cols-[3fr_1fr] gap-16 md:gap-24 items-center">
+            <div>
+              <h1 className="leading-[0.93] tracking-tight mb-7"
+                style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(3.2rem, 7.5vw, 6rem)" }}>
+                GuildMark helps you<br />
+                stop leaving money<br />
+                on the table when<br />
+                you refresh hardware.
+              </h1>
+              <p className="text-base leading-relaxed max-w-md mb-8"
+                style={{ color: "var(--muted-foreground)", fontFamily: BODY, fontWeight: 300 }}>
+                A direct path for IT teams to sell end-of-lease and surplus equipment at fair
+                market value — no brokers skimming margin, no spreadsheet chaos.
+              </p>
+              <div className="flex flex-col gap-2.5">
+                {[
+                  "Instant valuations against live market data",
+                  "Certified listings — graded, spec-disclosed",
+                  "8% platform fee. $0 to list.",
+                ].map((pt) => (
+                  <div key={pt} className="flex items-center gap-2.5">
+                    <div className="w-1 h-1 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
+                    <span className="text-xs text-muted-foreground" style={{ fontFamily: BODY }}>{pt}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border border-border p-7" style={{ background: "var(--card)" }}>
+              <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-1"
+                style={{ color: "var(--primary)", fontFamily: MONO }}>Early Access</p>
+              <h2 className="text-2xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>Join the waitlist.</h2>
+              <p className="text-xs text-muted-foreground mb-6" style={{ fontFamily: BODY }}>
+                We're onboarding IT teams ahead of launch. Access is limited.
+              </p>
+              {status === "success" ? (
+                <SubmitSuccess audience="IT team" />
+              ) : (
+                <form onSubmit={onSubmit} className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Work email</label>
+                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com" className={fieldClass} style={fieldStyle} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Organization</label>
+                    <input type="text" value={org} onChange={(e) => setOrg(e.target.value)}
+                      placeholder="Company name" className={fieldClass} style={fieldStyle} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Estimated refresh size</label>
+                    <select value={size} onChange={(e) => setSize(e.target.value)}
+                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                      <option value="">Select range</option>
+                      <option>Under 50 units</option>
+                      <option>50 – 200 units</option>
+                      <option>200 – 1,000 units</option>
+                      <option>1,000+ units</option>
+                    </select>
+                  </div>
+                  {status === "error" && <FormError msg={error} />}
+                  <SubmitButton status={status} label="Request early access" />
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Section 2 — Supply side ─────────────────────────────────────────────────
+
+const SUPPLY_BENEFITS = [
+  { icon: Globe, title: "Reach verified buyers directly", body: "List once, reach hundreds of vetted IT teams actively looking for certified supply — no cold calls, no brokered leads." },
+  { icon: BarChart3, title: "Market-rate pricing intelligence", body: "GuildMark surfaces live comparable sales data so you list at the right price the first time, not the wrong one." },
+  { icon: ShieldCheck, title: "Certification builds buyer trust", body: "Our grading and disclosure standards give buyers confidence to transact without inspections or back-and-forth." },
+  { icon: Zap, title: "Bulk listings via CSV or MDM sync", body: "Upload your full inventory in minutes. GuildMark structures and publishes each listing with the right fields automatically." },
 ];
 
-function PartnerForm() {
-  const navigate = useNavigate();
-  const [fields, setFields] = useState({
-    name: "", company: "", partnerType: "", email: "", phone: "",
-  });
+function SupplySection() {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [volume, setVolume] = useState("");
+  const { status, error, submit } = useWaitlist();
 
-  function set(key: keyof typeof fields) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setFields(f => ({ ...f, [key]: e.target.value }));
-  }
-
-  function handleSubmit(e: React.FormEvent) {
+  function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    navigate("/compliance/partner-loi", { state: fields });
+    if (!email.trim() || status === "loading") return;
+    void submit({
+      email: email.trim(),
+      source: "supply",
+      partner_type: [role, volume && `Volume: ${volume}`].filter(Boolean).join(" · ") || undefined,
+    });
   }
-
-  const inputClass =
-    "w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-black placeholder:text-black-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          type="text"
-          placeholder="Your name"
-          value={fields.name}
-          onChange={set("name")}
-          required
-          disabled={status === "loading"}
-          className={inputClass}
-        />
-        <input
-          type="text"
-          placeholder="Company name"
-          value={fields.company}
-          onChange={set("company")}
-          required
-          disabled={status === "loading"}
-          className={inputClass}
-        />
-      </div>
-      <select
-        value={fields.partnerType}
-        onChange={set("partnerType")}
-        required
-        disabled={status === "loading"}
-        className={`${inputClass} text-${fields.partnerType ? "black" : "black-400"}`}
-      >
-        <option value="" disabled>What best describes your business?</option>
-        {PARTNER_TYPES.map(pt => (
-          <option key={pt.value} value={pt.value}>{pt.label}</option>
-        ))}
-      </select>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <input
-            type="email"
-            placeholder="Work email"
-            value={fields.email}
-            onChange={set("email")}
-            required
-            className={`${inputClass} pl-9`}
-          />
+    <section className="flex items-center border-t border-border" style={{ background: "var(--section-2)" }}>
+      <div className="max-w-[1600px] mx-auto px-8 md:px-20 w-full py-28">
+        <div className="grid md:grid-cols-[1fr_3fr] gap-16 md:gap-24 items-start">
+          <div>
+            <h2 className="leading-[0.95] tracking-tight mb-6"
+              style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.6rem, 5vw, 4.2rem)" }}>
+              GuildMark helps you<br />
+              list your supply and<br />
+              skip the middleman.
+            </h2>
+            <p className="text-sm leading-relaxed mb-8 max-w-sm"
+              style={{ color: "var(--muted-foreground)", fontFamily: BODY, fontWeight: 300 }}>
+              Early access for resellers, ITAD providers, and brokers to list inventory directly
+              on the GuildMark exchange ahead of public launch.
+            </p>
+            <div className="border border-border p-6" style={{ background: "var(--card)" }}>
+              <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-4 text-muted-foreground" style={{ fontFamily: MONO }}>
+                Supply-Side Early Access
+              </p>
+              {status === "success" ? (
+                <SubmitSuccess audience="supply-side" />
+              ) : (
+                <form onSubmit={onSubmit} className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Work email</label>
+                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com" className={fieldClass} style={fieldStyle} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Your role</label>
+                    <select required value={role} onChange={(e) => setRole(e.target.value)}
+                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                      <option value="">Select your role</option>
+                      <option>MSR — Managed Service Reseller</option>
+                      <option>ITAD — IT Asset Disposition</option>
+                      <option>Broker / Independent reseller</option>
+                      <option>OEM / Manufacturer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Avg. monthly supply volume</label>
+                    <select value={volume} onChange={(e) => setVolume(e.target.value)}
+                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                      <option value="">Select range</option>
+                      <option>Under $25k</option>
+                      <option>$25k – $100k</option>
+                      <option>$100k – $500k</option>
+                      <option>Over $500k</option>
+                    </select>
+                  </div>
+                  {status === "error" && <FormError msg={error} />}
+                  <SubmitButton status={status} label="Apply for early access" />
+                </form>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-0 divide-y divide-border border-t border-b border-border">
+            {SUPPLY_BENEFITS.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="py-6 flex gap-5 items-start">
+                <div className="w-8 h-8 flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ border: "1px solid var(--border)", background: "var(--secondary)" }}>
+                  <Icon size={14} style={{ color: "var(--primary)" }} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1.5" style={{ fontFamily: BODY }}>{title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY, fontWeight: 300 }}>{body}</p>
+                </div>
+              </div>
+            ))}
+            <div className="py-6">
+              <div className="grid grid-cols-3 gap-4">
+                {[{ val: "$0", label: "To list" }, { val: "8%", label: "On sale only" }, { val: "48hr", label: "Avg. time to sale" }].map((s) => (
+                  <div key={s.label} className="text-center">
+                    <div className="text-3xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.val}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase" style={{ fontFamily: MONO }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-        <input
-          type="tel"
-          placeholder="Phone number"
-          value={fields.phone}
-          onChange={set("phone")}
-          className={inputClass}
-        />
       </div>
-      <button
-        type="submit"
-        className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-sans rounded-lg transition-colors flex items-center justify-center gap-2"
-      >
-        Review LOI
-        <ArrowRight className="w-3.5 h-3.5" />
-      </button>
-      <p className="text-xs text-muted-foreground font-sans ml-1">
-        You'll review and sign a Letter of Intent before we follow up.
-      </p>
-    </form>
+    </section>
   );
 }
 
-export function PreLaunch() {
-  const { t }            = useTranslation();
-  const { openInsights } = useOutletContext<PreLaunchContext>();
-  const navigate         = useNavigate();
+// ── Section 3 — Partner network ─────────────────────────────────────────────
+
+const PARTNER_PERKS = [
+  { icon: Award, title: "GuildMark Certified Partner badge", body: "Display your certification on your website, proposals, and email — buyers actively filter for Certified Partners." },
+  { icon: Users, title: "Inbound referral leads", body: "When IT teams need ITAD services on the platform, Certified Partners are presented first. No ad spend required." },
+  { icon: Server, title: "Co-branded pickup & processing", body: "Offer pickup, data destruction, and logistics as add-on services directly within GuildMark transactions." },
+  { icon: RefreshCw, title: "Closed-loop asset recovery", body: "Receive unsold inventory from the exchange for downstream remarketing, recycling, or parts — your choice." },
+];
+
+function PartnerNetworkSection() {
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [services, setServices] = useState("");
+  const [coverage, setCoverage] = useState("");
+  const { status, error, submit } = useWaitlist();
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || status === "loading") return;
+    void submit({
+      email: email.trim(),
+      source: "partner",
+      company: company.trim() || undefined,
+      partner_type: [services, coverage].filter(Boolean).join(" · ") || undefined,
+    });
+  }
 
   return (
-    <div className="px-6 py-16 space-y-20 max-w-3/4 mx-auto">
-      <div className="flex flex-col items-center text-center">
-        <div className="flex items-center gap-2 mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="text-xs  uppercase tracking-widest text-primary">
-            {t("prelaunch.badge")}
+    <section className="flex flex-col border-t border-border" style={{ background: "var(--section-3)" }}>
+      <div className="flex-1 flex items-center">
+        <div className="max-w-[1600px] mx-auto px-8 md:px-20 w-full py-28">
+          <div className="grid md:grid-cols-[1fr_auto] gap-6 items-end mb-14">
+            <h2 className="leading-[0.93] tracking-tight"
+              style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.8rem, 6vw, 5rem)" }}>
+              GuildMark helps you<br />
+              advertise your services<br />
+              to buyers who are<br />
+              already looking.
+            </h2>
+            <div className="shrink-0 self-end pb-1">
+              <div className="px-4 py-2 border text-xs font-mono tracking-widest"
+                style={{ borderColor: "var(--primary)", color: "var(--primary)", fontFamily: MONO }}>
+                PARTNER NETWORK
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-[3fr_1fr] gap-16 md:gap-24 items-start">
+            <div className="grid sm:grid-cols-2 gap-px border border-border" style={{ background: "var(--border)" }}>
+              {PARTNER_PERKS.map(({ icon: Icon, title, body }) => (
+                <div key={title} className="p-6 flex flex-col gap-4" style={{ background: "var(--card)" }}>
+                  <div className="w-9 h-9 flex items-center justify-center"
+                    style={{ border: "1px solid var(--border)", background: "var(--secondary)" }}>
+                    <Icon size={15} style={{ color: "var(--primary)" }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-2" style={{ fontFamily: BODY }}>{title}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY, fontWeight: 300 }}>{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <div className="border border-border p-6" style={{ background: "var(--card)" }}>
+                <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-1 text-muted-foreground" style={{ fontFamily: MONO }}>
+                  Partner Application
+                </p>
+                <h3 className="text-xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>Apply to the network.</h3>
+                <p className="text-xs text-muted-foreground mb-6" style={{ fontFamily: BODY }}>
+                  We review ITAD providers individually. Certified Partners are listed in the GuildMark
+                  directory and receive inbound referrals at launch.
+                </p>
+                {status === "success" ? (
+                  <SubmitSuccess audience="ITAD partner" />
+                ) : (
+                  <form onSubmit={onSubmit} className="space-y-4">
+                    <div>
+                      <label className={labelClass}>Work email</label>
+                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@itadcompany.com" className={fieldClass} style={fieldStyle} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Company name</label>
+                      <input type="text" value={company} onChange={(e) => setCompany(e.target.value)}
+                        placeholder="ITAD provider name" className={fieldClass} style={fieldStyle} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Services offered</label>
+                      <select value={services} onChange={(e) => setServices(e.target.value)}
+                        className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                        <option value="">Select primary service</option>
+                        <option>Full ITAD — pickup, wipe, resale</option>
+                        <option>Data destruction only</option>
+                        <option>Logistics & pickup</option>
+                        <option>Refurbishment & remarketing</option>
+                        <option>End-of-life recycling (R2/e-Stewards)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Geographic coverage</label>
+                      <select value={coverage} onChange={(e) => setCoverage(e.target.value)}
+                        className={`${fieldClass} appearance-none`} style={fieldStyle}>
+                        <option value="">Select coverage</option>
+                        <option>National</option>
+                        <option>Regional — Northeast</option>
+                        <option>Regional — Southeast</option>
+                        <option>Regional — Midwest</option>
+                        <option>Regional — West</option>
+                        <option>International</option>
+                      </select>
+                    </div>
+                    {status === "error" && <FormError msg={error} />}
+                    <SubmitButton status={status} label="Apply to Partner Network" />
+                  </form>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-4 leading-relaxed px-1" style={{ fontFamily: BODY }}>
+                Partner listings are reviewed within 5 business days. We verify certifications
+                (R2, e-Stewards, NAID) and service capabilities before approval.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Header / footer (page owns its own chrome) ──────────────────────────────
+
+function PreLaunchHeader({ openInsights }: { openInsights: () => void }) {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <header className="border-b border-border sticky top-0 z-50" style={{ background: "var(--background)", backdropFilter: "blur(8px)" }}>
+      <div className="px-8 md:px-20 h-14 flex items-center justify-between gap-6">
+        <div className="flex items-center gap-3">
+          <img src={logoLong} className="h-6" alt="GuildMark" />
+          <span className="text-[9px] font-mono tracking-[0.15em] text-muted-foreground border border-border px-2 py-0.5 hidden sm:block" style={{ fontFamily: MONO }}>
+            IT ASSET MARKETPLACE
           </span>
         </div>
-
-        <h1 className="text-4xl md:text-5xl font-bold text-foreground text-center max-w-3xl leading-tight mb-5">
-          <Trans
-            i18nKey="prelaunch.headline"
-            components={{ accent: <span className="text-primary" /> }}
-          />
-        </h1>
-
-        <p className="text-lg text-muted-foreground text-center max-w-2xl leading-relaxed mb-12 font-sans">
-          {t("prelaunch.description")}
-        </p>
-        <div className="2xl:flex 2xl:flex-row 2xl:space-x-16 space-y-4 flex-col">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-sans font-bold">Sign up to stay in the loop on development.</h2>
-            <p className="text-sm text-muted-foreground font-sans">
-              We're offering mailing list and partner applications.</p>
-        <div className="flex-2 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          {/* Waitlist card */}
-          <div className="border border-primary rounded-xl p-6 space-y-4 text-left bg-background">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold font-sans">For IT Teams</h3>
-                <p className="text-xs text-muted-foreground font-sans">Manage and sell retired hardware</p>
-              </div>
-            </div>
-            <WaitlistForm />
-          </div>
-
-          {/* Partner card */}
-          <div className="border border-primary rounded-xl p-6 space-y-4 text-left bg-background">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Handshake className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold font-sans">Become a Partner</h3>
-                <p className="text-xs text-muted-foreground font-sans">Resellers, MSPs &amp; refurbishers</p>
-              </div>
-            </div>
-            <PartnerForm />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-3 mt-8">
-          <TrustBadge icon={Lock}   text="Escrow-secured payments" />
-          <TrustBadge icon={Shield} text="NIST 800-88 certified wipe" />
-          <TrustBadge icon={Zap}    text="Live market valuations" />
+        <div className="flex items-center gap-3 shrink-0">
+          <button onClick={openInsights}
+            className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            style={{ fontFamily: BODY }}>
+            <BookOpen size={14} />
+            Market Research
+          </button>
+          <div className="w-px h-4 bg-border hidden md:block" />
+          <span className="text-[10px] font-mono tracking-widest items-center gap-1.5 hidden sm:flex" style={{ color: "var(--primary)", fontFamily: MONO }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--primary)" }} />
+            Early Access
+          </span>
+          <Link to="/pre/marketplace"
+            className="flex items-center gap-1.5 text-sm font-medium px-4 py-1.5 hover:opacity-90 transition-opacity"
+            style={{ background: "var(--primary)", color: "#fff", fontFamily: BODY }}>
+            Demo the platform
+            <ArrowRight size={13} />
+          </Link>
+          <button onClick={toggleTheme}
+            className="w-8 h-8 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+            aria-label="Toggle theme">
+            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
         </div>
       </div>
+    </header>
+  );
+}
 
-      <div className="space-y-4 max-w-5xl">
-        <div className="text-center space-y-1 mb-8">
-          <h2 className="text-2xl font-bold font-sans">One platform. Two powerful tools.</h2>
-          <p className="text-sm text-muted-foreground font-sans">
-            GuildMark combines fleet management with a B2B hardware marketplace — so you can
-            track what you own, know what it's worth, and sell it when you're ready.
+function PreLaunchFooter({ openInsights }: { openInsights: () => void }) {
+  return (
+    <footer className="border-t border-border">
+      <div className="max-w-[1600px] mx-auto px-8 md:px-20 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex flex-col gap-1">
+          <p className="text-[11px] font-mono text-muted-foreground" style={{ fontFamily: MONO }}>
+            © {new Date().getFullYear()} Baerhous Media Group, LLC — GuildMark™
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          {/* AMPS */}
-          <div className="border rounded-xl p-6 space-y-4 bg-background">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Layers className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold font-sans">Guildmark PRO</h3>
-                <p className="text-xs text-muted-foreground font-sans">Asset Management &amp; Portfolio Valuation System</p>
-              </div>
-            </div>
-            <ul className="space-y-2">
-              <FeatureItem>
-                <strong>Depreciation analytics</strong> — real-time value tracking with AI "value cliff" warnings
-              </FeatureItem>
-              <FeatureItem>
-                <strong>MDM sync</strong> — pull your fleet from Jamf Pro, Jamf School, or Microsoft Intune
-              </FeatureItem>
-              <FeatureItem>
-                <strong>Portfolio overview</strong> — total fleet value, per-asset valuations, judged against MSRP, devaluation, and marketplace activity.
-              </FeatureItem>
-              <FeatureItem>
-                <strong>Discounted platform fees</strong> - Sales from Growth* and Pro* accounts have discounted platform fees.
-              </FeatureItem>
-              <FeatureItem>
-                <strong>Invoice generation</strong> — tax invoices for every sale, directly from the platform
-              </FeatureItem>
-            </ul>
-          </div>
-
-          <div className="border rounded-xl p-6 space-y-4 bg-background">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Store className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold font-sans">B2B Marketplace</h3>
-                <p className="text-xs text-muted-foreground font-sans">Hardware trading between verified businesses</p>
-              </div>
-            </div>
-            <ul className="space-y-2">
-              <FeatureItem>
-                <strong>List instantly</strong> — push assets directly to the marketplace with fair market prices, thanks to our AI-powered valuation engine
-              </FeatureItem>
-              <FeatureItem>
-                <strong>Offer management</strong> — receive, counter, and accept offers with a full negotiation inbox
-              </FeatureItem>
-               <FeatureItem>
-                <strong>CSV bulk import</strong> — upload hundreds of assets at once; market value calculated automatically
-              </FeatureItem>
-              <FeatureItem>
-                <strong>The payment option you need</strong> — We are business tailored and offer secure payment options: Escrow, Credit Card, and ACH
-              </FeatureItem>
-              <FeatureItem>
-                <strong>Optional data wipe</strong> — ship to our Orlando facility, get paid on arrival; Certified to your needs such as NIST 800-88, R2v3, HIPAA, and DOD
-              </FeatureItem>
-              <FeatureItem>
-                <strong>Prepaid shipping</strong> — labels for 1–5 units or pallet pickup for 6+; or ship direct
-              </FeatureItem>
-            </ul>
-          </div>
-        </div>
-      </div>
-      </div>
-</div>
-      <div className="border rounded-xl p-8 bg-background space-y-6">
-        <h2 className="text-sm font-sans uppercase tracking-wide text-muted-foreground">How it works</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              n: 1,
-              title: "Import your fleet",
-              body: "Connect your MDM or upload a CSV. GuildMark instantly values every asset against live market data.",
-            },
-            {
-              n: 2,
-              title: "List what you want to sell",
-              body: "Push assets to the marketplace with one click. Buyers submit offers — you accept, counter, or decline.",
-            },
-            {
-              n: 3,
-              title: "Get paid, securely",
-              body:"We offer multiple secure payment options through our trusted Payment Partners: Escrow, Credit Card, and ACH",
-            },
-          ].map(({ n, title, body }) => (
-            <div key={n} className="flex gap-4">
-              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-sans font-bold shrink-0 mt-0.5">
-                {n}
-              </div>
-              <div>
-                <p className="text-sm font-semibold font-sans">{title}</p>
-                <p className="text-xs text-muted-foreground font-sans mt-1 leading-relaxed">{body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border border-primary/20 bg-primary/5 rounded-xl p-8 space-y-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold font-sans text-primary">$0</span>
-          <span className="text-sm text-muted-foreground font-sans">to get started, only subscribe if you need <b>GuildMark Pro</b></span>
-        </div>
-        <div className="grid grid-cols-3 gap-4 pt-2">
-          {[
-            { icon: BarChart2, label: "Platform fee", value: "12% on sale" },
-            { icon: Shield,    label: "Data wipe",    value: "Flat rate / asset" },
-            { icon: Truck,     label: "Shipping",     value: "Actual cost" },
-          ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="text-center space-y-1">
-              <div className="flex justify-center">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-primary" />
-                </div>
-              </div>
-              <p className="text-sm font-semibold font-sans">{value}</p>
-              <p className="text-xs text-muted-foreground font-sans">{label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-border pt-10 pb-6 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-10">
-
-        <div className="flex flex-col gap-2">
-          <img src="/img/logo-long.svg" className="w-36 " alt="GuildMark" />
-          <p className="text-xs text-muted-foreground font-sans max-w-[180px] leading-relaxed">
-            B2B hardware asset management &amp; marketplace.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:justify-end">
-
-          <div className="space-y-2">
-            <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground/60 mb-3">Platform</p>
-            <button
-              onClick={openInsights}
-              className="block text-sm font-sans text-muted-foreground hover:text-primary transition-colors text-left"
-            >
-              {t("prelaunch.readResearch")}
+          <div className="flex gap-5 mt-1">
+            <button onClick={openInsights} className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
+              Market Research
             </button>
-            <button
-              onClick={() => navigate("/contact")}
-              className="block text-sm font-sans text-muted-foreground hover:text-foreground transition-colors text-left"
-            >
-              {t("prelaunch.getInTouch")}
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground/60 mb-3">Legal</p>
-            <a
-              href="/compliance/privacy-policy"
-              className="block text-sm font-sans text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <a href="/compliance/privacy-policy" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
               Privacy Policy
             </a>
-            <a
-              href="/compliance/terms"
-              className="block text-sm font-sans text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <a href="/compliance/terms" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
               Terms of Service
             </a>
           </div>
-
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <Link to="/pre/marketplace"
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-mono border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            style={{ fontFamily: MONO }}>
+            Preview the marketplace
+            <ArrowRight size={12} />
+          </Link>
         </div>
       </div>
+    </footer>
+  );
+}
 
-    </div>
+// ── Root ────────────────────────────────────────────────────────────────────
+
+export function PreLaunch() {
+  const { openInsights } = useOutletContext<PreLaunchContext>();
+  return (
+    <>
+      <PreLaunchHeader openInsights={openInsights} />
+      <ITTeamsSection />
+      <SupplySection />
+      <PartnerNetworkSection />
+      <PreLaunchFooter openInsights={openInsights} />
+    </>
   );
 }

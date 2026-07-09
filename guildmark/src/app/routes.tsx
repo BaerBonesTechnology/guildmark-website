@@ -10,7 +10,6 @@ import { OfferInbox } from "./pages/OfferInbox";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { AccountSettings } from "./pages/Settings";
-import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { HowItWorks } from "./pages/HowItWorks";
@@ -50,7 +49,8 @@ export const router = createBrowserRouter([
     path: "/",
     Component: Layout,
     children: [
-      { index: true, Component: Landing },
+      // Launch hero removed — post-launch home lands on the marketplace.
+      { index: true, element: <Navigate to="/marketplace" replace /> },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
       { path: "forgot-password", Component: ForgotPassword },
@@ -167,7 +167,8 @@ export const preLaunchRouter = createBrowserRouter([
     path: "/pre",
     Component: Layout,
     children: [
-      { index: true, Component: Landing },
+      // Demo entry — launch hero removed; land straight on the marketplace.
+      { index: true, element: <Navigate to="/pre/marketplace" replace /> },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
       { path: "forgot-password", Component: ForgotPassword },
@@ -219,8 +220,17 @@ export const preLaunchRouter = createBrowserRouter([
           { index: true, Component: OfferInbox },
         ],
       },
+      
       {
-        path: "amps",
+        path: "settings",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: AccountSettings },
+        ],
+      },
+    ],
+  },{
+        path: "/pre/amps",
         element: <ProtectedRoute />,
         children: [
           // Pro signup — no sidebar, shown to free-tier users upgrading
@@ -237,15 +247,6 @@ export const preLaunchRouter = createBrowserRouter([
           },
         ],
       },
-      {
-        path: "settings",
-        element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: AccountSettings },
-        ],
-      },
-    ],
-  },
   {
     path: "*",
     element: <Navigate to="/" replace />,

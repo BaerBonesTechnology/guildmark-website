@@ -1,10 +1,8 @@
-import { Link, Outlet, useSearchParams } from "react-router";
+import { Outlet, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, BookOpen, X } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
 import { Drawer } from "vaul";
-import { useTheme } from "../hooks/useTheme";
 import { InsightPage } from "../pages/Insights";
-import logoLong from "../../logo-long.svg";
 
 function InsightsDrawer() {
   const { t } = useTranslation();
@@ -62,9 +60,12 @@ function InsightsDrawer() {
 }
 
 
+/**
+ * Thin shell for the pre-launch experience. Each page (PreLaunch, Contact)
+ * owns its own header/footer chrome now, so the layout only provides the
+ * shared Insights drawer and the `openInsights` outlet context.
+ */
 export function PreLaunchLayout() {
-  const { t } = useTranslation();
-  const { theme, toggleTheme } = useTheme();
   const [, setParams] = useSearchParams();
 
   function openInsights() {
@@ -77,47 +78,7 @@ export function PreLaunchLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-primary/50 backdrop-blur-sm sticky top-0 z-40 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-              <img src={logoLong} className="w-50"/>
-            <p className="text-xs text-muted-foreground mt-0.5 mx-2 font-sans">{t("brand.tagline")}</p>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-          </button>
-        </div>
-      </header>
-
-      <main className="pb-16">
-        <Outlet context={{ openInsights }} />
-      </main>
-
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-sm border-t border-border px-6 py-3">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <p className="text-xs text-muted-foreground font-sans">
-            {t("footer.copyright", { year: new Date().getFullYear() })} {t("footer.trademark")}
-          </p>
-          <button
-            onClick={openInsights}
-            className="flex items-center gap-1.5 text-xs  text-muted-foreground hover:text-primary transition-colors"
-          >
-            <BookOpen className="w-3 h-3" />
-            {t("footer.marketResearch")}
-          </button>
-           <Link
-            to="/pre/"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
-            Interested in seeing our platform? demo it now.
-          </Link>
-        </div>
-      </footer>
-
+      <Outlet context={{ openInsights }} />
       <InsightsDrawer />
     </div>
   );
