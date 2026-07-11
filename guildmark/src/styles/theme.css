@@ -1,11 +1,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   GuildMark Design Tokens
-   Primary accent : #3B82F6  (blue-500)
-   Hover accent   : #2563EB  (blue-600)
-   Dark base      : #2B2B2B  (charcoal)
+   GuildMark Design Tokens  —  2026 UI refresh
+   Primary accent : #2D6EF0  (brighter blue)
+   Dark base      : #0A0C10  (near-black, layered)
+   Corners        : 0.25rem  (sharp)
    Font           : Inter (body) · JetBrains Mono (data/code)
+   Neutrals are intentionally cool-gray (not blue-tinted) and
+   borders are hairline; section-1/2/3 give vertical rhythm.
    ============================================================ */
 
 :root {
@@ -14,36 +16,41 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
   /* Surface */
-  --background:          #e6e6e6;
-  --foreground:          #0F172A;
+  --background:          #f5f6f8;
+  --foreground:          #0f1117;
   --card:                #ffffff;
-  --card-foreground:     #0F172A;
-  --popover:             #FFFFFF;
-  --popover-foreground:  #0F172A;
+  --card-foreground:     #0f1117;
+  --popover:             #ffffff;
+  --popover-foreground:  #0f1117;
 
   /* Interactive */
-  --primary:             #3B82F6;
-  --primary-foreground:  #FFFFFF;
-  --secondary:           #EFF6FF;
-  --secondary-foreground:#1D4ED8;
-  --muted:               #F1F5F9;
-  --muted-foreground:    #64748B;
-  --accent:              #EFF6FF;
-  --accent-foreground:   #1E40AF;
+  --primary:             #2d6ef0;
+  --primary-foreground:  #ffffff;
+  --secondary:           #eaecf0;
+  --secondary-foreground:#0f1117;
+  --muted:               #eaecf0;
+  --muted-foreground:    #6b7280;
+  --accent:              #eaecf0;
+  --accent-foreground:   #0f1117;
 
   /* Utility */
-  --destructive:         #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border:              #CBD5E1;
-  --input:               #a7a7a7;
-  --input-background:    #e4e4e4;
-  --switch-background:   #CBD5E1;
-  --ring:                #3B82F6;
-  --radius:              0.625rem;
+  --destructive:         #d4183d;
+  --destructive-foreground: #ffffff;
+  --border:              rgba(0, 0, 0, 0.09);
+  --input:               transparent;
+  --input-background:    #eaecf0;
+  --switch-background:   #c8ccd4;
+  --ring:                #2d6ef0;
+  --radius:              0.25rem;
+
+  /* Layered section backgrounds (page vertical rhythm) */
+  --section-1:           #f5f6f8;
+  --section-2:           #eef0f5;
+  --section-3:           #e8eaf2;
 
   /* Font weights */
-  --font-weight-medium: 400;
-  --font-weight-normal: 200;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
 
   /* Brand */
   --brand-primary:            #3B82F6;
@@ -103,30 +110,37 @@
 }
 
 .dark {
-  /* Surface */
-  --background:          #2B2B2B;
-  --foreground:          #F1F5F9;
-  --card:                #383838;
-  --card-foreground:     #F1F5F9;
-  --popover:             #383838;
-  --popover-foreground:  #F1F5F9;
+  /* Surface — deep near-black with layered elevation */
+  --background:          #0a0c10;
+  --foreground:          #dde1e8;
+  --card:                #111318;
+  --card-foreground:     #dde1e8;
+  --popover:             #111318;
+  --popover-foreground:  #dde1e8;
 
   /* Interactive */
-  --primary:             #3B82F6;
-  --primary-foreground:  #FFFFFF;
-  --secondary:           #3F3F3F;
-  --secondary-foreground:#E2E8F0;
-  --muted:               #3F3F3F;
-  --muted-foreground:    #94A3B8;
-  --accent:              #3F3F3F;
-  --accent-foreground:   #E2E8F0;
+  --primary:             #2d6ef0;
+  --primary-foreground:  #ffffff;
+  --secondary:           #1a1d24;
+  --secondary-foreground:#9ba3b0;
+  --muted:               #1a1d24;
+  --muted-foreground:    #6b7280;
+  --accent:              #1a1d24;
+  --accent-foreground:   #dde1e8;
 
   /* Utility */
-  --destructive:         #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border:              #444444;
-  --input:               #444444;
-  --ring:                #3B82F6;
+  --destructive:         #d4183d;
+  --destructive-foreground: #ffffff;
+  --border:              rgba(255, 255, 255, 0.07);
+  --input:               transparent;
+  --input-background:    #1a1d24;   /* was inheriting the light gray — fixed */
+  --switch-background:   #2d3140;
+  --ring:                #2d6ef0;
+
+  /* Layered section backgrounds */
+  --section-1:           #0a0c10;
+  --section-2:           #0b1018;
+  --section-3:           #0d0b14;
 
   /* Font weights */
   --font-weight-medium: 500;
@@ -211,6 +225,9 @@
   --color-input-background:            var(--input-background);
   --color-switch-background:           var(--switch-background);
   --color-ring:                        var(--ring);
+  --color-section-1:                   var(--section-1);
+  --color-section-2:                   var(--section-2);
+  --color-section-3:                   var(--section-3);
   --color-brand-primary:               var(--brand-primary);
   --color-brand-primary-foreground:    var(--brand-primary-foreground);
   --color-brand-secondary:             var(--brand-secondary);
@@ -262,6 +279,13 @@
   --color-sidebar-ring:                var(--sidebar-ring);
   --font-family-sans: var(--font-sans);
   --font-family-mono: var(--font-mono);
+  /* Brand type scale — exposed as Tailwind utilities: font-display / font-body
+     / font-mono. Use these instead of inline fontFamily style objects. */
+  --font-display: 'Barlow Condensed', var(--font-sans);
+  --font-body:    'DM Sans', var(--font-sans);
+  /* Compact label step (10px) — exposed as the `text-2xs` utility so dense
+     UI labels stay token-based instead of arbitrary text-[10px] values. */
+  --text-2xs: 0.625rem;
 }
 
 @layer base {

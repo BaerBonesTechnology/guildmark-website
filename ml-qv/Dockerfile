@@ -16,7 +16,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Source modules — flat layout (no app/ package).
-COPY __init__.py main.py schemas.py setup.py pyproject.toml ./
+COPY __init__.py main.py retrain.py schemas.py setup.py pyproject.toml ./
 COPY models/    ./models/
 COPY training/  ./training/
 COPY entrypoint.sh ./

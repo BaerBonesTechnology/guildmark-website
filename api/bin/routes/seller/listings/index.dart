@@ -67,6 +67,35 @@ Future<Response> onRequest(RequestContext context) async {
           cpuScore: cpuRaw != null ? (cpuRaw as num).toInt() : null,
           serialNumber: body['serial_number'] as String?,
           department: body['department'] as String?,
+          // ── Marketplace device-spec fields ──────────────────────────────
+          manufacturer: body['manufacturer'] as String?,
+          modelNumber: body['model_number'] as String?,
+          yearOfManufacture: _int(body['year_of_manufacture']),
+          functionalStatus: body['functional_status'] as String?,
+          knownDefects: body['known_defects'] as String?,
+          dataWipeStatus: body['data_wipe_status'] as String?,
+          warrantyStatus: body['warranty_status'] as String?,
+          warrantyExpiration: _date(body['warranty_expiration']),
+          includedAccessories: body['included_accessories'] as String?,
+          shipsFromLocation: body['ships_from_location'] as String?,
+          cpuModel: body['cpu_model'] as String?,
+          cpuCores: _int(body['cpu_cores']),
+          cpuSpeedGhz: _double(body['cpu_speed_ghz']),
+          ramType: body['ram_type'] as String?,
+          storageType: body['storage_type'] as String?,
+          gpuModel: body['gpu_model'] as String?,
+          screenSizeIn: _double(body['screen_size_in']),
+          screenResolution: body['screen_resolution'] as String?,
+          touchscreen: body['touchscreen'] as bool?,
+          formFactor: body['form_factor'] as String?,
+          powerSupplyWatts: _int(body['power_supply_watts']),
+          panelType: body['panel_type'] as String?,
+          refreshRateHz: _int(body['refresh_rate_hz']),
+          ports: body['ports'] as String?,
+          portCount: _int(body['port_count']),
+          throughput: body['throughput'] as String?,
+          managed: body['managed'] as bool?,
+          carrierLocked: body['carrier_locked'] as bool?,
         );
       } else {
         final found = await AssetRepo(
@@ -117,6 +146,7 @@ Future<Response> onRequest(RequestContext context) async {
         assetId: asset.id,
         listedPrice: price,
         fairMarketValue: fmv,
+        productImages: _strList(body['product_images']),
       );
 
       // Record valuation history — fire-and-forget so a DB hiccup here
@@ -151,4 +181,33 @@ int _ageMonths(DateTime? purchaseDate) {
   final now = DateTime.now();
   final delta = now.difference(purchaseDate);
   return (delta.inDays / 30.44).floor().clamp(0, 240);
+}
+
+/// Coerce a JSON number/string to int (null-safe, tolerant of "16" strings).
+int? _int(Object? v) => switch (v) {
+      final int i => i,
+      final num n => n.toInt(),
+      final String s => int.tryParse(s.trim()),
+      _ => null,
+    };
+
+/// Coerce a JSON number/string to double (null-safe).
+double? _double(Object? v) => switch (v) {
+      final num n => n.toDouble(),
+      final String s => double.tryParse(s.trim()),
+      _ => null,
+    };
+
+/// Parse an ISO date string to DateTime (null-safe).
+DateTime? _date(Object? v) =>
+    v is String && v.isNotEmpty ? DateTime.tryParse(v) : null;
+
+/// Coerce a JSON list to a `List<String>` of non-empty entries (null if empty).
+List<String>? _strList(Object? v) {
+  if (v is! List) return null;
+  final out = v
+      .map((e) => e.toString().trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+  return out.isEmpty ? null : out;
 }

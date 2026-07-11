@@ -3,6 +3,7 @@ import { ExecutiveDashboard } from "./pages/ExecutiveDashboard";
 import { MarketCalculator } from "./pages/MarketCalculator";
 import { OffloadWorkflow } from "./pages/OffloadWorkflow";
 import { Marketplace } from "./pages/Marketplace";
+import { ProductDetail } from "./pages/ProductDetail";
 import { MyListings } from "./pages/MyListings";
 import { Orders } from "./pages/Orders";
 import { OrderDetail } from "./pages/OrderDetail";
@@ -10,7 +11,6 @@ import { OfferInbox } from "./pages/OfferInbox";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { AccountSettings } from "./pages/Settings";
-import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { HowItWorks } from "./pages/HowItWorks";
@@ -26,6 +26,8 @@ import { Invoices } from "./pages/amps/Invoices";
 import { Settings } from "./pages/amps/Settings";
 import { InsightPage } from "./pages/Insights";
 import { PreLaunch } from "./pages/PreLaunch";
+import { Blog } from "./pages/Blog";
+import { BlogArticle } from "./pages/BlogArticle";
 import { Contact } from "./pages/Contact";
 import { TermsOfService } from "./pages/compliance/TermsOfService";
 import { PrivacyPolicy } from "./pages/compliance/PrivacyPolicy";
@@ -34,6 +36,7 @@ import { SellerLetterOfIntent } from "./pages/compliance/SellerLetterOfIntent";
 import { PartnerLetterOfIntent } from "./pages/compliance/PartnerLetterOfIntent";
 import { PartnerGuildmarkAgreement } from "./pages/compliance/PartnerGuildmarkAgreement";
 import { ProSignup } from "./pages/amps/ProSignup";
+import { ampsEnabled } from "./config";
 
 // ── Shared compliance children ─────────────────────────────────────────────
 const complianceChildren = [
@@ -50,13 +53,15 @@ export const router = createBrowserRouter([
     path: "/",
     Component: Layout,
     children: [
-      { index: true, Component: Landing },
+      // Launch hero removed — post-launch home lands on the marketplace.
+      { index: true, element: <Navigate to="/marketplace" replace /> },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
       { path: "forgot-password", Component: ForgotPassword },
       { path: "reset-password", Component: ResetPassword },
       { path: "how-it-works", Component: HowItWorks },
       { path: "marketplace", Component: Marketplace },
+      { path: "marketplace/:id", Component: ProductDetail },
       { path: "insights", Component: InsightPage },
       { path: "contact", Component: Contact },
       {
@@ -116,25 +121,28 @@ export const router = createBrowserRouter([
     Component: ComplianceLayout,
     children: complianceChildren,
   },
-  {
-    path: "/amps",
-    element: <ProtectedRoute />,
-    children: [
-      // Pro signup — no sidebar, shown to free-tier users upgrading
-      { path: "pro-signup", Component: ProSignup },
-      {
+  // GM Pro / AMPS — feature-flagged off until the section is ready.
+  ...(ampsEnabled
+    ? [{
         path: "/amps",
-        Component: AMPSLayout,
+        element: <ProtectedRoute />,
         children: [
-          { index: true, Component: PortfolioOverview },
-          { path: "assets", Component: AssetInventory },
-          { path: "mdm", Component: MDMConnections },
-          { path: "invoices", Component: Invoices },
-          { path: "settings", Component: Settings },
+          // Pro signup — no sidebar, shown to free-tier users upgrading
+          { path: "pro-signup", Component: ProSignup },
+          {
+            path: "/amps",
+            Component: AMPSLayout,
+            children: [
+              { index: true, Component: PortfolioOverview },
+              { path: "assets", Component: AssetInventory },
+              { path: "mdm", Component: MDMConnections },
+              { path: "invoices", Component: Invoices },
+              { path: "settings", Component: Settings },
+            ],
+          },
         ],
-      },
-    ],
-  },
+      }]
+    : []),
   {
     path: "*",
     element: <Navigate to="/" replace />,
@@ -152,8 +160,10 @@ export const preLaunchRouter = createBrowserRouter([
     Component: PreLaunchLayout,
     children: [
       { index: true, Component: PreLaunch },
-      // Redirect /insights to the bottom sheet so direct URL navigation works
-      { path: "insights", element: <Navigate to="/?sheet=insights" replace /> },
+      { path: "blog", Component: Blog },
+      { path: "blog/:slug", Component: BlogArticle },
+      // Market research is now a blog post rather than a drawer.
+      { path: "insights", element: <Navigate to="/blog/it-hardware-lifecycle-gap" replace /> },
       { path: "contact", Component: Contact },
     ],
   },
@@ -167,13 +177,15 @@ export const preLaunchRouter = createBrowserRouter([
     path: "/pre",
     Component: Layout,
     children: [
-      { index: true, Component: Landing },
+      // Demo entry — launch hero removed; land straight on the marketplace.
+      { index: true, element: <Navigate to="/pre/marketplace" replace /> },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
       { path: "forgot-password", Component: ForgotPassword },
       { path: "reset-password", Component: ResetPassword },
       { path: "how-it-works", Component: HowItWorks },
       { path: "marketplace", Component: Marketplace },
+      { path: "marketplace/:id", Component: ProductDetail },
       { path: "insights", Component: InsightPage },
       { path: "contact", Component: Contact },
       {
@@ -219,8 +231,20 @@ export const preLaunchRouter = createBrowserRouter([
           { index: true, Component: OfferInbox },
         ],
       },
+      
       {
-        path: "amps",
+        path: "settings",
+        element: <ProtectedRoute />,
+        children: [
+          { index: true, Component: AccountSettings },
+        ],
+      },
+    ],
+  },
+  // GM Pro / AMPS — feature-flagged off until the section is ready.
+  ...(ampsEnabled
+    ? [{
+        path: "/pre/amps",
         element: <ProtectedRoute />,
         children: [
           // Pro signup — no sidebar, shown to free-tier users upgrading
@@ -236,16 +260,8 @@ export const preLaunchRouter = createBrowserRouter([
             ],
           },
         ],
-      },
-      {
-        path: "settings",
-        element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: AccountSettings },
-        ],
-      },
-    ],
-  },
+      }]
+    : []),
   {
     path: "*",
     element: <Navigate to="/" replace />,

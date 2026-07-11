@@ -15,6 +15,7 @@ import '../routes/valuation/estimate.dart' as valuation_estimate;
 import '../routes/subscriptions/current.dart' as subscriptions_current;
 import '../routes/subscriptions/checkout.dart' as subscriptions_checkout;
 import '../routes/subscriptions/cancel.dart' as subscriptions_cancel;
+import '../routes/seller/offers/index.dart' as seller_offers_index;
 import '../routes/seller/offers/[offerId]/[action].dart' as seller_offers_$offer_id_$action;
 import '../routes/seller/listings/index.dart' as seller_listings_index;
 import '../routes/seller/listings/[id]/withdraw.dart' as seller_listings_$id_withdraw;
@@ -104,6 +105,7 @@ Handler buildRootHandler() {
     ..mount('/waitlist', (context) => buildWaitlistHandler()(context))
     ..mount('/valuation', (context) => buildValuationHandler()(context))
     ..mount('/subscriptions', (context) => buildSubscriptionsHandler()(context))
+    ..mount('/seller/offers', (context) => buildSellerOffersHandler()(context))
     ..mount('/seller/offers/<offerId>', (context,offerId,) => buildSellerOffers$offerIdHandler(offerId,)(context))
     ..mount('/seller/listings', (context) => buildSellerListingsHandler()(context))
     ..mount('/seller/listings/<id>', (context,id,) => buildSellerListings$idHandler(id,)(context))
@@ -194,6 +196,13 @@ Handler buildSubscriptionsHandler() {
   final pipeline = const Pipeline();
   final router = Router()
     ..all('/cancel', (context) => subscriptions_cancel.onRequest(context,))..all('/checkout', (context) => subscriptions_checkout.onRequest(context,))..all('/current', (context) => subscriptions_current.onRequest(context,));
+  return pipeline.addHandler(router);
+}
+
+Handler buildSellerOffersHandler() {
+  final pipeline = const Pipeline();
+  final router = Router()
+    ..all('/', (context) => seller_offers_index.onRequest(context,));
   return pipeline.addHandler(router);
 }
 

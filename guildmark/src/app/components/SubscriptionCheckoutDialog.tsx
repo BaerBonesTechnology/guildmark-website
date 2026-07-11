@@ -15,7 +15,7 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, CheckCircle2, AlertCircle, CreditCard, Sparkles } from "lucide-react";
-import { useSubscriptionCheckout, useTriggerValuation } from "../lib/apiHooks";
+import { useSubscriptionCheckout, useTriggerValuation, usePlatformFees, formatFeeRate } from "../lib/apiHooks";
 import { squareApplicationId, squareLocationId, squareEnvironment } from "../config";
 import { useAuth } from "../hooks/useAuth";
 
@@ -118,6 +118,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
   const checkout          = useSubscriptionCheckout();
   const triggerValuation  = useTriggerValuation();
   const { refreshUser }   = useAuth();
+  const { data: fees }    = usePlatformFees();
 
   const [step,      setStep]      = useState<Step>("confirm");
   const [cardError, setCardError] = useState<string>("");
@@ -326,7 +327,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                  {meta.sellerFee} marketplace seller fee (vs 8% on Free)
+                  {meta.sellerFee} marketplace seller fee (vs {formatFeeRate(fees?.seller_fee_free)} on Free)
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />

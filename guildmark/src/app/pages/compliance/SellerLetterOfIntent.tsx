@@ -2,7 +2,10 @@
  * GuildMark Seller Letter of Intent
  * Static display — not the signing-flow version (that's PartnerLetterOfIntent).
  * Rendered as a reference document for IT teams reviewing the seller onboarding terms.
+ * The platform fee is read live from /config/fees so it never goes stale.
  */
+
+import { usePlatformFees, formatFeeRate } from "../../lib/apiHooks";
 
 function Section({ n, title, children }: { n?: string | number; title: string; children: React.ReactNode }) {
   return (
@@ -23,6 +26,8 @@ function Clause({ letter, children }: { letter: string; children: React.ReactNod
 }
 
 export function SellerLetterOfIntent() {
+  const { data: fees } = usePlatformFees();
+  const sellerFee = formatFeeRate(fees?.seller_fee_free);
   return (
     <div className="space-y-10">
       <div className="space-y-3">
@@ -69,7 +74,7 @@ export function SellerLetterOfIntent() {
           </Clause>
           <Clause letter="c">
             <strong>Secure Transactions:</strong> All marketplace transactions will be secured through
-            Escrow.com. GuildMark charges a 12% platform fee on completed transactions, deducted
+            Escrow.com. GuildMark charges a {sellerFee} platform fee on completed transactions, deducted
             from seller proceeds.
           </Clause>
           <Clause letter="d">
@@ -86,7 +91,7 @@ export function SellerLetterOfIntent() {
 
         <Section n={3} title="Platform Fees">
           <p>
-            There is no subscription or setup fee. GuildMark's platform fee of <strong>12% of the final sale price</strong> is
+            There is no subscription or setup fee. GuildMark's platform fee of <strong>{sellerFee} of the final sale price</strong> is
             charged only on completed transactions. Data wipe services are charged at a flat per-unit rate
             quoted at time of service election. Shipping is charged at actual carrier cost.
           </p>
