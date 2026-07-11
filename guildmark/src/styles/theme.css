@@ -279,6 +279,13 @@
   --color-sidebar-ring:                var(--sidebar-ring);
   --font-family-sans: var(--font-sans);
   --font-family-mono: var(--font-mono);
+  /* Brand type scale — exposed as Tailwind utilities: font-display / font-body
+     / font-mono. Use these instead of inline fontFamily style objects. */
+  --font-display: 'Barlow Condensed', var(--font-sans);
+  --font-body:    'DM Sans', var(--font-sans);
+  /* Compact label step (10px) — exposed as the `text-2xs` utility so dense
+     UI labels stay token-based instead of arbitrary text-[10px] values. */
+  --text-2xs: 0.625rem;
 }
 
 @layer base {

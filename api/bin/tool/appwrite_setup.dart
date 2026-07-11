@@ -167,9 +167,68 @@ Future<void> _setupAssets() async {
   // 0008 widened these to NUMERIC — floats here (not money)
   await _float(c, 'ram_gb', required: false);
   await _float(c, 'storage_gb', required: false);
+
+  // ── Marketplace device-spec fields (buyer-facing listing detail) ──────────
+  // Universal
+  await _str(c, 'manufacturer', required: false);
+  await _str(c, 'model_number', required: false); // MPN / part number
+  await _int(c, 'year_of_manufacture', required: false);
+  await _enum(
+    c,
+    'functional_status',
+    ['fully_functional', 'functional_with_issues', 'for_parts'],
+    xdefault: 'fully_functional',
+  );
+  await _text(c, 'known_defects', required: false);
+  await _enum(
+    c,
+    'data_wipe_status',
+    ['not_wiped', 'wiped', 'certified'],
+    xdefault: 'not_wiped',
+  );
+  await _enum(
+    c,
+    'warranty_status',
+    ['none', 'active', 'expired'],
+    xdefault: 'none',
+  );
+  await _datetime(c, 'warranty_expiration', required: false);
+  await _text(c, 'included_accessories', required: false);
+  await _str(c, 'ships_from_location', required: false);
+  // Compute (laptop / desktop / server)
+  await _str(c, 'cpu_model', required: false); // e.g. "Intel Core i7-12700"
+  await _int(c, 'cpu_cores', required: false);
+  await _float(c, 'cpu_speed_ghz', required: false);
+  await _str(c, 'ram_type', required: false); // DDR4 / DDR5 / LPDDR5
+  await _enum(
+    c,
+    'storage_type',
+    ['ssd', 'nvme', 'hdd', 'emmc', 'other'],
+    required: false,
+  );
+  await _str(c, 'gpu_model', required: false);
+  // Display (laptop / monitor / phone / tablet)
+  await _float(c, 'screen_size_in', required: false);
+  await _str(c, 'screen_resolution', required: false); // "1920x1080"
+  await _bool(c, 'touchscreen', required: false);
+  // Desktop / server
+  await _str(c, 'form_factor', required: false); // SFF / Tower / 1U / 2U
+  await _int(c, 'power_supply_watts', required: false);
+  // Monitor
+  await _str(c, 'panel_type', required: false); // IPS / VA / TN / OLED
+  await _int(c, 'refresh_rate_hz', required: false);
+  await _text(c, 'ports', required: false); // free-form port list
+  // Networking
+  await _int(c, 'port_count', required: false);
+  await _str(c, 'throughput', required: false); // "1G" / "10G"
+  await _bool(c, 'managed', required: false);
+  // Phone / tablet
+  await _bool(c, 'carrier_locked', required: false);
+
   _index(c, 'company_id_idx', TablesDBIndexType.key, ['company_id']);
   _index(c, 'asset_type_idx', TablesDBIndexType.key, ['asset_type']);
   _index(c, 'condition_grade_idx', TablesDBIndexType.key, ['condition_grade']);
+  _index(c, 'manufacturer_idx', TablesDBIndexType.key, ['manufacturer']);
   // ⚠ PG treats NULL serials as distinct; Appwrite may not. The manual-entry
   // path must therefore never send serial_number: null twice for the same
   // company — repos synthesize a per-row placeholder when serial is absent.
@@ -206,6 +265,9 @@ Future<void> _setupListings() async {
     xdefault: 'draft',
   );
   await _datetime(c, 'last_valued_at', required: false);
+  // Buyer-facing listing media — array of image URLs (PLP card shows the
+  // first; the PDP shows the full gallery). Never indexed.
+  await _strArray(c, 'product_images');
   _index(c, 'company_id_idx', TablesDBIndexType.key, ['company_id']);
   _index(c, 'asset_id_idx', TablesDBIndexType.key, ['asset_id']);
   _index(c, 'status_idx', TablesDBIndexType.key, ['status']);
@@ -678,6 +740,24 @@ Future<void> _str(
   '[setup]   col $table.$key (varchar $size)',
 );
 
+/// Bounded string ARRAY column (varchar[]). Appwrite forbids defaults on
+/// array columns, so these are always optional with no default. Not indexable.
+Future<void> _strArray(
+  String table,
+  String key, {
+  int size = 1024,
+}) => _ignoreConflict(
+  () => _db.createVarcharColumn(
+    databaseId: Aw.databaseId,
+    tableId: table,
+    key: key,
+    size: size,
+    xrequired: false,
+    array: true,
+  ),
+  '[setup]   col $table.$key (varchar[] $size)',
+);
+
 /// Unbounded text column — for long free-form fields only (notes, messages,
 /// encrypted blobs). Never index these: max index length is 1024.
 Future<void> _text(
@@ -834,6 +914,14 @@ Future<void> _ignoreConflict(Future<void> Function() op, String label) async {
     } on AppwriteException catch (e) {
       if (e.code == 409) {
         stdout.writeln('$label (exists)');
+        return;
+      }
+      // Duplicate index by shape: a differently-named index already covers the
+      // same attributes + orders. Idempotent for our purposes — the coverage
+      // exists, so treat it like a 409 rather than failing the whole run.
+      if (e.code == 400 &&
+          (e.message?.contains('already an index with the same') ?? false)) {
+        stdout.writeln('$label (equivalent index exists)');
         return;
       }
       // Transient gateway/overload errors (Cloudflare 502/504, Appwrite 503,

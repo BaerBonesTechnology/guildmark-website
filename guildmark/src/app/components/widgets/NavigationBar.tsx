@@ -5,6 +5,7 @@ import {
   Tags, Receipt, Inbox, Settings, LogOut, ChevronDown, Menu, Sun, Moon,
 } from "lucide-react";
 import logoLong from "../../../logo-long.svg";
+import { ampsEnabled } from "../../config";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import { Button } from "../ui/button";
@@ -153,7 +154,7 @@ export function GMNavbar() {
       {/* Main header */}
       <header className="border-b border-border" style={{ background: "var(--background)" }}>
         <div className="px-6 h-12 flex items-center gap-6">
-          <Link to={isAuthenticated ? "/pre/dashboard" : "/pre/"} className="shrink-0">
+          <Link to={isAuthenticated ? "/pre/marketplace" : "/"} className="shrink-0">
             <img src={logoLong} className="h-6" alt="GuildMark" />
           </Link>
 
@@ -168,7 +169,7 @@ export function GMNavbar() {
               ))
             ) : (
               <>
-                <TopNavLink item={{ label: "Home", icon: Home, to: "/pre/" }} />
+                {/* <TopNavLink item={{ label: "Home", icon: Home, to: "/pre/" }} /> */}
                 <TopNavLink item={{ label: "Marketplace", icon: ShoppingCart, to: "/pre/marketplace" }} />
               </>
             )}
@@ -178,8 +179,7 @@ export function GMNavbar() {
           <div className="hidden lg:flex items-center gap-2 shrink-0 ml-auto">
             {isAuthenticated ? (
               <>
-                <GmProLink />
-                <Sep />
+                {ampsEnabled && <><GmProLink /><Sep /></>}
                 <UserMenu />
               </>
             ) : (
@@ -227,7 +227,7 @@ export function GMNavbar() {
                     <Icon className="w-4 h-4 shrink-0" /><span>{label}</span>
                   </NavLink>
                 ))}
-                <div className="px-1 py-2"><GmProLink sidebar onClick={handleNav} /></div>
+                {ampsEnabled && <div className="px-1 py-2"><GmProLink sidebar onClick={handleNav} /></div>}
                 <div className="border-t border-border my-1" />
                 {USER_MENU.map(({ label, icon: Icon, to }) => (
                   <NavLink key={to} to={to} onClick={handleNav}
@@ -243,10 +243,10 @@ export function GMNavbar() {
               </>
             ) : (
               <>
-                <NavLink to="/pre/" end onClick={handleNav}
+                {/* <NavLink to="/pre/" end onClick={handleNav}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60">
                   <Home className="w-4 h-4 shrink-0" /><span>Home</span>
-                </NavLink>
+                </NavLink> */}
                 <NavLink to="/pre/marketplace" onClick={handleNav}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60">
                   <ShoppingCart className="w-4 h-4 shrink-0" /><span>Marketplace</span>

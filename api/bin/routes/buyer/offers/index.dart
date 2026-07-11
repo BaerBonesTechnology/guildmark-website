@@ -22,7 +22,7 @@ Future<Response> onRequest(RequestContext context) async {
   switch (context.request.method) {
     case HttpMethod.get:
       final offers = await OfferRepo(aw).findByBuyerCompany(auth.companyId);
-      return Response.json(body: offers.map((o) => o.toJson()).toList());
+      return Response.json(body: offers);
 
     case HttpMethod.post:
       final body = await context.request.json() as Map<String, dynamic>?;

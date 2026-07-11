@@ -16,6 +16,10 @@ export const isDebug: boolean = import.meta.env.VITE_IS_DEBUG === 'false';  // D
 /** Base URL for the AstechServer API. */
 export const apiUrl: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8443';
 
+/** GM Pro / AMPS (Asset Management) suite. Hidden by default until the section
+ *  is ready — set VITE_AMPS_ENABLED=true to surface the nav pill and routes. */
+export const ampsEnabled: boolean = import.meta.env.VITE_AMPS_ENABLED === 'true';
+
 // ── Square Web Payments SDK (frontend-only, public identifiers) ───────────────
 //
 // These are NOT secrets — they are public identifiers used only to initialise

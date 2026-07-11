@@ -48,22 +48,22 @@ function BigNumber({ children, color = "var(--foreground)" }: { children: React.
 export function ExecutiveDashboard() {
   const { data, isPending, isError, error } = useDashboard();
 
-  const totalFleetValue      = data?.total_fleet_value     ?? 0;
-  const inMarketValue        = data?.in_market_value       ?? 0;
-  const stagedValue          = data?.staged_value          ?? 0;
-  const ampsPortfolioValue   = data?.amps_portfolio_value  ?? 0;
-  const totalListedValue     = data?.total_listed_value    ?? 0;
-  const totalMarketValue     = data?.total_market_value    ?? 0;
-  const projectedLoss        = data?.projected_loss_6mo    ?? 0;
-  const recoveryOpportunity  = data?.recovery_opportunity  ?? 0;
-  const activeListings       = data?.active_listings       ?? 0;
-  const pendingOffers        = data?.pending_offers        ?? 0;
-  const idleUnits            = data?.idle_units            ?? 0;
-  const efficiencyPct        = data?.fleet_efficiency_pct  ?? 0;
-  const overpricedCount      = data?.overpriced_count      ?? 0;
-  const totalRecovered       = data?.total_recovered       ?? 0;
-  const chartData            = data?.value_trend           ?? [];
-  const highDemandAssets     = data?.high_demand_assets    ?? [];
+  const totalFleetValue = data?.total_fleet_value ?? 0;
+  const inMarketValue = data?.in_market_value ?? 0;
+  const stagedValue = data?.staged_value ?? 0;
+  const ampsPortfolioValue = data?.amps_portfolio_value ?? 0;
+  const totalListedValue = data?.total_listed_value ?? 0;
+  const totalMarketValue = data?.total_market_value ?? 0;
+  const projectedLoss = data?.projected_loss_6mo ?? 0;
+  const recoveryOpportunity = data?.recovery_opportunity ?? 0;
+  const activeListings = data?.active_listings ?? 0;
+  const pendingOffers = data?.pending_offers ?? 0;
+  const idleUnits = data?.idle_units ?? 0;
+  const efficiencyPct = data?.fleet_efficiency_pct ?? 0;
+  const overpricedCount = data?.overpriced_count ?? 0;
+  const totalRecovered = data?.total_recovered ?? 0;
+  const chartData = data?.value_trend ?? [];
+  const highDemandAssets = data?.high_demand_assets ?? [];
 
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-4" style={{ fontFamily: BODY }}>
@@ -152,7 +152,7 @@ export function ExecutiveDashboard() {
       <div className="flex flex-col sm:flex-row gap-px border border-border" style={{ background: "var(--border)" }}>
         {[
           { label: "Active Listings", value: isPending ? "—" : `${activeListings}` },
-          { label: "Pending Offers",  value: isPending ? "—" : `${pendingOffers}` },
+          { label: "Pending Offers", value: isPending ? "—" : `${pendingOffers}` },
           { label: "Fleet Efficiency", value: isPending ? "—" : `${efficiencyPct.toFixed(0)}%`, sub: "Not overpriced" },
           { label: "Total Recovered", value: isPending ? "—" : `$${totalRecovered.toLocaleString()}`, accent: true },
         ].map((s) => (
@@ -165,7 +165,7 @@ export function ExecutiveDashboard() {
       </div>
 
       {/* ── Resale Cliff Chart ────────────────────────────────────────────── */}
-      <div className="border border-border p-6" style={{ background: "var(--card)" }}>
+      {chartData.length > 0 ? (<div className="border border-border p-6" style={{ background: "var(--card)" }}>
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <p className="text-sm font-medium mb-1">Resale Value Cliff Analysis</p>
@@ -179,46 +179,41 @@ export function ExecutiveDashboard() {
           <BarChart2 size={16} className="shrink-0 mt-0.5" style={{ color: "var(--muted-foreground)" }} />
         </div>
 
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} key="dashboard-area-chart">
-              <defs>
-                <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={CHART_B} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={CHART_B} stopOpacity={0}   />
-                </linearGradient>
-                <linearGradient id="colorUpgrade" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={CHART_A} stopOpacity={0.2} />
-                  <stop offset="95%" stopColor={CHART_A} stopOpacity={0}   />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" opacity={0.4} />
-              <XAxis dataKey="month" stroke="currentColor" className="text-muted-foreground" style={{ fontSize: "12px", fontFamily: "monospace" }} />
-              <YAxis stroke="currentColor" className="text-muted-foreground" style={{ fontSize: "12px", fontFamily: "monospace" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--popover)",
-                  color:           "var(--popover-foreground)",
-                  border:          "1px solid var(--border)",
-                  borderRadius:    "0px",
-                  fontFamily:      "monospace",
-                  fontSize:        "12px",
-                }}
-                formatter={(value: number) => `$${value.toLocaleString()}`}
-              />
-              <Legend wrapperStyle={{ fontFamily: "monospace", fontSize: "12px" }} />
-              <Area type="monotone" dataKey="current" stroke={CHART_B} strokeWidth={2} fillOpacity={1} fill="url(#colorCurrent)" name="Current Inventory Value" />
-              <Area type="monotone" dataKey="upgrade" stroke={CHART_A} strokeWidth={2} fillOpacity={1} fill="url(#colorUpgrade)" name="New Upgrade Cost" />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="h-[300px] flex flex-col items-center justify-center gap-3 border border-border" style={{ background: "var(--secondary)" }}>
-            <TrendingDown className="w-8 h-8" style={{ color: "var(--muted-foreground)" }} />
-            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>ML depreciation forecast requires AMPS</p>
-          </div>
-        )}
-      </div>
 
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={chartData} key="dashboard-area-chart">
+            <defs>
+              <linearGradient id="colorCurrent" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={CHART_B} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={CHART_B} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="colorUpgrade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={CHART_A} stopOpacity={0.2} />
+                <stop offset="95%" stopColor={CHART_A} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" opacity={0.4} />
+            <XAxis dataKey="month" stroke="currentColor" className="text-muted-foreground" style={{ fontSize: "12px", fontFamily: "monospace" }} />
+            <YAxis stroke="currentColor" className="text-muted-foreground" style={{ fontSize: "12px", fontFamily: "monospace" }} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "var(--popover)",
+                color: "var(--popover-foreground)",
+                border: "1px solid var(--border)",
+                borderRadius: "0px",
+                fontFamily: "monospace",
+                fontSize: "12px",
+              }}
+              formatter={(value: number) => `$${value.toLocaleString()}`}
+            />
+            <Legend wrapperStyle={{ fontFamily: "monospace", fontSize: "12px" }} />
+            <Area type="monotone" dataKey="current" stroke={CHART_B} strokeWidth={2} fillOpacity={1} fill="url(#colorCurrent)" name="Current Inventory Value" />
+            <Area type="monotone" dataKey="upgrade" stroke={CHART_A} strokeWidth={2} fillOpacity={1} fill="url(#colorUpgrade)" name="New Upgrade Cost" />
+          </AreaChart>
+        </ResponsiveContainer>
+
+      </div>
+      ) : null}
       {/* ── High-Intent Asset Table ───────────────────────────────────────── */}
       <div className="border border-border" style={{ background: "var(--card)" }}>
         <div className="p-6 border-b border-border">

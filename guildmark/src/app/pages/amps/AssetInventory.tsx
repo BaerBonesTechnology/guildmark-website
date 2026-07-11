@@ -1,347 +1,177 @@
 import { useState } from "react";
 import { Search, Download, Plus, ExternalLink, Upload } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Link } from "react-router";
 import { AddAssetDialog } from "../../components/AddAssetDialog";
 import { ImportCSVDialog } from "../../components/ImportCSVDialog";
 
-// ---------------------------------------------------------------------------
-// Local asset shape
-// ---------------------------------------------------------------------------
+const DISPLAY = "'Barlow Condensed', sans-serif";
+const BODY = "'DM Sans', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
+const ACCENT = "var(--amps-accent)";
+const GRADE_COLOR: Record<string, string> = { A: "var(--grade-a)", B: "var(--grade-b)", C: "var(--grade-c)" };
 
 export interface LocalAsset {
-  id:              string;
-  model:           string;
-  type:            string;
-  condition:       "A" | "B" | "C";
-  quantity?:       number;
-  age:             number;
-  fairMarketValue: number;
-  bookValue:       number;
-  depreciation:    number;
-  serialNumber?:   string | null;
-  department?:     string | null;
-  status:          "Active" | "At Risk";
-  lastSync:        string;
-  source?:         "mdm" | "manual" | "csv";
+  id: string; model: string; type: string; condition: "A" | "B" | "C";
+  quantity?: number; age: number; fairMarketValue: number; bookValue: number;
+  depreciation: number; serialNumber?: string | null; department?: string | null;
+  status: "Active" | "At Risk"; lastSync: string; source?: "mdm" | "manual" | "csv";
 }
 
 const seed: LocalAsset[] = [];
 
-// ---------------------------------------------------------------------------
-// CSV export helper
-// ---------------------------------------------------------------------------
-
 function exportCSV(assets: LocalAsset[]) {
   const headers = [
-    "id","model","type","condition","age_months",
-    "fair_market_value","book_value","depreciation_pct",
-    "serial_number","department","status","source",
+    "id", "model", "type", "condition", "age_months", "fair_market_value",
+    "book_value", "depreciation_pct", "serial_number", "department", "status", "source",
   ];
-  const rows = assets.map((a) =>
-    [
-      a.id, `"${a.model}"`, a.type, a.condition, a.age,
-      a.fairMarketValue, a.bookValue, a.depreciation,
-      a.serialNumber ?? "", a.department ?? "", a.status, a.source ?? "mdm",
-    ].join(",")
-  );
-  const csv  = [headers.join(","), ...rows].join("\n");
+  const rows = assets.map((a) => [
+    a.id, `"${a.model}"`, a.type, a.condition, a.age, a.fairMarketValue,
+    a.bookValue, a.depreciation, a.serialNumber ?? "", a.department ?? "", a.status, a.source ?? "mdm",
+  ].join(","));
+  const csv = [headers.join(","), ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = `guildmark-assets-${new Date().toISOString().slice(0,10)}.csv`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `guildmark-assets-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-// ---------------------------------------------------------------------------
-// Source badge
-// ---------------------------------------------------------------------------
-
 function SourceBadge({ source }: { source?: string }) {
   if (!source || source === "mdm") return null;
+  const color = source === "csv" ? ACCENT : "var(--grade-b)";
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px]  ml-1.5 ${
-      source === "csv"    ? "bg-amps-accent/10 text-amps-accent" :
-      source === "manual" ? "bg-warning/10 text-warning" : ""
-    }`}>
-      {source}
-    </span>
+    <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide uppercase ml-1.5"
+      style={{ fontFamily: MONO, color, border: `1px solid color-mix(in srgb, ${color} 30%, transparent)` }}>{source}</span>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export function AssetInventory() {
-  const [assets,          setAssets]          = useState<LocalAsset[]>(seed);
-  const [searchTerm,      setSearchTerm]      = useState("");
-  const [typeFilter,      setTypeFilter]      = useState("all");
+  const [assets, setAssets] = useState<LocalAsset[]>(seed);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [conditionFilter, setConditionFilter] = useState("all");
-  const [selectedAssets,  setSelectedAssets]  = useState<string[]>([]);
-  const [addOpen,         setAddOpen]         = useState(false);
-  const [importOpen,      setImportOpen]      = useState(false);
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const filteredAssets = assets.filter((asset) => {
-    const matchesSearch    = asset.model.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType      = typeFilter === "all" || asset.type.toLowerCase() === typeFilter.toLowerCase();
+    const matchesSearch = asset.model.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === "all" || asset.type.toLowerCase() === typeFilter.toLowerCase();
     const matchesCondition = conditionFilter === "all" || asset.condition === conditionFilter;
     return matchesSearch && matchesType && matchesCondition;
   });
 
-  function toggleAsset(id: string) {
-    setSelectedAssets((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  }
-
-  function toggleAll() {
-    setSelectedAssets(
-      selectedAssets.length === filteredAssets.length
-        ? []
-        : filteredAssets.map((a) => a.id)
-    );
-  }
-
-  function handleAddAsset(asset: LocalAsset) {
-    setAssets((prev) => [asset, ...prev]);
-  }
-
-  function handleImportAssets(newAssets: LocalAsset[]) {
-    setAssets((prev) => [...newAssets, ...prev]);
-  }
+  const toggleAsset = (id: string) => setSelectedAssets((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  const toggleAll = () => setSelectedAssets(selectedAssets.length === filteredAssets.length ? [] : filteredAssets.map((a) => a.id));
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 py-6 max-w-[1600px] mx-auto pb-20" style={{ fontFamily: BODY }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl  font-semibold mb-2">Asset Inventory</h1>
-          <p className="text-muted-foreground text-sm">
-            Full catalog of devices with real-time valuations
-            <span className=" ml-2 text-xs bg-muted px-1.5 py-0.5 rounded">
-              {assets.length} total
-            </span>
-          </p>
+          <h1 className="tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(1.8rem, 3vw, 2.3rem)", lineHeight: 1 }}>Asset Inventory</h1>
+          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Full catalog of devices with real-time valuations · {assets.length} total</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => exportCSV(filteredAssets)}
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setImportOpen(true)}
-          >
-            <Upload className="h-4 w-4" />
-            Import CSV
-          </Button>
-          <Button
-            className="bg-amps-accent hover:bg-amps-accent/90 text-white"
-            onClick={() => setAddOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Add asset
-          </Button>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => exportCSV(filteredAssets)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors">
+            <Download size={13} /> Export CSV
+          </button>
+          <button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors">
+            <Upload size={13} /> Import CSV
+          </button>
+          <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity" style={{ background: ACCENT, color: "#fff" }}>
+            <Plus size={13} /> Add asset
+          </button>
         </div>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by model..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 "
-              />
-            </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Asset type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="Laptop">Laptop</SelectItem>
-                <SelectItem value="Desktop">Desktop</SelectItem>
-                <SelectItem value="Tablet">Tablet</SelectItem>
-                <SelectItem value="Server">Server</SelectItem>
-                <SelectItem value="Phone">Phone</SelectItem>
-                <SelectItem value="Monitor">Monitor</SelectItem>
-                <SelectItem value="Networking">Networking</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={conditionFilter} onValueChange={setConditionFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Condition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All conditions</SelectItem>
-                <SelectItem value="A">Grade A — Excellent</SelectItem>
-                <SelectItem value="B">Grade B — Good</SelectItem>
-                <SelectItem value="C">Grade C — Fair</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="border border-border p-4 mb-4 flex gap-3" style={{ background: "var(--card)" }}>
+        <div className="flex-1 relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+          <input placeholder="Search by model…" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border border-border focus:outline-none focus:border-primary"
+            style={{ background: "var(--input-background)", fontFamily: BODY }} />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-44"><SelectValue placeholder="Asset type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {["Laptop", "Desktop", "Tablet", "Server", "Phone", "Monitor", "Networking", "Other"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={conditionFilter} onValueChange={setConditionFilter}>
+          <SelectTrigger className="w-44"><SelectValue placeholder="Condition" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All conditions</SelectItem>
+            <SelectItem value="A">Grade A — Excellent</SelectItem>
+            <SelectItem value="B">Grade B — Good</SelectItem>
+            <SelectItem value="C">Grade C — Fair</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Bulk actions bar */}
+      {/* Bulk actions */}
       {selectedAssets.length > 0 && (
-        <Card className="border-amps-accent bg-amps-accent/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm">
-                <span className="font-semibold ">{selectedAssets.length}</span>
-                {" "}asset{selectedAssets.length !== 1 ? "s" : ""} selected
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">Create listings</Button>
-                <Button variant="outline" size="sm">Generate invoices</Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => exportCSV(assets.filter((a) => selectedAssets.includes(a.id)))}
-                >
-                  Export selected
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="border p-4 mb-4 flex items-center justify-between" style={{ background: `color-mix(in srgb, ${ACCENT} 6%, var(--card))`, borderColor: `color-mix(in srgb, ${ACCENT} 30%, transparent)` }}>
+          <p className="text-sm"><span className="font-semibold">{selectedAssets.length}</span> asset{selectedAssets.length !== 1 ? "s" : ""} selected</p>
+          <div className="flex gap-2">
+            <button className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Create listings</button>
+            <button className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Generate invoices</button>
+            <button onClick={() => exportCSV(assets.filter((a) => selectedAssets.includes(a.id)))} className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Export selected</button>
+          </div>
+        </div>
       )}
 
-      {/* Assets table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <input
-                    type="checkbox"
-                    checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
-                    onChange={toggleAll}
-                    className="rounded border-border"
-                  />
-                </TableHead>
-                <TableHead className="">Model</TableHead>
-                <TableHead className="">Type</TableHead>
-                <TableHead className=" text-center">Grade</TableHead>
-                <TableHead className=" text-right">Age (mo)</TableHead>
-                <TableHead className=" text-right">Fair market value</TableHead>
-                <TableHead className=" text-right">Book value</TableHead>
-                <TableHead className=" text-right">Depreciation</TableHead>
-                <TableHead className="">Status</TableHead>
-                <TableHead className="">Last sync</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAssets.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12 text-muted-foreground text-sm">
-                    No assets match your filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredAssets.map((asset) => (
-                  <TableRow key={asset.id} className="hover:bg-amps-surface/50">
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedAssets.includes(asset.id)}
-                        onChange={() => toggleAsset(asset.id)}
-                        className="rounded border-border"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <span className=" font-medium">{asset.model}</span>
-                      <SourceBadge source={asset.source} />
-                    </TableCell>
-                    <TableCell className=" text-muted-foreground">{asset.type}</TableCell>
-                    <TableCell className="text-center">
-                      <span className={`inline-flex items-center justify-center w-8 h-6 rounded  text-xs font-semibold ${
-                        asset.condition === "A"
-                          ? "bg-grade-a-subtle text-grade-a-text"
-                          : asset.condition === "B"
-                          ? "bg-grade-b-subtle text-grade-b-text"
-                          : "bg-grade-c-subtle text-grade-c-text"
-                      }`}>
-                        {asset.condition}
-                      </span>
-                    </TableCell>
-                    <TableCell className=" text-right">{asset.age}</TableCell>
-                    <TableCell className=" text-right font-medium">
-                      ${asset.fairMarketValue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className=" text-right text-muted-foreground">
-                      ${asset.bookValue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className=" text-right">
-                      <span className={
-                        asset.depreciation < 20 ? "text-success" :
-                        asset.depreciation < 30 ? "text-warning" : "text-danger"
-                      }>
-                        {asset.depreciation.toFixed(1)}%
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs  ${
-                        asset.status === "Active"
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
-                      }`}>
-                        {asset.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className=" text-xs text-muted-foreground">
-                      {asset.lastSync}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
-                        <Link to={`/amps/assets/${asset.id}`}>
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Table */}
+      <div className="border border-border overflow-x-auto" style={{ background: "var(--card)" }}>
+        <table className="w-full text-sm" style={{ minWidth: 900 }}>
+          <thead>
+            <tr className="border-b border-border">
+              <th className="w-10 py-2.5 px-4">
+                <input type="checkbox" checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0} onChange={toggleAll} className="align-middle" />
+              </th>
+              {["Model", "Type", "Grade", "Age (mo)", "Fair Market Value", "Book Value", "Depreciation", "Status", "Last Sync", ""].map((h, i) => (
+                <th key={i} className={`py-2.5 px-4 text-[10px] tracking-wider uppercase font-normal ${["Grade"].includes(h) ? "text-center" : ["Age (mo)", "Fair Market Value", "Book Value", "Depreciation"].includes(h) ? "text-right" : "text-left"}`}
+                  style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filteredAssets.length === 0 ? (
+              <tr><td colSpan={11} className="text-center py-16 text-sm" style={{ color: "var(--muted-foreground)" }}>No assets match your filters — connect your MDM or add assets manually.</td></tr>
+            ) : filteredAssets.map((asset, i) => (
+              <tr key={asset.id} className="border-b border-border last:border-0" style={{ background: i % 2 ? "var(--secondary)" : "transparent" }}>
+                <td className="py-2.5 px-4"><input type="checkbox" checked={selectedAssets.includes(asset.id)} onChange={() => toggleAsset(asset.id)} className="align-middle" /></td>
+                <td className="py-2.5 px-4 font-medium">{asset.model}<SourceBadge source={asset.source} /></td>
+                <td className="py-2.5 px-4 capitalize" style={{ color: "var(--muted-foreground)" }}>{asset.type}</td>
+                <td className="py-2.5 px-4 text-center">
+                  <span className="inline-flex items-center justify-center w-7 h-6 text-xs font-semibold" style={{ fontFamily: MONO, color: GRADE_COLOR[asset.condition], border: `1px solid color-mix(in srgb, ${GRADE_COLOR[asset.condition]} 30%, transparent)` }}>{asset.condition}</span>
+                </td>
+                <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO }}>{asset.age}</td>
+                <td className="py-2.5 px-4 text-right font-medium" style={{ fontFamily: MONO }}>${asset.fairMarketValue.toLocaleString()}</td>
+                <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO, color: "var(--muted-foreground)" }}>${asset.bookValue.toLocaleString()}</td>
+                <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO, color: asset.depreciation < 20 ? "var(--grade-a)" : asset.depreciation < 30 ? "var(--grade-b)" : "var(--chart-4)" }}>{asset.depreciation.toFixed(1)}%</td>
+                <td className="py-2.5 px-4">
+                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] tracking-wider uppercase" style={{ fontFamily: MONO, color: asset.status === "Active" ? "var(--grade-a)" : "var(--grade-b)", border: `1px solid color-mix(in srgb, ${asset.status === "Active" ? "var(--grade-a)" : "var(--grade-b)"} 30%, transparent)` }}>{asset.status}</span>
+                </td>
+                <td className="py-2.5 px-4 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{asset.lastSync}</td>
+                <td className="py-2.5 px-4">
+                  <Link to={`/pre/amps/assets/${asset.id}`} className="w-7 h-7 flex items-center justify-center hover:bg-secondary transition-colors" style={{ color: "var(--muted-foreground)" }}><ExternalLink size={13} /></Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Footer */}
-      <p className="text-center text-sm text-muted-foreground ">
-        Showing {filteredAssets.length} of {assets.length} assets
-      </p>
+      <p className="text-center text-xs mt-4" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Showing {filteredAssets.length} of {assets.length} assets</p>
 
-      {/* Dialogs */}
-      <AddAssetDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onAdd={handleAddAsset}
-      />
-      <ImportCSVDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImport={handleImportAssets}
-      />
+      <AddAssetDialog open={addOpen} onOpenChange={setAddOpen} onAdd={(a) => setAssets((p) => [a, ...p])} />
+      <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} onImport={(n) => setAssets((p) => [...n, ...p])} />
     </div>
   );
 }

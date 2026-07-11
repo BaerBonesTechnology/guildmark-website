@@ -20,6 +20,7 @@ import { api } from "./api";
 import type { Asset } from "../models/asset";
 import type { Listing } from "../models/listing";
 import type { MarketplaceListing, BuyerOffer } from "../models/marketplace";
+import type { BuyerOffer as PlacedOffer, SellerOffer } from "../models/offer";
 import type { MdmConnection, MdmConnectRequest } from "../models/mdm";
 import type { TaxInvoice, InvoiceType } from "../models/invoice";
 import type { PortfolioSummary } from "../models/portfolio";
@@ -38,6 +39,7 @@ export const queryKeys = {
   listing:           (id: string)        => ["listing", id] as const,
   myListings:        ()                  => ["my-listings"] as const,
   myOffers:          ()                  => ["my-offers"] as const,
+  sellerOffers:      ()                  => ["seller-offers"] as const,
 
   // Assets
   assets:            (filters?: object)  => ["assets", filters] as const,
@@ -126,6 +128,39 @@ export function useCreateListing() {
       quantity:     number;
       listed_price: number;
       reason?:      string;
+      // Device-spec detail (all optional; category-dependent in the form)
+      product_images?:      string[];
+      manufacturer?:        string;
+      model_number?:        string;
+      year_of_manufacture?: number;
+      functional_status?:   string;
+      known_defects?:       string;
+      data_wipe_status?:    string;
+      warranty_status?:     string;
+      warranty_expiration?: string;
+      included_accessories?: string;
+      ships_from_location?: string;
+      cpu_model?:           string;
+      cpu_score?:           number;
+      cpu_cores?:           number;
+      cpu_speed_ghz?:       number;
+      ram_gb?:              number;
+      ram_type?:            string;
+      storage_gb?:          number;
+      storage_type?:        string;
+      gpu_model?:           string;
+      screen_size_in?:      number;
+      screen_resolution?:   string;
+      touchscreen?:         boolean;
+      form_factor?:         string;
+      power_supply_watts?:  number;
+      panel_type?:          string;
+      refresh_rate_hz?:     number;
+      ports?:               string;
+      port_count?:          number;
+      throughput?:          string;
+      managed?:             boolean;
+      carrier_locked?:      boolean;
     }) => api.post<Listing>("/seller/listings", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.myListings() });
@@ -183,6 +218,48 @@ export function useMakeOffer() {
   });
 }
 
+/**
+ * Buy Now — charges the buyer (subtotal + buyer fee) via a Square card nonce
+ * and opens the order/escrow flow. Returns the created order row.
+ */
+export function useBuyListing(listingId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      source_id:      string;
+      quantity?:      number;
+      payment_terms?: string;
+    }) =>
+      api.post<{ id: string; status: string }>(
+        `/marketplace/listings/${listingId}/buy`,
+        data,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.marketplace() });
+      qc.invalidateQueries({ queryKey: queryKeys.listing(listingId) });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+}
+
+/** Buyer-side inbox: offers this company placed, enriched with product context. */
+export function usePlacedOffers() {
+  return useQuery({
+    queryKey: queryKeys.myOffers(),
+    queryFn:  () => api.get<PlacedOffer[]>("/buyer/offers"),
+    staleTime: 30 * 1000,
+  });
+}
+
+/** Seller-side inbox: offers placed on this company's listings. */
+export function useSellerOffers() {
+  return useQuery({
+    queryKey: queryKeys.sellerOffers(),
+    queryFn:  () => api.get<SellerOffer[]>("/seller/offers"),
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useRespondToOffer() {
   const qc = useQueryClient();
   return useMutation({
@@ -200,6 +277,8 @@ export function useRespondToOffer() {
         counter_price != null ? { counter_price } : {},
       ),
     onSuccess: () => {
+      // Accepting auto-declines siblings server-side — refetch the whole inbox.
+      qc.invalidateQueries({ queryKey: queryKeys.sellerOffers() });
       qc.invalidateQueries({ queryKey: queryKeys.myListings() });
     },
   });

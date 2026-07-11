@@ -1,258 +1,63 @@
-import { useState } from "react";
-import {
-  ShoppingCart,
-  Package,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  RotateCcw,
-  Inbox,
-  DollarSign,
-  Tag,
-  CalendarClock,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
-import type { BuyerOffer } from "../models/offer";
+/** Offers page (View) — Received + Placed tabs; logic lives in the ViewModel. */
+import { AlertTriangle } from "lucide-react";
+import { OfferCard } from "../components/offers/OfferCard";
+import { OfferDialog } from "../components/offers/OfferDialog";
+import { OffersEmptyState } from "../components/offers/OffersEmptyState";
+import { useOfferInboxViewModel } from "../viewmodels/useOfferInboxViewModel";
+import type { OfferRole } from "../models/offer";
 
-type OfferStatus = "pending" | "accepted" | "rejected" | "expired" | "countered";
-
-function statusConfig(status: OfferStatus) {
-  switch (status) {
-    case "pending":
-      return { label: "Pending", className: "bg-amber-500/10 text-amber-500 border-amber-500/30", Icon: Clock };
-    case "accepted":
-      return { label: "Accepted", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30", Icon: CheckCircle2 };
-    case "rejected":
-      return { label: "Rejected", className: "bg-red-500/10 text-red-500 border-red-500/30", Icon: XCircle };
-    case "expired":
-      return { label: "Expired", className: "bg-muted text-muted-foreground border-border", Icon: RotateCcw };
-    case "countered":
-      return { label: "Counter Offer", className: "bg-violet-500/10 text-violet-500 border-violet-500/30", Icon: DollarSign };
-  }
-}
-
-function fmt(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-  });
-}
-
-type OfferTab = "all" | "pending" | "accepted" | "countered";
+const TABS: { key: OfferRole; label: string }[] = [
+  { key: "received", label: "Received" },
+  { key: "placed", label: "Placed" },
+];
 
 export function OfferInbox() {
-  const [activeTab, setActiveTab] = useState<OfferTab>("all");
-
-  const { data: offers = [], isLoading } = useQuery<BuyerOffer[]>({
-    queryKey: ["buyer-offers"],
-    queryFn: () => api.get<BuyerOffer[]>("/buyer/offers"),
-  });
-
-  const tabs: { key: OfferTab; label: string }[] = [
-    { key: "all",      label: "All Offers" },
-    { key: "pending",  label: "Pending" },
-    { key: "accepted", label: "Accepted" },
-    { key: "countered", label: "Counter Offers" },
-  ];
-
-  const filtered =
-    activeTab === "all"
-      ? offers
-      : offers.filter((o) => o.status === activeTab);
-
-  const pendingCount = offers.filter((o) => o.status === "pending").length;
-  const counterCount = offers.filter((o) => o.status === "countered").length;
+  const model = useOfferInboxViewModel();
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl  font-semibold text-foreground">
-            Offer Inbox
-          </h1>
-          <p className="text-sm text-muted-foreground  mt-1">
-            Track offers you've placed on marketplace listings.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {pendingCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-              <Clock className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-xs  text-amber-500">{pendingCount} pending</span>
-            </div>
-          )}
-          {counterCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30">
-              <DollarSign className="h-3.5 w-3.5 text-violet-500" />
-              <span className="text-xs  text-violet-500">{counterCount} counter{counterCount !== 1 ? "s" : ""}</span>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="max-w-screen-2xl mx-auto px-6 py-6 pb-20 font-body">
+      <header className="mb-6">
+        <h1 className="font-display font-extrabold tracking-tight leading-none text-3xl md:text-4xl">Offers</h1>
+        <p className="text-2xs font-mono text-muted-foreground mt-1.5">Respond to offers on your listings, and track the offers you've placed</p>
+      </header>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: "Total Offers", value: offers.length, color: "text-foreground" },
-          { label: "Pending",      value: pendingCount,  color: "text-amber-500" },
-          { label: "Accepted",     value: offers.filter((o) => o.status === "accepted").length, color: "text-emerald-500" },
-          { label: "Counter Offers", value: counterCount, color: "text-violet-500" },
-        ].map(({ label, value, color }) => (
-          <Card key={label}>
-            <CardContent className="pt-5">
-              <p className="text-xs  text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
-              <p className={`text-2xl  ${color}`}>{isLoading ? "—" : value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex gap-2 border-b border-border">
-        {tabs.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`px-4 py-2  text-sm transition-colors border-b-2 -mb-px ${
-              activeTab === key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
+      <div className="flex gap-1 border-b border-border mb-6">
+        {TABS.map(({ key, label }) => (
+          <button key={key} onClick={() => model.switchTab(key)}
+            className={`px-4 py-2.5 text-xs tracking-wider uppercase font-mono -mb-px border-b-2 transition-colors ${model.activeTab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
             {label}
+            {key === "received" && model.pendingReceived > 0 && (
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-4 h-4 px-1 text-2xs text-white bg-grade-b">{model.pendingReceived}</span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Offer list */}
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="pt-6 h-28" />
-            </Card>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-          <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
-            <Inbox className="h-7 w-7 text-muted-foreground" />
-          </div>
+      {model.activeLoading ? (
+        <div className="space-y-3">{[0, 1, 2].map((ndx) => <div key={ndx} className="bg-card border border-border h-24 animate-pulse" />)}</div>
+      ) : model.activeError ? (
+        <div className="bg-card border border-border border-l-4 border-l-chart-4 p-8 flex items-start gap-4">
+          <AlertTriangle size={20} className="mt-0.5 shrink-0 text-chart-4" />
           <div>
-            <p className=" font-semibold text-foreground">No offers yet</p>
-            <p className="text-sm text-muted-foreground  mt-1">
-              Offers you place on marketplace listings will appear here.
+            <p className="font-body font-medium mb-1">Couldn't load offers</p>
+            <p className="text-sm font-body text-muted-foreground">
+              {model.activeTab === "received"
+                ? "The /seller/offers endpoint returned an error — the API may need a restart to pick up this route."
+                : "The /buyer/offers endpoint returned an error."}
             </p>
           </div>
-          <Button asChild variant="outline" className=" text-sm mt-1">
-            <a href="/marketplace">Browse Marketplace</a>
-          </Button>
         </div>
+      ) : model.activeOffers.length === 0 ? (
+        <OffersEmptyState role={model.activeTab} />
       ) : (
         <div className="space-y-3">
-          {filtered.map((offer) => {
-            const { label: statusLabel, className: statusClass, Icon: StatusIcon } =
-              statusConfig(offer.status as OfferStatus);
-
-            return (
-              <Card key={offer.id} className="">
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      {/* Product name placeholder — BE returns model_name via a join when we upgrade */}
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm  font-semibold text-foreground">
-                            Listing {offer.listingId.slice(0, 8)}…
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Qty: {offer.quantity}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Meta */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pl-10">
-                        <span className="flex items-center gap-1">
-                          <Tag className="h-3 w-3" />
-                          Offer: <strong className="text-foreground ml-0.5">${offer.offerPrice.toLocaleString()}</strong>
-                        </span>
-                        {offer.counterPrice && (
-                          <span className="flex items-center gap-1 text-violet-500">
-                            <DollarSign className="h-3 w-3" />
-                            Counter: <strong className="ml-0.5">${offer.counterPrice.toLocaleString()}</strong>
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <CalendarClock className="h-3 w-3" />
-                          Placed {fmt(offer.createdAt)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Expires {fmt(offer.expiresAt)}
-                        </span>
-                      </div>
-
-                      {offer.message && (
-                        <p className="text-xs text-muted-foreground pl-10 italic">
-                          "{offer.message}"
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <Badge className={`flex items-center gap-1 border  text-xs ${statusClass}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {statusLabel}
-                      </Badge>
-
-                      {offer.status === "accepted" && (
-                        <Button
-                          size="sm"
-                          className=" text-xs bg-primary hover:bg-primary/90 text-white"
-                        >
-                          <Package className="h-3.5 w-3.5 mr-1" />
-                          Place Order
-                        </Button>
-                      )}
-
-                      {offer.status === "countered" && offer.counterPrice && (
-                        <div className="flex gap-1.5">
-                          <Button
-                            size="sm"
-                            className=" text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
-                          >
-                            Accept ${offer.counterPrice.toLocaleString()}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className=" text-xs border-red-500/40 text-red-500 hover:bg-red-500/10"
-                          >
-                            Decline
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {model.activeOffers.map((offer) => (
+            <OfferCard key={offer.id} offer={offer} role={model.activeTab} onSelect={() => model.selectOffer(offer)} />
+          ))}
         </div>
       )}
+
+      <OfferDialog offer={model.selectedOffer} mode={model.activeTab} onOpenChange={(open) => { if (!open) model.clearSelection(); }} />
     </div>
   );
 }

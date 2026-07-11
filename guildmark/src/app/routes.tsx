@@ -36,6 +36,7 @@ import { SellerLetterOfIntent } from "./pages/compliance/SellerLetterOfIntent";
 import { PartnerLetterOfIntent } from "./pages/compliance/PartnerLetterOfIntent";
 import { PartnerGuildmarkAgreement } from "./pages/compliance/PartnerGuildmarkAgreement";
 import { ProSignup } from "./pages/amps/ProSignup";
+import { ampsEnabled } from "./config";
 
 // ── Shared compliance children ─────────────────────────────────────────────
 const complianceChildren = [
@@ -120,25 +121,28 @@ export const router = createBrowserRouter([
     Component: ComplianceLayout,
     children: complianceChildren,
   },
-  {
-    path: "/amps",
-    element: <ProtectedRoute />,
-    children: [
-      // Pro signup — no sidebar, shown to free-tier users upgrading
-      { path: "pro-signup", Component: ProSignup },
-      {
+  // GM Pro / AMPS — feature-flagged off until the section is ready.
+  ...(ampsEnabled
+    ? [{
         path: "/amps",
-        Component: AMPSLayout,
+        element: <ProtectedRoute />,
         children: [
-          { index: true, Component: PortfolioOverview },
-          { path: "assets", Component: AssetInventory },
-          { path: "mdm", Component: MDMConnections },
-          { path: "invoices", Component: Invoices },
-          { path: "settings", Component: Settings },
+          // Pro signup — no sidebar, shown to free-tier users upgrading
+          { path: "pro-signup", Component: ProSignup },
+          {
+            path: "/amps",
+            Component: AMPSLayout,
+            children: [
+              { index: true, Component: PortfolioOverview },
+              { path: "assets", Component: AssetInventory },
+              { path: "mdm", Component: MDMConnections },
+              { path: "invoices", Component: Invoices },
+              { path: "settings", Component: Settings },
+            ],
+          },
         ],
-      },
-    ],
-  },
+      }]
+    : []),
   {
     path: "*",
     element: <Navigate to="/" replace />,
@@ -236,7 +240,10 @@ export const preLaunchRouter = createBrowserRouter([
         ],
       },
     ],
-  },{
+  },
+  // GM Pro / AMPS — feature-flagged off until the section is ready.
+  ...(ampsEnabled
+    ? [{
         path: "/pre/amps",
         element: <ProtectedRoute />,
         children: [
@@ -253,7 +260,8 @@ export const preLaunchRouter = createBrowserRouter([
             ],
           },
         ],
-      },
+      }]
+    : []),
   {
     path: "*",
     element: <Navigate to="/" replace />,

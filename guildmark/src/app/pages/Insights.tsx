@@ -242,20 +242,20 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
         <div className={`text-foreground ${inDrawer ? "" : "-mx-6 -my-6 min-h-screen"}`}>
 
             {/* ── Hero ── */}
-            <header className="max-w-5xl mx-auto px-6 py-16 text-center">
-                <p className="text-xs  uppercase tracking-widest text-muted-foreground mb-4">
+            <header className="mx-auto px-6 py-8">
+                {/* <p className="text-xs  uppercase tracking-widest text-muted-foreground mb-4">
                     Market Research · 2025–2026
                 </p>
                 <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
                     Capitalizing on the IT Hardware{" "}
                     <span className="text-muted-foreground">Lifecycle Gap</span>
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed ">
+                <p className="text-lg text-muted-foreground mx-auto leading-relaxed ">
                     The secondary B2B hardware market is driven by predictable refresh cycles,
                     unspent corporate budgets, and a real technology gap between large enterprises
                     and small businesses. Here is the data behind the GuildMarket opportunity.
-                </p>
-                <div className="flex justify-center gap-6 mt-10 text-sm ">
+                </p> */}
+                <div className="flex justify-around gap-6 mt-10 text-md ">
                     {[
                         { href: "#stockpile", label: "The Stockpile Problem" },
                         { href: "#seasonality", label: "Market Rhythms" },
@@ -264,7 +264,7 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                         <a
                             key={href}
                             href={href}
-                            className="text-muted-foreground hover:text-muted-foreground pb-0.5"
+                            className="text-muted-foreground hover:text-muted-foreground px-20 py-5 hover:bg-primary/10 border-b-2 border-transparent hover:border-primary transition-colors"
                         >
                             {label}
                         </a>
@@ -274,12 +274,20 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
 
             {/* ── Section 1: Stockpile Cost ── */}
             <section id="stockpile" className="px-6 py-16 border-t border-border">
-                <div className="max-w-7xl mx-auto">
+                <div className=" mx-auto">
                     <SectionLabel>01 · The Cost of Inaction</SectionLabel>
                     <h2 className="text-3xl font-bold text-foreground mb-3">
                         Idle Hardware is a Liability, Not an Asset
                     </h2>
-                    <p className="text-muted-foreground max-w-3xl mb-10 leading-relaxed">
+                    <p className="text-muted-foreground mb-10 leading-relaxed">
+                        Every laptop, server, and workstation a company buys is on a clock. Finance
+                        depreciates it, IT refreshes it, and somewhere around year three to five the
+                        asset stops being an asset and starts being a liability sitting in a supply
+                        closet. Multiply that across every mid-market and enterprise IT fleet and you
+                        get a large, predictable, perpetually replenished pool of hardware that still
+                        has years of useful life left in it.
+
+                        That pool is the market GuildMark is built for. <br /><br />
                         2 in 5 organizations spend over $100,000 a year just to store hardware they are
                         not using.<Cite n={22} /> On top of that, carrying costs eat about 21% of the original
                         purchase price every year.<Cite n={22} /> Move the slider to see what that looks like for any fleet size.
@@ -391,8 +399,8 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                             key={i}
                                             title={isIdle ? "Idle, not deployed" : "Active"}
                                             className={`w-4 h-4 rounded-sm transition-colors ${isIdle
-                                                    ? "bg-amber-500/40 border border-amber-500/30"
-                                                    : "bg-primary/30 border border-primary/20"
+                                                ? "bg-amber-500/40 border border-amber-500/30"
+                                                : "bg-primary/30 border border-primary/20"
                                                 }`}
                                         />
                                     );
@@ -455,12 +463,19 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                 id="seasonality"
                 className="px-6 py-16 border-t border-border bg-muted/30"
             >
-                <div className="max-w-7xl mx-auto">
+                <div className="mx-auto">
                     <SectionLabel>02 · Market Rhythms</SectionLabel>
                     <h2 className="text-3xl font-bold text-foreground mb-3">
                         Purchasing is Seasonal and tech supply lags around 3–4 Years
                     </h2>
-                    <p className="text-muted-foreground max-w-3xl mb-10 leading-relaxed">
+                    <p className="text-muted-foreground mb-10 leading-relaxed">
+                        Corporate hardware doesn't leave service at random. It leaves on a schedule;
+                        lease expirations, warranty windows, OS end-of-life, and standard three-to-five
+                        year refresh policies. Because those cycles are planned and budgeted, the supply
+                        of good, recent-generation used hardware is not a one-time windfall; it is a
+                        recurring, forecastable stream. A marketplace that can meet sellers at the
+                        moment of refresh captures inventory the seller was going to retire anyway.
+                        <br /><br />
                         Most corporate budgets are use-it-or-lose-it, so IT teams bulk-purchase in Q4
                         before funds expire.<Cite n={1} /> Hardware bought in Q4 then shows up on
                         the secondary market 3 to 4 years later,<Cite n={11} /> which means GuildMarket can
@@ -478,10 +493,10 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                                         key={v}
                                         onClick={() => setActiveView(v)}
                                         className={`px-4 py-2 rounded-md transition-all ${activeView === v
-                                                ? v === "purchasing"
-                                                    ? "bg-primary/20 text-muted-foreground"
-                                                    : "bg-amber-500/20 text-amber-400"
-                                                : "text-muted-foreground hover:text-foreground"
+                                            ? v === "purchasing"
+                                                ? "bg-primary/20 text-muted-foreground"
+                                                : "bg-amber-500/20 text-amber-400"
+                                            : "text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
                                         {v === "purchasing" ? "Primary Purchasing (Yr 0)" : "Secondary Supply (Yr 3–4)"}
@@ -541,17 +556,31 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                             </InsightCard>
                         </div>
                     </div>
+                    <p className="text-muted-foreground mt-10 leading-relaxed">Disposition is almost never the priority for an internal IT team. The result is
+                        predictable: equipment that could recover real value instead depreciates in
+                        storage, and the recovery window quietly closes as newer models arrive. Sellers
+                        aren't looking to run an auction — they want the fastest path to a fair price
+                        with the compliance paperwork handled. Speed and certainty, not squeezing the
+                        last dollar, are what move surplus hardware.
+                    </p>
                 </div>
             </section>
 
             {/* ── Section 3: SMB Demand Gap ── */}
             <section id="demand" className="px-6 py-16 border-t border-border">
-                <div className="max-w-7xl mx-auto">
+                <div className=" mx-auto">
                     <SectionLabel>03 · SMB Demand Gap</SectionLabel>
                     <h2 className="text-3xl font-bold text-foreground mb-3">
                         The Generational Technology Gap
                     </h2>
-                    <p className="text-muted-foreground max-w-3xl mb-10 leading-relaxed">
+                    <p className="text-muted-foreground mb-10 leading-relaxed">
+                        The same device that a large enterprise considers obsolete is often a
+significant upgrade for a small business. Enterprises standardize on current
+hardware for support and security reasons; small businesses optimize for cost
+per capable machine. That mismatch is the engine of the secondary market: one
+side has capable hardware it no longer wants, the other side wants capable
+hardware it can afford. GuildMark sits in the middle, matching graded,
+data-sanitized supply to verified B2B demand.<br/><br />
                         Refurbished hardware is already the mainstream choice. Over 54% of SMBs
                         buy certified refurb.<Cite n={9} /> The opportunity is in connecting mid-market
                         sellers retiring 2 to 3 year old hardware<Cite n={11} /> with SMB buyers running
@@ -647,9 +676,49 @@ export function InsightPage({ inDrawer = false }: { inDrawer?: boolean }) {
                 </div>
             </section>
 
+            <section className="px-6 py-16 border-t border-border bg-muted/30">
+                <div className="mx-auto space-y-6">
+                    <SectionLabel>04 • Market Fit</SectionLabel>
+                    <h2 className="text-3xl font-bold text-foreground mb-3">
+                        Why a purpose-built marketplace wins
+                    </h2>
+                    <p className="text-muted-foreground mb-10 leading-relaxed">
+                        Generic resale channels weren't designed for business hardware. They don't grade
+condition consistently, they don't certify data destruction, and they don't
+give a finance team the write-off documentation an audit requires. A B2B
+marketplace that treats those as first-class features: condition grading,
+NIST 800-88 data sanitization, escrow-secured payment, and audit-ready invoices, device comparison. We strive to remove the friction that keeps surplus hardware sitting in closets.
+                    </p>
+                   
+                    <ul className="list-disc pl-6 space-y-3 text-muted-foreground mb-10">
+                         <h2 className="text-2xl font-bold text-foreground mb-3">
+                        The Opportunity
+                    </h2>
+                        <li className="mb-3">
+                            <strong>Recurring supply</strong> from planned refresh cycles rather than one-off sales.
+                            </li>
+                            <li>
+                                <strong>Motivated sellers</strong> who value speed, certainty, and compliance over top dollar.
+                            </li>
+                            <li>
+                                <strong>Structural demand</strong> from the enterprise-to-SMB capability gap.
+                            </li>
+                            <li>
+                                <strong>Defensible differentiation</strong> through grading, data destruction, and escrow.
+                            </li>
+                    </ul>
+                    <strong className="text-lg text-foreground justify-center flex">
+                        The hardware lifecycle gap isn't a temporary inefficiency — it's a permanent
+feature of how businesses buy and retire technology. GuildMark's opportunity is
+to make the transition from *liability in a closet* to *value on a balance
+sheet* fast, compliant, and repeatable.
+                    </strong>
+                    </div>
+                    </section>
+
             {/* ── Sources ── */}
             <footer id="sources" className="border-t border-border px-6 py-12">
-                <div className="max-w-7xl mx-auto">
+                <div className="mx-auto">
                     <p className="text-xs  uppercase tracking-widest text-muted-foreground mb-6">
                         Sources
                     </p>

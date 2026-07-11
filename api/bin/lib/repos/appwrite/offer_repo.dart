@@ -11,6 +11,8 @@
 /// listing, same as a lost lock race under READ COMMITTED.
 library;
 
+import 'dart:io';
+
 import 'package:dart_appwrite/dart_appwrite.dart';
 import 'package:dart_appwrite/models.dart';
 
@@ -29,27 +31,17 @@ class OfferRepo {
 
   TablesDB get _db => _aw.tablesDB;
 
-  /// Buyer-side: every offer placed by a company.
-  Future<List<BuyerOffer>> findByBuyerCompany(String buyerCompanyId) async {
-    const pageSize = 100;
-    final rows = <Row>[];
-    var offset = 0;
-    while (true) {
-      final res = await _db.listRows(
-        databaseId: Aw.databaseId,
-        tableId: Aw.buyerOffers,
-        queries: [
-          Query.equal('buyer_company_id', buyerCompanyId),
-          Query.orderDesc(r'$createdAt'),
-          Query.limit(pageSize),
-          Query.offset(offset),
-        ],
-      );
-      rows.addAll(res.rows);
-      if (res.rows.length < pageSize) break;
-      offset += pageSize;
-    }
-    return rows.map(_fromRow).toList();
+  /// Buyer-side: every offer placed by a company, enriched with the listing's
+  /// model name + listed price so the buyer's inbox can show the product
+  /// rather than a bare listing id. JSON-ready maps (see [_enrich]).
+  Future<List<Map<String, dynamic>>> findByBuyerCompany(
+    String buyerCompanyId,
+  ) async {
+    final rows = await _listAll(Aw.buyerOffers, [
+      Query.equal('buyer_company_id', buyerCompanyId),
+      Query.orderDesc(r'$createdAt'),
+    ]);
+    return _enrich(rows);
   }
 
   /// Place a new offer on a listing.
@@ -190,12 +182,169 @@ class OfferRepo {
         'counter_price_cents': _dollarsToCents(counterPrice),
       },
     );
+
+    // Accepting one offer auto-declines every other still-pending offer on the
+    // same listing — only one buyer can win. Best-effort, after the accept
+    // commit: a failure here leaves a sibling pending (harmless — it can be
+    // rejected manually) but never rolls back the accept.
+    if (action == 'accept') {
+      await _autoDeclineSiblings(
+        listingId: offer.data['listing_id'] as String,
+        acceptedOfferId: offerId,
+      );
+    }
+
     return _fromRow(row);
+  }
+
+  /// Reject all other pending offers on [listingId] once one has been accepted.
+  Future<void> _autoDeclineSiblings({
+    required String listingId,
+    required String acceptedOfferId,
+  }) async {
+    try {
+      final siblings = await _db.listRows(
+        databaseId: Aw.databaseId,
+        tableId: Aw.buyerOffers,
+        queries: [
+          Query.equal('listing_id', listingId),
+          Query.equal('status', 'pending'),
+          Query.limit(100),
+        ],
+      );
+      for (final s in siblings.rows) {
+        if (s.$id == acceptedOfferId) continue;
+        try {
+          await _db.updateRow(
+            databaseId: Aw.databaseId,
+            tableId: Aw.buyerOffers,
+            rowId: s.$id,
+            data: {'status': 'rejected'},
+          );
+        } on AppwriteException {
+          // Skip a sibling that vanished / changed under us; keep going.
+        }
+      }
+    } on AppwriteException catch (e) {
+      stderr.writeln('[offer] auto-decline siblings failed: $e');
+    }
+  }
+
+  /// Seller-side: every offer placed on any of a company's listings, enriched
+  /// with the listing's model name + listed price and the buyer's company name
+  /// so the seller UI can show "their offer vs your price" without extra calls.
+  ///
+  /// Returns JSON-ready maps (the base offer fields in snake_case plus
+  /// `model_name`, `listed_price`, `buyer_name`).
+  Future<List<Map<String, dynamic>>> findBySellerCompany(
+    String sellerCompanyId,
+  ) async {
+    // This seller's listings define which offers are "mine".
+    final listings = await _listAll(Aw.listings, [
+      Query.equal('company_id', sellerCompanyId),
+    ]);
+    if (listings.isEmpty) return [];
+    final listingIds = listings.map((l) => l.$id).toList();
+
+    // Offers on those listings (IN (...) → chunked equal with OR semantics).
+    final offerRows = <Row>[];
+    const chunk = 100;
+    for (var i = 0; i < listingIds.length; i += chunk) {
+      final end =
+          (i + chunk) > listingIds.length ? listingIds.length : i + chunk;
+      final res = await _db.listRows(
+        databaseId: Aw.databaseId,
+        tableId: Aw.buyerOffers,
+        queries: [
+          Query.equal('listing_id', listingIds.sublist(i, end)),
+          Query.orderDesc(r'$createdAt'),
+          Query.limit(100),
+        ],
+      );
+      offerRows.addAll(res.rows);
+    }
+    offerRows.sort((a, b) => b.$createdAt.compareTo(a.$createdAt));
+    return _enrich(offerRows);
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Enrich offer rows with listing/asset/buyer context and return JSON-ready
+  /// maps (the base offer in snake_case + `model_name`, `listed_price`,
+  /// `buyer_name`). Shared by the buyer and seller inbox queries.
+  Future<List<Map<String, dynamic>>> _enrich(List<Row> offerRows) async {
+    if (offerRows.isEmpty) return [];
+    final listingsById = await _rowsByIds(
+      Aw.listings,
+      offerRows.map((o) => o.data['listing_id'] as String),
+    );
+    final assetsById = await _rowsByIds(
+      Aw.assets,
+      listingsById.values.map((l) => l.data['asset_id'] as String),
+    );
+    final buyersById = await _rowsByIds(
+      Aw.companies,
+      offerRows.map((o) => o.data['buyer_company_id'] as String),
+    );
+    return offerRows.map((o) {
+      final json = _fromRow(o).toJson();
+      final listing = listingsById[o.data['listing_id']];
+      final asset =
+          listing != null ? assetsById[listing.data['asset_id']] : null;
+      json['model_name'] = asset?.data['model_name'];
+      json['listed_price'] = listing != null
+          ? _centsToDollars(listing.data['listed_price_cents'])
+          : null;
+      json['buyer_name'] =
+          buyersById[o.data['buyer_company_id']]?.data['name'];
+      return json;
+    }).toList();
+  }
+
+  /// Page through every row matching [queries].
+  Future<List<Row>> _listAll(String tableId, List<String> queries) async {
+    const pageSize = 100;
+    final rows = <Row>[];
+    var offset = 0;
+    while (true) {
+      final res = await _db.listRows(
+        databaseId: Aw.databaseId,
+        tableId: tableId,
+        queries: [...queries, Query.limit(pageSize), Query.offset(offset)],
+      );
+      rows.addAll(res.rows);
+      if (res.rows.length < pageSize) break;
+      offset += pageSize;
+    }
+    return rows;
+  }
+
+  /// Batch-fetch rows by `$id` (chunked; OR semantics replace SQL IN).
+  Future<Map<String, Row>> _rowsByIds(
+    String tableId,
+    Iterable<String> ids,
+  ) async {
+    const chunkSize = 100;
+    final unique = ids.toSet().toList();
+    final byId = <String, Row>{};
+    for (var i = 0; i < unique.length; i += chunkSize) {
+      final end =
+          (i + chunkSize) > unique.length ? unique.length : i + chunkSize;
+      final chunkIds = unique.sublist(i, end);
+      if (chunkIds.isEmpty) continue;
+      final res = await _db.listRows(
+        databaseId: Aw.databaseId,
+        tableId: tableId,
+        queries: [Query.equal(r'$id', chunkIds), Query.limit(chunkIds.length)],
+      );
+      for (final row in res.rows) {
+        byId[row.$id] = row;
+      }
+    }
+    return byId;
+  }
 
   BuyerOffer _fromRow(Row row) {
     final d = row.data;

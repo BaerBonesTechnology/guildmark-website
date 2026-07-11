@@ -163,6 +163,7 @@ class ListingRepo {
     required String assetId,
     required double listedPrice,
     double? fairMarketValue,
+    List<String>? productImages,
   }) async {
     final flag = _valuationFlag(listedPrice, fairMarketValue);
 
@@ -177,6 +178,8 @@ class ListingRepo {
         'fair_market_value_cents': _dollarsToCents(fairMarketValue),
         'valuation_flag': flag,
         'status': 'draft',
+        if (productImages != null && productImages.isNotEmpty)
+          'product_images': productImages,
       },
     );
     // Like the Postgres RETURNING (no asset join), the asset-derived fields
@@ -397,6 +400,35 @@ class ListingRepo {
       cpuScore: numToDoubleOrNull(a?['cpu_score']),
       ramGb: numToDoubleOrNull(a?['ram_gb']),
       storageGb: numToDoubleOrNull(a?['storage_gb']),
+      productImages: _strList(d['product_images']),
+      manufacturer: a?['manufacturer'] as String?,
+      modelNumber: a?['model_number'] as String?,
+      yearOfManufacture: numToIntOrNull(a?['year_of_manufacture']),
+      functionalStatus: a?['functional_status'] as String?,
+      knownDefects: a?['known_defects'] as String?,
+      dataWipeStatus: a?['data_wipe_status'] as String?,
+      warrantyStatus: a?['warranty_status'] as String?,
+      warrantyExpiration: _dt(a?['warranty_expiration']),
+      includedAccessories: a?['included_accessories'] as String?,
+      shipsFromLocation: a?['ships_from_location'] as String?,
+      cpuModel: a?['cpu_model'] as String?,
+      cpuCores: numToIntOrNull(a?['cpu_cores']),
+      cpuSpeedGhz: numToDoubleOrNull(a?['cpu_speed_ghz']),
+      ramType: a?['ram_type'] as String?,
+      storageType: a?['storage_type'] as String?,
+      gpuModel: a?['gpu_model'] as String?,
+      screenSizeIn: numToDoubleOrNull(a?['screen_size_in']),
+      screenResolution: a?['screen_resolution'] as String?,
+      touchscreen: a?['touchscreen'] as bool?,
+      formFactor: a?['form_factor'] as String?,
+      powerSupplyWatts: numToIntOrNull(a?['power_supply_watts']),
+      panelType: a?['panel_type'] as String?,
+      refreshRateHz: numToIntOrNull(a?['refresh_rate_hz']),
+      ports: a?['ports'] as String?,
+      portCount: numToIntOrNull(a?['port_count']),
+      throughput: a?['throughput'] as String?,
+      managed: a?['managed'] as bool?,
+      carrierLocked: a?['carrier_locked'] as bool?,
     );
   }
 
@@ -433,11 +465,47 @@ class ListingRepo {
       cpuScore: numToDoubleOrNull(a['cpu_score']),
       ramGb: numToDoubleOrNull(a['ram_gb']),
       storageGb: numToDoubleOrNull(a['storage_gb']),
+      productImages: _strList(d['product_images']),
+      manufacturer: a['manufacturer'] as String?,
+      modelNumber: a['model_number'] as String?,
+      yearOfManufacture: numToIntOrNull(a['year_of_manufacture']),
+      functionalStatus: a['functional_status'] as String?,
+      knownDefects: a['known_defects'] as String?,
+      dataWipeStatus: a['data_wipe_status'] as String?,
+      warrantyStatus: a['warranty_status'] as String?,
+      warrantyExpiration: _dt(a['warranty_expiration']),
+      includedAccessories: a['included_accessories'] as String?,
+      shipsFromLocation: a['ships_from_location'] as String?,
+      cpuModel: a['cpu_model'] as String?,
+      cpuCores: numToIntOrNull(a['cpu_cores']),
+      cpuSpeedGhz: numToDoubleOrNull(a['cpu_speed_ghz']),
+      ramType: a['ram_type'] as String?,
+      storageType: a['storage_type'] as String?,
+      gpuModel: a['gpu_model'] as String?,
+      screenSizeIn: numToDoubleOrNull(a['screen_size_in']),
+      screenResolution: a['screen_resolution'] as String?,
+      touchscreen: a['touchscreen'] as bool?,
+      formFactor: a['form_factor'] as String?,
+      powerSupplyWatts: numToIntOrNull(a['power_supply_watts']),
+      panelType: a['panel_type'] as String?,
+      refreshRateHz: numToIntOrNull(a['refresh_rate_hz']),
+      ports: a['ports'] as String?,
+      portCount: numToIntOrNull(a['port_count']),
+      throughput: a['throughput'] as String?,
+      managed: a['managed'] as bool?,
+      carrierLocked: a['carrier_locked'] as bool?,
       sellerName: c?['name'] as String?,
       sellerIndustry: c?['industry'] as String?,
       sellerSizeBand: c?['size_band'] as String?,
     );
   }
+}
+
+/// Coerce an Appwrite array-column value (List&lt;dynamic&gt;) into a
+/// `List&lt;String&gt;`. Null/empty → null so the field is omitted from JSON.
+List<String>? _strList(Object? raw) {
+  if (raw is! List || raw.isEmpty) return null;
+  return raw.map((e) => e.toString()).toList();
 }
 
 double? _centsToDollars(Object? cents) =>
