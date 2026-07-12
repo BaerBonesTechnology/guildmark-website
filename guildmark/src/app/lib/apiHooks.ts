@@ -169,6 +169,28 @@ export function useCreateListing() {
   });
 }
 
+/** A file uploaded to the product-images bucket, as returned by the API. */
+export interface UploadedImage {
+  file_id:   string;
+  bucket_id: string;
+  url:       string;
+}
+
+/**
+ * Uploads a single image to the `gm-product-images` bucket via the API
+ * (POST /seller/uploads/images) and returns its public view URL. The dialog
+ * collects these URLs into the listing's `product_images`.
+ */
+export function useUploadProductImage() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return api.upload<UploadedImage>("/seller/uploads/images", form);
+    },
+  });
+}
+
 export function useWithdrawListing() {
   const qc = useQueryClient();
   return useMutation({
