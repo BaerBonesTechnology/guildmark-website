@@ -1,65 +1,27 @@
-import { TrendingUp, TrendingDown, Package, AlertCircle, FileText, Cloud, ArrowRight } from "lucide-react";
+/**
+ * AMPS Portfolio Overview — fleet value & health dashboard (View).
+ * Summary fetch and chart transforms live in usePortfolioOverviewViewModel;
+ * StatCard and Panel are shared AMPS components. Presentation only.
+ */
+import { AlertCircle, ArrowRight, Package, TrendingDown, TrendingUp } from "lucide-react";
 import { Link } from "react-router";
-import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { usePortfolioSummary } from "../../lib/apiHooks";
-import { grades } from "../../lib/tokens";
-
-const DISPLAY = "'Barlow Condensed', sans-serif";
-const BODY = "'DM Sans', sans-serif";
-const MONO = "'JetBrains Mono', monospace";
-const ACCENT = "var(--amps-accent)";
-
-const TOOLTIP_STYLE = {
-  backgroundColor: "var(--card)",
-  border: "1px solid var(--border)",
-  borderRadius: 0,
-  fontFamily: "'JetBrains Mono', monospace",
-  fontSize: 12,
-};
-
-function StatCard({ label, value, icon: Icon, sub, subColor }: {
-  label: string; value: string; icon: React.ElementType; sub?: React.ReactNode; subColor?: string;
-}) {
-  return (
-    <div className="p-5" style={{ background: "var(--card)" }}>
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <p className="text-[10px] tracking-widest uppercase mb-2" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{label}</p>
-          <p className="text-3xl leading-none" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{value}</p>
-          {sub && <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: subColor ?? "var(--muted-foreground)", fontFamily: MONO }}>{sub}</div>}
-        </div>
-        <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ border: `1px solid color-mix(in srgb, ${ACCENT} 30%, transparent)`, background: `color-mix(in srgb, ${ACCENT} 8%, transparent)` }}>
-          <Icon size={16} style={{ color: ACCENT }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Panel({ title, subtitle, action, children }: { title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="border border-border" style={{ background: "var(--card)" }}>
-      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between gap-3">
-        <div>
-          <span className="text-[10px] tracking-widest uppercase block" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{title}</span>
-          {subtitle && <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{subtitle}</span>}
-        </div>
-        {action}
-      </div>
-      <div className="p-5">{children}</div>
-    </div>
-  );
-}
+import { Area, AreaChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Panel } from "../../components/amps/Panel";
+import { StatCard } from "../../components/amps/StatCard";
+import { AMPS_ACCENT, AMPS_TOOLTIP_STYLE, PORTFOLIO_QUICK_ACTIONS } from "../../constants/amps.constants";
+import { BODY, DISPLAY, MONO } from "../../constants/typography";
+import { formatUsd } from "../../services/portfolio.service";
+import { usePortfolioOverviewViewModel } from "../../viewmodels/usePortfolioOverviewViewModel";
 
 export function PortfolioOverview() {
-  const { data: portfolio, isLoading, error } = usePortfolioSummary();
+  const { conditionSlices, depPct, error, isLoading, portfolio, trendData, typeSlices } = usePortfolioOverviewViewModel();
 
   if (isLoading) {
     return (
       <div className="px-6 py-6 max-w-[1600px] mx-auto" style={{ fontFamily: BODY }}>
         <div className="h-9 w-64 mb-6 animate-pulse" style={{ background: "var(--secondary)" }} />
         <div className="grid grid-cols-4 gap-px border border-border mb-6" style={{ background: "var(--border)" }}>
-          {[...Array(4)].map((_, i) => <div key={i} className="h-28 animate-pulse" style={{ background: "var(--card)" }} />)}
+          {[...Array(4)].map((_, ndx) => <div key={ndx} className="h-28 animate-pulse" style={{ background: "var(--card)" }} />)}
         </div>
         <div className="border border-border h-80 animate-pulse" style={{ background: "var(--card)" }} />
       </div>
@@ -80,23 +42,6 @@ export function PortfolioOverview() {
     );
   }
 
-  const fleetByType = Object.entries(portfolio?.by_type ?? {}).map(([name, d], i) => ({
-    name, value: d.count, color: ["#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE"][i % 4],
-  }));
-  const fleetByCondition = Object.entries(portfolio?.by_condition ?? {}).map(([name, d]) => ({
-    name: name === "A" ? "Excellent (A)" : name === "B" ? "Good (B)" : "Fair (C)",
-    value: d.count,
-    color: name === "A" ? grades.A.bg : name === "B" ? grades.B.bg : grades.C.bg,
-  }));
-  const portfolioData = (portfolio?.trend ?? []).map((t) => ({
-    month: new Date(t.snapshot_date).toLocaleDateString("en-US", { month: "short" }),
-    portfolio: t.total_portfolio_value,
-    book: t.total_book_value,
-  }));
-
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
-  const depPct = portfolio ? (portfolio.depreciation_pct * 100).toFixed(1) : "0";
-
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto pb-20" style={{ fontFamily: BODY }}>
       {/* Header */}
@@ -107,7 +52,7 @@ export function PortfolioOverview() {
 
       {/* Hero stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-px border border-border mb-6" style={{ background: "var(--border)" }}>
-        <StatCard label="Total Portfolio Value" value={fmt(portfolio?.total_portfolio_value ?? 0)} icon={TrendingUp}
+        <StatCard label="Total Portfolio Value" value={formatUsd(portfolio?.total_portfolio_value ?? 0)} icon={TrendingUp}
           sub={<><TrendingDown size={12} style={{ color: "var(--chart-4)" }} /> <span style={{ color: "var(--chart-4)" }}>-{depPct}%</span> vs book</>} />
         <StatCard label="Total Devices" value={String(portfolio?.total_devices ?? 0)} icon={Package}
           sub={<>Across {Object.keys(portfolio?.by_type ?? {}).length} types</>} />
@@ -122,7 +67,7 @@ export function PortfolioOverview() {
         <Panel title="Portfolio Value Over Time" subtitle="Market value vs book value (last 6 months)">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={portfolioData}>
+              <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
@@ -136,7 +81,7 @@ export function PortfolioOverview() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "monospace" }} stroke="var(--muted-foreground)" />
                 <YAxis tick={{ fontSize: 11, fontFamily: "monospace" }} stroke="var(--muted-foreground)" />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value: number) => `$${value.toLocaleString()}`} />
+                <Tooltip contentStyle={AMPS_TOOLTIP_STYLE} formatter={(value: number) => `$${value.toLocaleString()}`} />
                 <Legend />
                 <Area type="monotone" dataKey="portfolio" stroke="#8B5CF6" strokeWidth={2} fill="url(#portfolioGradient)" name="Market Value" />
                 <Area type="monotone" dataKey="book" stroke="#94A3B8" strokeWidth={2} fill="url(#bookGradient)" name="Book Value" />
@@ -152,10 +97,10 @@ export function PortfolioOverview() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={fleetByType} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
-                  {fleetByType.map((entry, index) => <Cell key={`type-${index}`} fill={entry.color} />)}
+                <Pie data={typeSlices} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
+                  {typeSlices.map((entry, index) => <Cell key={`type-${index}`} fill={entry.color} />)}
                 </Pie>
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Tooltip contentStyle={AMPS_TOOLTIP_STYLE} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -165,10 +110,10 @@ export function PortfolioOverview() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={fleetByCondition} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
-                  {fleetByCondition.map((entry, index) => <Cell key={`cond-${index}`} fill={entry.color} />)}
+                <Pie data={conditionSlices} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
+                  {conditionSlices.map((entry, index) => <Cell key={`cond-${index}`} fill={entry.color} />)}
                 </Pie>
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Tooltip contentStyle={AMPS_TOOLTIP_STYLE} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -193,7 +138,7 @@ export function PortfolioOverview() {
                 <tr key={type} className="border-b border-border last:border-0">
                   <td className="py-2.5 capitalize">{type}</td>
                   <td className="py-2.5 text-right" style={{ fontFamily: MONO }}>{data.count}</td>
-                  <td className="py-2.5 text-right" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{fmt(data.value)}</td>
+                  <td className="py-2.5 text-right" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{formatUsd(data.value)}</td>
                 </tr>
               ))}
               {Object.keys(portfolio?.by_type ?? {}).length === 0 && (
@@ -206,13 +151,9 @@ export function PortfolioOverview() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { to: "/pre/amps/assets?filter=aging", icon: AlertCircle, label: "List Aging Assets", sub: "Assets > 36 months" },
-          { to: "/pre/amps/invoices?action=generate", icon: FileText, label: "Generate Report", sub: "Portfolio PDF" },
-          { to: "/pre/amps/mdm", icon: Cloud, label: "Connect MDM", sub: "Sync devices" },
-        ].map(({ to, icon: Icon, label, sub }) => (
+        {PORTFOLIO_QUICK_ACTIONS.map(({ to, icon: Icon, label, sub }) => (
           <Link key={to} to={to} className="border border-border p-5 flex flex-col gap-2 hover:border-[color:var(--amps-accent)] transition-colors group" style={{ background: "var(--card)" }}>
-            <Icon size={18} style={{ color: ACCENT }} />
+            <Icon size={18} style={{ color: AMPS_ACCENT }} />
             <span className="text-sm font-medium">{label}</span>
             <span className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{sub}</span>
           </Link>

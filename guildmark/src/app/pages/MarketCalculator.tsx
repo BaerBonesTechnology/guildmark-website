@@ -1,103 +1,30 @@
-import { useMemo, useState } from "react";
-import { Upload, DollarSign, Truck, ShieldCheck, Percent, Loader2, AlertTriangle, BarChart2 } from "lucide-react";
-import { useValuationEstimate, usePlatformFees, formatFeeRate } from "../lib/apiHooks";
-import type { AssetType, ConditionGrade } from "../models/asset";
-import type { ValuationEstimateRequest } from "../models/valuation";
-
-// ---------------------------------------------------------------------------
-// Form value → API contract translation tables. Kept inline so the mapping
-// from human-friendly options to the ML feature space is reviewable in one
-// place. If we ever move beyond laptops, expand asset_type accordingly.
-// ---------------------------------------------------------------------------
-
-const BRAND_LABELS: Record<string, string> = {
-  apple: "Apple", dell: "Dell", hp: "HP", lenovo: "Lenovo", microsoft: "Microsoft",
-};
-const MODEL_LABELS: Record<string, string> = {
-  "macbook-pro": "MacBook Pro 14\"", "macbook-air": "MacBook Air",
-  "surface": "Surface Laptop", "thinkpad": "ThinkPad X1",
-};
-const CPU_SCORES: Record<string, number> = {
-  "m2": 220, "m2-pro": 280, "m2-max": 350, "intel-i5": 130, "intel-i7": 180, "intel-i9": 230,
-};
-const RAM_GB: Record<string, number> = { "8gb": 8, "16gb": 16, "32gb": 32, "64gb": 64 };
-const CONDITION_TO_GRADE: Record<string, ConditionGrade> = { excellent: "A", good: "B", fair: "C" };
-
-// Add-on service pricing — platform rules, not market data. The platform fee
-// itself comes from the API (usePlatformFees), never hardcoded.
-const SHIPPING_PER_UNIT = 15;
-const DATA_WIPE_PER_UNIT = 8;
-
-const DISPLAY = "'Barlow Condensed', sans-serif";
-const BODY = "'DM Sans', sans-serif";
-const MONO = "'JetBrains Mono', monospace";
+/**
+ * MarketCalculator — "Market Pulse" valuation calculator (View).
+ * Form state, valuation lookup, and the net-recovery math live in
+ * useMarketCalculatorViewModel; this file is presentation only.
+ */
+import { AlertTriangle, BarChart2, DollarSign, Loader2, Percent, ShieldCheck, Truck, Upload } from "lucide-react";
+import { DeductionRow } from "../components/calculator/DeductionRow";
+import { FieldLabel } from "../components/calculator/FieldLabel";
+import {
+  BRAND_OPTIONS, CONDITION_OPTIONS, CPU_OPTIONS, MODEL_OPTIONS, RAM_OPTIONS,
+} from "../constants/calculator.constants";
+import { BODY, DISPLAY, MONO } from "../constants/typography";
+import { formatFeeRate } from "../lib/apiHooks";
+import { useMarketCalculatorViewModel } from "../viewmodels/useMarketCalculatorViewModel";
 
 const selectClass = "w-full px-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary transition-colors appearance-none";
 const inputClass = "w-full px-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary transition-colors";
 const fieldStyle = { fontFamily: BODY, background: "var(--input-background)" } as const;
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="block text-[10px] tracking-widest uppercase mb-2" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{children}</label>;
-}
-
-function DeductionRow({ icon: Icon, label, sub, value, positive = false }: {
-  icon: React.ElementType; label: string; sub: string; value: string; positive?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 pb-4 border-b border-border last:border-0 last:pb-0">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 flex items-center justify-center shrink-0" style={{ border: "1px solid var(--border)", background: "var(--secondary)" }}>
-          <Icon size={13} style={{ color: "var(--muted-foreground)" }} />
-        </div>
-        <div>
-          <p className="text-xs font-medium" style={{ fontFamily: BODY }}>{label}</p>
-          <p className="text-[10px]" style={{ color: "var(--muted-foreground)", fontFamily: BODY }}>{sub}</p>
-        </div>
-      </div>
-      <span className="text-sm tabular-nums" style={{ fontFamily: MONO, color: positive ? "var(--chart-3)" : "var(--foreground)" }}>{value}</span>
-    </div>
-  );
-}
-
 export function MarketCalculator() {
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [cpu, setCpu] = useState("");
-  const [ram, setRam] = useState("");
-  const [condition, setCondition] = useState("");
-  const [ageMonths, setAgeMonths] = useState<number>(12);
-  const [quantity, setQuantity] = useState<number>(1);
-  const [includeDataWipe, setIncludeDataWipe] = useState(true);
+  const {
+    ageMonths, brand, condition, confidence, cpu, fees, fmvPerUnit, includeDataWipe,
+    model, quantity, ram, recovery, setAgeMonths, setBrand, setCondition, setCpu,
+    setIncludeDataWipe, setModel, setQuantity, setRam, showResults, valuation,
+  } = useMarketCalculatorViewModel();
 
-  const { data: fees } = usePlatformFees();
-  const platformFeePct = fees?.seller_fee_free ?? 0;
-
-  const valuationRequest = useMemo<ValuationEstimateRequest | undefined>(() => {
-    if (!brand || !model || !cpu || !ram || !condition) return undefined;
-    const grade = CONDITION_TO_GRADE[condition];
-    if (!grade) return undefined;
-    const modelName = `${BRAND_LABELS[brand] ?? brand} ${MODEL_LABELS[model] ?? model}`.trim();
-    return {
-      asset_type: "laptop" as AssetType,
-      model_name: modelName,
-      condition_grade: grade,
-      age_months: ageMonths,
-      cpu_score: CPU_SCORES[cpu],
-      ram_gb: RAM_GB[ram],
-    };
-  }, [brand, model, cpu, ram, condition, ageMonths]);
-
-  const valuation = useValuationEstimate(valuationRequest);
-  const showResults = !!valuationRequest;
-
-  const fmvPerUnit = valuation.data?.fair_market_value ?? 0;
-  const confidence = valuation.data?.confidence ?? 0;
-
-  const estimatedValue = fmvPerUnit * quantity;
-  const shipping = SHIPPING_PER_UNIT * quantity;
-  const dataWipe = includeDataWipe ? DATA_WIPE_PER_UNIT * quantity : 0;
-  const platformFee = estimatedValue * platformFeePct;
-  const netProfit = estimatedValue - shipping - dataWipe - platformFee;
+  const { dataWipe, estimatedValue, netProfit, platformFee, shipping } = recovery;
 
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto" style={{ fontFamily: BODY }}>
@@ -115,11 +42,7 @@ export function MarketCalculator() {
               <FieldLabel>Brand</FieldLabel>
               <select value={brand} onChange={(e) => setBrand(e.target.value)} className={selectClass} style={fieldStyle}>
                 <option value="">Select...</option>
-                <option value="apple">Apple</option>
-                <option value="dell">Dell</option>
-                <option value="hp">HP</option>
-                <option value="lenovo">Lenovo</option>
-                <option value="microsoft">Microsoft</option>
+                {BRAND_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
 
@@ -127,10 +50,7 @@ export function MarketCalculator() {
               <FieldLabel>Model</FieldLabel>
               <select value={model} onChange={(e) => setModel(e.target.value)} className={selectClass} style={fieldStyle}>
                 <option value="">Select...</option>
-                <option value="macbook-pro">MacBook Pro 14"</option>
-                <option value="macbook-air">MacBook Air</option>
-                <option value="surface">Surface Laptop</option>
-                <option value="thinkpad">ThinkPad X1</option>
+                {MODEL_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
 
@@ -138,12 +58,7 @@ export function MarketCalculator() {
               <FieldLabel>CPU</FieldLabel>
               <select value={cpu} onChange={(e) => setCpu(e.target.value)} className={selectClass} style={fieldStyle}>
                 <option value="">Select...</option>
-                <option value="m2">Apple M2</option>
-                <option value="m2-pro">Apple M2 Pro</option>
-                <option value="m2-max">Apple M2 Max</option>
-                <option value="intel-i5">Intel i5</option>
-                <option value="intel-i7">Intel i7</option>
-                <option value="intel-i9">Intel i9</option>
+                {CPU_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
 
@@ -151,10 +66,7 @@ export function MarketCalculator() {
               <FieldLabel>RAM</FieldLabel>
               <select value={ram} onChange={(e) => setRam(e.target.value)} className={selectClass} style={fieldStyle}>
                 <option value="">Select...</option>
-                <option value="8gb">8 GB</option>
-                <option value="16gb">16 GB</option>
-                <option value="32gb">32 GB</option>
-                <option value="64gb">64 GB</option>
+                {RAM_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
 
@@ -162,9 +74,7 @@ export function MarketCalculator() {
               <FieldLabel>Condition</FieldLabel>
               <select value={condition} onChange={(e) => setCondition(e.target.value)} className={selectClass} style={fieldStyle}>
                 <option value="">Select...</option>
-                <option value="excellent">Excellent (Grade A)</option>
-                <option value="good">Good (Grade B)</option>
-                <option value="fair">Fair (Grade C)</option>
+                {CONDITION_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
 

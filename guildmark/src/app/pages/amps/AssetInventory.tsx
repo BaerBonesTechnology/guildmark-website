@@ -1,71 +1,26 @@
-import { useState } from "react";
-import { Search, Download, Plus, ExternalLink, Upload } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+/**
+ * AMPS Asset Inventory — full device catalog with valuations (View).
+ * List/filter/selection state lives in useAssetInventoryViewModel; CSV export
+ * and filtering are in assetInventory.service. Presentation only.
+ */
+import { Download, ExternalLink, Plus, Search, Upload } from "lucide-react";
 import { Link } from "react-router";
 import { AddAssetDialog } from "../../components/AddAssetDialog";
 import { ImportCSVDialog } from "../../components/ImportCSVDialog";
-
-const DISPLAY = "'Barlow Condensed', sans-serif";
-const BODY = "'DM Sans', sans-serif";
-const MONO = "'JetBrains Mono', monospace";
-const ACCENT = "var(--amps-accent)";
-const GRADE_COLOR: Record<string, string> = { A: "var(--grade-a)", B: "var(--grade-b)", C: "var(--grade-c)" };
-
-export interface LocalAsset {
-  id: string; model: string; type: string; condition: "A" | "B" | "C";
-  quantity?: number; age: number; fairMarketValue: number; bookValue: number;
-  depreciation: number; serialNumber?: string | null; department?: string | null;
-  status: "Active" | "At Risk"; lastSync: string; source?: "mdm" | "manual" | "csv";
-}
-
-const seed: LocalAsset[] = [];
-
-function exportCSV(assets: LocalAsset[]) {
-  const headers = [
-    "id", "model", "type", "condition", "age_months", "fair_market_value",
-    "book_value", "depreciation_pct", "serial_number", "department", "status", "source",
-  ];
-  const rows = assets.map((a) => [
-    a.id, `"${a.model}"`, a.type, a.condition, a.age, a.fairMarketValue,
-    a.bookValue, a.depreciation, a.serialNumber ?? "", a.department ?? "", a.status, a.source ?? "mdm",
-  ].join(","));
-  const csv = [headers.join(","), ...rows].join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `guildmark-assets-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function SourceBadge({ source }: { source?: string }) {
-  if (!source || source === "mdm") return null;
-  const color = source === "csv" ? ACCENT : "var(--grade-b)";
-  return (
-    <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide uppercase ml-1.5"
-      style={{ fontFamily: MONO, color, border: `1px solid color-mix(in srgb, ${color} 30%, transparent)` }}>{source}</span>
-  );
-}
+import { SourceBadge } from "../../components/amps/SourceBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { AMPS_ACCENT } from "../../constants/amps.constants";
+import { ASSET_GRADE_COLOR, ASSET_TABLE_HEADERS, ASSET_TYPE_OPTIONS } from "../../constants/assetInventory.constants";
+import { BODY, DISPLAY, MONO } from "../../constants/typography";
+import { exportCSV } from "../../services/assetInventory.service";
+import { useAssetInventoryViewModel } from "../../viewmodels/useAssetInventoryViewModel";
 
 export function AssetInventory() {
-  const [assets, setAssets] = useState<LocalAsset[]>(seed);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [conditionFilter, setConditionFilter] = useState("all");
-  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
-  const [addOpen, setAddOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-
-  const filteredAssets = assets.filter((asset) => {
-    const matchesSearch = asset.model.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === "all" || asset.type.toLowerCase() === typeFilter.toLowerCase();
-    const matchesCondition = conditionFilter === "all" || asset.condition === conditionFilter;
-    return matchesSearch && matchesType && matchesCondition;
-  });
-
-  const toggleAsset = (id: string) => setSelectedAssets((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
-  const toggleAll = () => setSelectedAssets(selectedAssets.length === filteredAssets.length ? [] : filteredAssets.map((a) => a.id));
+  const {
+    addAsset, addOpen, assets, conditionFilter, filteredAssets, importAssets, importOpen,
+    searchTerm, selectedAssets, setAddOpen, setConditionFilter, setImportOpen, setSearchTerm,
+    setTypeFilter, toggleAll, toggleAsset, typeFilter,
+  } = useAssetInventoryViewModel();
 
   return (
     <div className="px-6 py-6 max-w-[1600px] mx-auto pb-20" style={{ fontFamily: BODY }}>
@@ -82,7 +37,7 @@ export function AssetInventory() {
           <button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors">
             <Upload size={13} /> Import CSV
           </button>
-          <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity" style={{ background: ACCENT, color: "#fff" }}>
+          <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity" style={{ background: AMPS_ACCENT, color: "#fff" }}>
             <Plus size={13} /> Add asset
           </button>
         </div>
@@ -100,7 +55,7 @@ export function AssetInventory() {
           <SelectTrigger className="w-44"><SelectValue placeholder="Asset type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
-            {["Laptop", "Desktop", "Tablet", "Server", "Phone", "Monitor", "Networking", "Other"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {ASSET_TYPE_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={conditionFilter} onValueChange={setConditionFilter}>
@@ -116,7 +71,7 @@ export function AssetInventory() {
 
       {/* Bulk actions */}
       {selectedAssets.length > 0 && (
-        <div className="border p-4 mb-4 flex items-center justify-between" style={{ background: `color-mix(in srgb, ${ACCENT} 6%, var(--card))`, borderColor: `color-mix(in srgb, ${ACCENT} 30%, transparent)` }}>
+        <div className="border p-4 mb-4 flex items-center justify-between" style={{ background: `color-mix(in srgb, ${AMPS_ACCENT} 6%, var(--card))`, borderColor: `color-mix(in srgb, ${AMPS_ACCENT} 30%, transparent)` }}>
           <p className="text-sm"><span className="font-semibold">{selectedAssets.length}</span> asset{selectedAssets.length !== 1 ? "s" : ""} selected</p>
           <div className="flex gap-2">
             <button className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Create listings</button>
@@ -134,7 +89,7 @@ export function AssetInventory() {
               <th className="w-10 py-2.5 px-4">
                 <input type="checkbox" checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0} onChange={toggleAll} className="align-middle" />
               </th>
-              {["Model", "Type", "Grade", "Age (mo)", "Fair Market Value", "Book Value", "Depreciation", "Status", "Last Sync", ""].map((h, i) => (
+              {ASSET_TABLE_HEADERS.map((h, i) => (
                 <th key={i} className={`py-2.5 px-4 text-[10px] tracking-wider uppercase font-normal ${["Grade"].includes(h) ? "text-center" : ["Age (mo)", "Fair Market Value", "Book Value", "Depreciation"].includes(h) ? "text-right" : "text-left"}`}
                   style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{h}</th>
               ))}
@@ -149,7 +104,7 @@ export function AssetInventory() {
                 <td className="py-2.5 px-4 font-medium">{asset.model}<SourceBadge source={asset.source} /></td>
                 <td className="py-2.5 px-4 capitalize" style={{ color: "var(--muted-foreground)" }}>{asset.type}</td>
                 <td className="py-2.5 px-4 text-center">
-                  <span className="inline-flex items-center justify-center w-7 h-6 text-xs font-semibold" style={{ fontFamily: MONO, color: GRADE_COLOR[asset.condition], border: `1px solid color-mix(in srgb, ${GRADE_COLOR[asset.condition]} 30%, transparent)` }}>{asset.condition}</span>
+                  <span className="inline-flex items-center justify-center w-7 h-6 text-xs font-semibold" style={{ fontFamily: MONO, color: ASSET_GRADE_COLOR[asset.condition], border: `1px solid color-mix(in srgb, ${ASSET_GRADE_COLOR[asset.condition]} 30%, transparent)` }}>{asset.condition}</span>
                 </td>
                 <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO }}>{asset.age}</td>
                 <td className="py-2.5 px-4 text-right font-medium" style={{ fontFamily: MONO }}>${asset.fairMarketValue.toLocaleString()}</td>
@@ -170,8 +125,8 @@ export function AssetInventory() {
 
       <p className="text-center text-xs mt-4" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Showing {filteredAssets.length} of {assets.length} assets</p>
 
-      <AddAssetDialog open={addOpen} onOpenChange={setAddOpen} onAdd={(a) => setAssets((p) => [a, ...p])} />
-      <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} onImport={(n) => setAssets((p) => [...n, ...p])} />
+      <AddAssetDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addAsset} />
+      <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} onImport={importAssets} />
     </div>
   );
 }

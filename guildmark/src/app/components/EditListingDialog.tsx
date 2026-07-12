@@ -1,46 +1,22 @@
-import { useEffect, useState } from "react";
+/**
+ * EditListingDialog — edit a listing's price (View).
+ * Price state, validation, and the FMV flag hint live in
+ * useEditListingViewModel. Presentation only.
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { useUpdateListingPrice } from "../lib/apiHooks";
 import type { Listing } from "../models/listing";
+import { useEditListingViewModel } from "../viewmodels/useEditListingViewModel";
 
 interface Props {
-  listing:      Listing | null;
+  listing: Listing | null;
   onOpenChange: (open: boolean) => void;
 }
 
 export function EditListingDialog({ listing, onOpenChange }: Props) {
-  const [price, setPrice]     = useState("");
-  const [error, setError]     = useState<string | null>(null);
-  const updatePrice            = useUpdateListingPrice();
-
-  useEffect(() => {
-    if (listing) setPrice(String(listing.listed_price ?? ""));
-    setError(null);
-  }, [listing]);
-
-  function handleSave() {
-    const parsed = parseFloat(price);
-    if (isNaN(parsed) || parsed <= 0) {
-      setError("Enter a valid price greater than 0");
-      return;
-    }
-    updatePrice.mutate(
-      { listingId: listing!.id, listed_price: parsed },
-      { onSuccess: () => onOpenChange(false) },
-    );
-  }
-
-  const fmv       = listing?.fair_market_value;
-  const parsedNum = parseFloat(price);
-  const ratio     = fmv && fmv > 0 && !isNaN(parsedNum) ? parsedNum / fmv : null;
-  const flagHint  = ratio == null
-    ? null
-    : ratio >= 1.20 ? "⚠ Above FMV — may be flagged as overpriced"
-    : ratio <= 0.60 ? "⚠ Well below FMV — may be flagged as distressed"
-    : "✓ Within fair market range";
+  const { error, flagHint, fmv, handlePriceChange, handleSave, price, updatePrice } = useEditListingViewModel(listing, onOpenChange);
 
   return (
     <Dialog open={!!listing} onOpenChange={onOpenChange}>
@@ -63,7 +39,7 @@ export function EditListingDialog({ listing, onOpenChange }: Props) {
                 min="0.01"
                 step="0.01"
                 value={price}
-                onChange={(e) => { setPrice(e.target.value); setError(null); }}
+                onChange={(e) => handlePriceChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
                 autoFocus
               />

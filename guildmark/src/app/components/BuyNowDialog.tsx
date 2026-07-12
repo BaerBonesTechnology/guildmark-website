@@ -1,183 +1,42 @@
 /**
- * BuyNowDialog — Square-backed one-click purchase for a marketplace listing.
+ * BuyNowDialog — Square-backed one-click purchase for a marketplace listing (View).
  *
  * Step 1 — card: Square Web Payments card form + billing address + order summary
  * Step 2 — success: order confirmation
  *
- * Square tokenises card number, CVV, and expiry in browser-hosted iframes so
- * raw card data never touches our servers; only the one-time nonce (cnon:…) is
- * sent to POST /marketplace/listings/:id/buy, which charges the buyer their
- * portion (subtotal + buyer fee) and opens escrow.
+ * The Square SDK lifecycle, order math, and payment flow live in
+ * useBuyNowViewModel / square.service. Presentation only.
  */
-import { useState, useEffect, useRef } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, CheckCircle2, AlertCircle, CreditCard, ShieldCheck } from "lucide-react";
-import { useBuyListing, usePlatformFees } from "../lib/apiHooks";
-import { squareApplicationId, squareLocationId, squareEnvironment } from "../config";
+import { MONO } from "../constants/typography";
 import type { MarketplaceListing } from "../models/marketplace";
-
-const MONO = "'JetBrains Mono', monospace";
-
-// ── Lazy-load the Square Web Payments SDK ───────────────────────────────────
-const SQUARE_SDK_URLS: Record<string, string> = {
-  production: "https://web.squarecdn.com/v1/square.js",
-  sandbox:    "https://sandbox.web.squarecdn.com/v1/square.js",
-};
-
-let squareSdkPromise: Promise<void> | null = null;
-
-function loadSquareSdk(): Promise<void> {
-  if (window.Square) return Promise.resolve();
-  if (squareSdkPromise) return squareSdkPromise;
-
-  squareSdkPromise = new Promise((resolve, reject) => {
-    const url = SQUARE_SDK_URLS[squareEnvironment] ?? SQUARE_SDK_URLS.sandbox;
-    const script = document.createElement("script");
-    script.src     = url;
-    script.onload  = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load Square SDK from ${url}`));
-    document.head.appendChild(script);
-  });
-
-  return squareSdkPromise;
-}
-
-type SquareCardForm = {
-  attach:   (selector: string) => Promise<void>;
-  tokenize: () => Promise<{ status: string; token?: string; errors?: { message: string }[] }>;
-  destroy:  () => Promise<void>;
-};
+import { money } from "../services/square.service";
+import { useBuyNowViewModel } from "../viewmodels/useBuyNowViewModel";
 
 const inputCls =
   "w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm " +
   "placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50";
 
-type Step = "card" | "success";
-
 interface Props {
-  open:         boolean;
+  listing: MarketplaceListing;
   onOpenChange: (open: boolean) => void;
-  listing:      MarketplaceListing;
-  quantity:     number;
   /** Called after a successful purchase, just before the dialog closes. */
-  onSuccess?:   () => void;
+  onSuccess?: () => void;
+  open: boolean;
+  quantity: number;
 }
 
-export function BuyNowDialog({ open, onOpenChange, listing, quantity, onSuccess }: Props) {
-  const buy = useBuyListing(listing.id);
-  const { data: fees } = usePlatformFees();
+export function BuyNowDialog({ listing, onOpenChange, onSuccess, open, quantity }: Props) {
+  const {
+    addr1, addr2, cardError, cardholderName, city, handlePay, isLoading, setAddr1, setAddr2,
+    setCardholderName, setCity, setStateAb, setZip, stateAb, step, totals, unit, zip,
+  } = useBuyNowViewModel(listing, quantity, open);
 
-  const [step,      setStep]      = useState<Step>("card");
-  const [cardError, setCardError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [cardholderName, setCardholderName] = useState("");
-  const [addr1,   setAddr1]   = useState("");
-  const [addr2,   setAddr2]   = useState("");
-  const [city,    setCity]    = useState("");
-  const [stateAb, setStateAb] = useState("");
-  const [zip,     setZip]     = useState("");
-
-  const cardRef = useRef<SquareCardForm | null>(null);
-  const [cardInitKey, setCardInitKey] = useState(0);
-
-  // ── Order math (mirrors the backend buy.dart fee snapshot) ────────────────
-  const unit       = listing.listed_price ?? listing.buyer_ask_price ?? 0;
-  const qty        = Math.max(1, quantity);
-  const subtotal   = unit * qty;
-  const buyerFeeR  = fees?.buyer_fee ?? null;
-  const buyerFee   = buyerFeeR != null ? subtotal * buyerFeeR : null;
-  const total      = buyerFee != null ? subtotal + buyerFee : subtotal;
-
-  // Mount the Square card form when we reach the card step (or on retry).
-  useEffect(() => {
-    if (step !== "card" || !open) return;
-    let cancelled = false;
-
-    (async () => {
-      setCardError("");
-      try {
-        await loadSquareSdk();
-        if (!window.Square) throw new Error("Square SDK not available");
-        const payments = await window.Square.payments(squareApplicationId, squareLocationId);
-        const card = await payments.card();
-        if (cancelled) { await card.destroy().catch(() => {}); return; }
-        cardRef.current = card;
-        await card.attach("#gm-buynow-card");
-      } catch (err) {
-        if (!cancelled) setCardError(err instanceof Error ? err.message : "Failed to load payment form");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      cardRef.current?.destroy().catch(() => {});
-      cardRef.current = null;
-    };
-  }, [step, open, cardInitKey]);
-
-  // Reset when the dialog closes.
-  useEffect(() => {
-    if (!open) {
-      setStep("card");
-      setCardError("");
-      setIsLoading(false);
-      setCardInitKey(0);
-      setCardholderName("");
-      setAddr1(""); setAddr2(""); setCity(""); setStateAb(""); setZip("");
-      buy.reset();
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handlePay() {
-    // Sandbox shortcut — bypass the SDK card form and use Square's static test
-    // nonce so backend config can be verified without a matching frontend appId.
-    const isSandbox = squareEnvironment === "sandbox" || squareApplicationId.startsWith("sandbox-");
-    if (isSandbox) {
-      setIsLoading(true);
-      setCardError("");
-      try {
-        await buy.mutateAsync({ source_id: "cnon:card-nonce-ok", quantity: qty, payment_terms: "immediate" });
-        setStep("success");
-      } catch (err) {
-        setCardError(err instanceof Error ? err.message : "Payment failed.");
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // Production flow — real SDK tokenisation.
-    if (!cardRef.current) { setCardError("Payment form not ready — please wait."); return; }
-    if (!cardholderName.trim()) { setCardError("Cardholder name is required."); return; }
-    if (!addr1.trim() || !city.trim() || !stateAb.trim() || !zip.trim()) {
-      setCardError("Please fill in all required billing address fields (marked *).");
-      return;
-    }
-
-    setIsLoading(true);
-    setCardError("");
-    try {
-      const result = await cardRef.current.tokenize();
-      if (result.status !== "OK" || !result.token) {
-        setCardError(result.errors?.[0]?.message ?? "Card tokenisation failed");
-        setIsLoading(false);
-        return;
-      }
-      await buy.mutateAsync({ source_id: result.token, quantity: qty, payment_terms: "immediate" });
-      setStep("success");
-    } catch (err) {
-      setCardError(err instanceof Error ? err.message : "Payment failed. Please try again.");
-      // The nonce is single-use — force a fresh card form for the next attempt.
-      setCardInitKey((k) => k + 1);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const money = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const { buyerFee, buyerFeeRate, qty, subtotal, total } = totals;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -209,8 +68,8 @@ export function BuyNowDialog({ open, onOpenChange, listing, quantity, onSuccess 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
                   Buyer fee
-                  {buyerFeeR != null && (
-                    <span className="text-xs text-muted-foreground/60">({(buyerFeeR * 100).toFixed(1)}%)</span>
+                  {buyerFeeRate != null && (
+                    <span className="text-xs text-muted-foreground/60">({(buyerFeeRate * 100).toFixed(1)}%)</span>
                   )}
                 </span>
                 <span>{buyerFee != null ? money(buyerFee) : "—"}</span>

@@ -1,68 +1,13 @@
 /**
- * Contact page — reached via "Get in touch" on the pre-launch hero.
- * Submits a message to POST /contact, which stores it in the mailing_list
- * table with source = 'contact'.
+ * Contact page — reached via "Get in touch" on the pre-launch hero (View).
+ * Form state and the POST /contact submission live in useContactViewModel.
  */
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
 import { ArrowLeft, Send, Check, AlertCircle, Mail } from "lucide-react";
-import { apiUrl } from "../config";
-
-// ---------------------------------------------------------------------------
-// API
-// ---------------------------------------------------------------------------
-
-async function submitContact(fields: {
-  name: string;
-  email: string;
-  message: string;
-}): Promise<void> {
-  const res = await fetch(`${apiUrl}/contact`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fields),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data?.error ?? "Something went wrong. Please try again.");
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-type Status = "idle" | "loading" | "success" | "error";
+import { useContactViewModel } from "../viewmodels/useContactViewModel";
 
 export function Contact() {
-  const navigate = useNavigate();
-  const [fields, setFields] = useState({ name: "", email: "", message: "" });
-
-  // Scroll to top immediately — navigating from a scrolled PreLaunch page
-  // would otherwise leave the user staring at mid-page form inputs.
-  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
-  const [status,   setStatus]   = useState<Status>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  function set(key: keyof typeof fields) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setFields(f => ({ ...f, [key]: e.target.value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (status === "loading") return;
-    setStatus("loading");
-    setErrorMsg("");
-    try {
-      await submitContact(fields);
-      setStatus("success");
-    } catch (err) {
-      setStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-    }
-  }
+  const { errorMsg, fields, goBack, goHome, handleSubmit, setField, status } = useContactViewModel();
 
   const inputClass =
     "w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm  text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors disabled:opacity-50";
@@ -73,7 +18,7 @@ export function Contact() {
 
         {/* Back */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="flex items-center gap-2 text-sm  text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -109,7 +54,7 @@ export function Contact() {
               </div>
             </div>
             <button
-              onClick={() => navigate("/")}
+              onClick={goHome}
               className="text-sm  text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
             >
               Back to home
@@ -131,7 +76,7 @@ export function Contact() {
                   type="text"
                   placeholder="Your name"
                   value={fields.name}
-                  onChange={set("name")}
+                  onChange={setField("name")}
                   disabled={status === "loading"}
                   className={inputClass}
                 />
@@ -144,7 +89,7 @@ export function Contact() {
                   type="email"
                   placeholder="you@company.com"
                   value={fields.email}
-                  onChange={set("email")}
+                  onChange={setField("email")}
                   required
                   disabled={status === "loading"}
                   className={inputClass}
@@ -159,7 +104,7 @@ export function Contact() {
               <textarea
                 placeholder="Tell us what you're looking to do, or ask us anything about the platform…"
                 value={fields.message}
-                onChange={set("message")}
+                onChange={setField("message")}
                 required
                 rows={5}
                 disabled={status === "loading"}

@@ -1,216 +1,27 @@
-import { useState, useRef, useCallback } from "react";
+/**
+ * ImportCSVDialog — bulk-add assets to the AMPS inventory from a CSV (View).
+ * Template download, CSV parsing, and validation live in importCsv.service;
+ * upload/preview/import flow state lives in useImportCsvViewModel.
+ */
 import { Upload, AlertCircle, CheckCircle2, Download, X, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import type { LocalAsset } from "../pages/amps/AssetInventory";
-
-// ---------------------------------------------------------------------------
-// CSV template
-// ---------------------------------------------------------------------------
-
-const TEMPLATE_HEADERS = [
-  "model_name",
-  "asset_type",
-  "condition_grade",
-  "quantity",
-  "age_months",
-  "fair_market_value",
-  "book_value",
-  "serial_number",
-  "department",
-];
-
-const TEMPLATE_EXAMPLE = [
-  "MacBook Pro 14\" M3",
-  "Laptop",
-  "A",
-  "1",
-  "18",
-  "1200",
-  "1500",
-  "C02XK1ZNJGH5",
-  "Engineering",
-];
-
-function downloadTemplate() {
-  const rows = [
-    TEMPLATE_HEADERS.join(","),
-    TEMPLATE_EXAMPLE.map((v) => `"${v}"`).join(","),
-  ].join("\n");
-  const blob = new Blob([rows], { type: "text/csv" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
-  a.href     = url;
-  a.download = "guildmark-asset-import-template.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ---------------------------------------------------------------------------
-// CSV parser
-// ---------------------------------------------------------------------------
-
-type ParsedRow = {
-  raw:    Record<string, string>;
-  asset:  Partial<LocalAsset>;
-  errors: string[];
-  rowNum: number;
-};
-
-const VALID_TYPES  = ["laptop","desktop","server","phone","tablet","networking","monitor","other"];
-const VALID_GRADES = ["A","B","C"];
-
-function parseCSV(text: string): ParsedRow[] {
-  const lines  = text.trim().split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return [];
-
-  // Parse a single CSV line respecting quoted fields
-  function parseLine(line: string): string[] {
-    const result: string[] = [];
-    let cur = "";
-    let inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
-        else { inQ = !inQ; }
-      } else if (ch === "," && !inQ) {
-        result.push(cur.trim());
-        cur = "";
-      } else {
-        cur += ch;
-      }
-    }
-    result.push(cur.trim());
-    return result;
-  }
-
-  const headers = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/\s+/g, "_"));
-
-  return lines.slice(1).map((line, i) => {
-    const values = parseLine(line);
-    const raw: Record<string, string> = {};
-    headers.forEach((h, idx) => { raw[h] = values[idx] ?? ""; });
-
-    const errors: string[] = [];
-    const model   = (raw.model_name || raw.model || "").trim();
-    const type    = (raw.asset_type || raw.type || "").toLowerCase().trim();
-    const grade   = (raw.condition_grade || raw.condition || "").toUpperCase().trim();
-    const fmvStr  = raw.fair_market_value || raw.fmv || raw.value || "";
-    const bookStr = raw.book_value || raw.book || "";
-    const ageStr  = raw.age_months || raw.age || "";
-
-    if (!model)                    errors.push("model_name is required");
-    if (!VALID_TYPES.includes(type)) errors.push(`asset_type must be one of: ${VALID_TYPES.join(", ")}`);
-    if (!VALID_GRADES.includes(grade)) errors.push("condition_grade must be A, B, or C");
-    const fmv  = parseFloat(fmvStr);
-    const book = parseFloat(bookStr) || fmv;
-    const age  = parseInt(ageStr);
-    if (isNaN(fmv) || fmv < 0)  errors.push("fair_market_value must be a positive number");
-    if (isNaN(age) || age < 0)   errors.push("age_months must be a non-negative integer");
-
-    const qty = parseInt(raw.quantity || "1") || 1;
-    const dep = book > 0 ? parseFloat((((book - fmv) / book) * 100).toFixed(1)) : 0;
-
-    const typePretty =
-      type.charAt(0).toUpperCase() + type.slice(1);
-
-    const asset: Partial<LocalAsset> = errors.length === 0
-      ? {
-          id:              crypto.randomUUID(),
-          model:           model,
-          type:            typePretty,
-          condition:       grade as "A" | "B" | "C",
-          quantity:        qty,
-          age:             age,
-          fairMarketValue: fmv,
-          bookValue:       book,
-          depreciation:    dep,
-          serialNumber:    (raw.serial_number || raw.serial || "").trim() || null,
-          department:      (raw.department || "").trim() || null,
-          status:          dep >= 30 ? "At Risk" : "Active",
-          lastSync:        "Just now",
-          source:          "csv",
-        }
-      : {};
-
-    return { raw, asset, errors, rowNum: i + 2 };
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+import type { LocalAsset } from "../models/localAsset";
+import { downloadTemplate } from "../services/importCsv.service";
+import { useImportCsvViewModel } from "../viewmodels/useImportCsvViewModel";
 
 interface ImportCSVDialogProps {
-  open:          boolean;
-  onOpenChange:  (open: boolean) => void;
-  onImport:      (assets: LocalAsset[]) => void;
+  onImport: (assets: LocalAsset[]) => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
-type Step = "upload" | "preview";
-
-export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialogProps) {
-  const [step,       setStep]       = useState<Step>("upload");
-  const [dragging,   setDragging]   = useState(false);
-  const [fileName,   setFileName]   = useState("");
-  const [rows,       setRows]       = useState<ParsedRow[]>([]);
-  const [skipErrors, setSkipErrors] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const validRows   = rows.filter((r) => r.errors.length === 0);
-  const invalidRows = rows.filter((r) => r.errors.length > 0);
-  const importable  = skipErrors ? validRows : (invalidRows.length === 0 ? rows : []);
-
-  function reset() {
-    setStep("upload");
-    setDragging(false);
-    setFileName("");
-    setRows([]);
-    setSkipErrors(false);
-  }
-
-  function handleClose() {
-    reset();
-    onOpenChange(false);
-  }
-
-  const processFile = useCallback((file: File) => {
-    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      alert("Please upload a .csv file.");
-      return;
-    }
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text   = e.target?.result as string;
-      const parsed = parseCSV(text);
-      setRows(parsed);
-      setStep("preview");
-    };
-    reader.readAsText(file);
-  }, []);
-
-  function onDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-  }
-
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-    e.target.value = "";
-  }
-
-  function handleImport() {
-    const assets = importable.map((r) => r.asset as LocalAsset);
-    onImport(assets);
-    reset();
-    onOpenChange(false);
-  }
+export function ImportCSVDialog({ onImport, onOpenChange, open }: ImportCSVDialogProps) {
+  const {
+    dragging, fileName, handleClose, handleImport, importable, inputRef, invalidRows,
+    onDrop, onFileChange, reset, rows, setDragging, setSkipErrors, skipErrors, step, validRows,
+  } = useImportCsvViewModel(onImport, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

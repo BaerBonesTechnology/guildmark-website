@@ -1,157 +1,23 @@
-import { useRef, useState } from "react";
+/**
+ * ImportListingsDialog — bulk-create listings from a CSV file (View).
+ * CSV parsing, row validation, and the sequential import loop live in
+ * useImportListingsViewModel / csv + importListings services.
+ */
 import { Upload, AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { useCreateListing } from "../lib/apiHooks";
+import { useImportListingsViewModel } from "../viewmodels/useImportListingsViewModel";
 
-// ── CSV parser ────────────────────────────────────────────────────────────────
-// Handles quoted fields and comma-in-value without a library dependency.
-function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-
-  const headers = splitLine(lines[0]);
-  return lines.slice(1).map((line) => {
-    const values = splitLine(line);
-    return Object.fromEntries(headers.map((h, i) => [h.trim(), (values[i] ?? "").trim()]));
-  });
-}
-
-function splitLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { inQuotes = !inQuotes; continue; }
-    if (ch === "," && !inQuotes) { result.push(current); current = ""; continue; }
-    current += ch;
-  }
-  result.push(current);
-  return result;
-}
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface ParsedRow {
-  model_name:   string;
-  asset_type:   string;
-  condition:    string;
-  quantity:     number;
-  listed_price: number;
-  ram_gb?:      number;
-  storage_gb?:  number;
-  cpu_score?:   number;
-  serial_number?: string;
-  reason?:      string;
-}
-
-type RowStatus = "pending" | "importing" | "done" | "error";
-
-interface RowState {
-  row:    ParsedRow;
-  status: RowStatus;
-  error?: string;
-}
-
-const REQUIRED = ["model_name", "asset_type", "condition", "quantity", "listed_price"] as const;
-
-function validateRow(raw: Record<string, string>, index: number): ParsedRow | string {
-  for (const field of REQUIRED) {
-    if (!raw[field]) return `Row ${index + 1}: missing "${field}"`;
-  }
-  const quantity    = parseInt(raw.quantity,    10);
-  const listed_price = parseFloat(raw.listed_price);
-  if (isNaN(quantity)     || quantity <= 0)    return `Row ${index + 1}: invalid quantity`;
-  if (isNaN(listed_price) || listed_price <= 0) return `Row ${index + 1}: invalid listed_price`;
-
-  return {
-    model_name:    raw.model_name,
-    asset_type:    raw.asset_type,
-    condition:     raw.condition,
-    quantity,
-    listed_price,
-    ram_gb:        raw.ram_gb      ? parseFloat(raw.ram_gb)      : undefined,
-    storage_gb:    raw.storage_gb  ? parseFloat(raw.storage_gb)  : undefined,
-    cpu_score:     raw.cpu_score   ? parseInt(raw.cpu_score, 10) : undefined,
-    serial_number: raw.serial_number || undefined,
-    reason:        raw.reason       || undefined,
-  };
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
 interface Props {
-  open:         boolean;
   onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
-export function ImportListingsDialog({ open, onOpenChange }: Props) {
-  const fileRef                  = useRef<HTMLInputElement>(null);
-  const [rows, setRows]          = useState<RowState[]>([]);
-  const [parseError, setParseError] = useState<string | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [done, setDone]          = useState(false);
-  const createListing            = useCreateListing();
-
-  function reset() {
-    setRows([]);
-    setParseError(null);
-    setImporting(false);
-    setDone(false);
-    if (fileRef.current) fileRef.current.value = "";
-  }
-
-  function handleClose(next: boolean) {
-    if (!importing) { reset(); onOpenChange(next); }
-  }
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setParseError(null);
-    setDone(false);
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target?.result as string;
-      const rawRows = parseCsv(text);
-      if (rawRows.length === 0) { setParseError("CSV appears empty or has no data rows."); return; }
-
-      const parsed: RowState[] = [];
-      for (let i = 0; i < rawRows.length; i++) {
-        const result = validateRow(rawRows[i], i);
-        if (typeof result === "string") { setParseError(result); setRows([]); return; }
-        parsed.push({ row: result, status: "pending" });
-      }
-      setRows(parsed);
-    };
-    reader.readAsText(file);
-  }
-
-  async function handleImport() {
-    setImporting(true);
-    const updated = [...rows];
-
-    for (let i = 0; i < updated.length; i++) {
-      if (updated[i].status === "done") continue;
-      updated[i] = { ...updated[i], status: "importing" };
-      setRows([...updated]);
-
-      try {
-        await createListing.mutateAsync(updated[i].row);
-        updated[i] = { ...updated[i], status: "done" };
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        updated[i] = { ...updated[i], status: "error", error: msg };
-      }
-      setRows([...updated]);
-    }
-
-    setImporting(false);
-    setDone(true);
-  }
-
-  const successCount = rows.filter((r) => r.status === "done").length;
-  const errorCount   = rows.filter((r) => r.status === "error").length;
+export function ImportListingsDialog({ onOpenChange, open }: Props) {
+  const {
+    done, errorCount, fileRef, handleClose, handleFile, handleImport, importing,
+    parseError, rows, successCount,
+  } = useImportListingsViewModel(onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

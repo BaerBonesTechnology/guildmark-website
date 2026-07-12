@@ -1,31 +1,12 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
-import { useAuth } from "../hooks/useAuth";
+import { useLoginViewModel } from "../viewmodels/useLoginViewModel";
 
 export function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const { login, error, clearError } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
-    setSubmitting(true);
-    try {
-      await login(email, password);
-      navigate("/pre/dashboard");
-    } catch {
-      // error is set in useAuth
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const { email, error, handleSubmit, password, setEmail, setPassword, submitting } = useLoginViewModel();
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">

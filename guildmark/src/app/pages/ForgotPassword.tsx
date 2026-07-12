@@ -1,31 +1,12 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { api, ApiError } from "../lib/api";
+import { useForgotPasswordViewModel } from "../viewmodels/useForgotPasswordViewModel";
 
 export function ForgotPassword() {
-  const [email, setEmail]     = useState("");
-  const [isLoading, setLoading] = useState(false);
-  const [sent, setSent]       = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      await api.post("/auth/forgot_password", { email }, { skipAuth: true });
-      setSent(true);
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Something went wrong. Please try again.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { email, error, handleSubmit, isLoading, sent, setEmail } = useForgotPasswordViewModel();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">

@@ -30,3 +30,15 @@ export function listingFlagColor(flag: string | undefined): string {
 export function listingTotalValue(listing: Listing): number {
   return (listing.listed_price ?? 0) * (listing.quantity ?? 1);
 }
+
+/**
+ * Price-vs-FMV hint shown while editing a listing price. Returns null when
+ * there's no valid FMV or price to compare.
+ */
+export function priceFlagHint(price: number, fmv: number | undefined): string | null {
+  if (!fmv || fmv <= 0 || isNaN(price)) return null;
+  const ratio = price / fmv;
+  if (ratio >= 1.20) return "⚠ Above FMV — may be flagged as overpriced";
+  if (ratio <= 0.60) return "⚠ Well below FMV — may be flagged as distressed";
+  return "✓ Within fair market range";
+}
