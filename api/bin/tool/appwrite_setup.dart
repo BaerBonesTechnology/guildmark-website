@@ -25,6 +25,7 @@ import 'package:dart_appwrite/enums.dart';
 import 'package:guildmark_api/appwrite/collections.dart';
 
 late final TablesDB _db;
+late final Storage _storage;
 
 /// Index specs are registered while columns are being created and applied in
 /// a second pass — Appwrite processes new columns asynchronously, so indexes
@@ -44,8 +45,12 @@ Future<void> main() async {
       .setProject(projectId)
       .setKey(apiKey);
   _db = TablesDB(client);
+  _storage = Storage(client);
 
   await _ensureDatabase(Aw.databaseId, 'GuildMark');
+
+  // ── Pass 0: storage buckets ──────────────────────────────────────────────
+  await _setupBuckets();
 
   // ── Pass 1: tables + columns ─────────────────────────────────────────────
   await _setupCompanies();
@@ -669,6 +674,60 @@ Future<void> _setupPartnerPayouts() async {
   await _datetime(c, 'paid_at', required: false);
   _index(c, 'payout_ref_unique', TablesDBIndexType.unique, ['payout_ref']);
   _index(c, 'partner_id_idx', TablesDBIndexType.key, ['partner_id']);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Storage buckets
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Buyer-facing product images (listing photos).
+///
+/// Public read so the marketplace PLP/PDP `<img>` tags can load files without a
+/// session. Writes are NOT granted to any role — the API streams uploads
+/// server-side with the admin API key (which bypasses permissions), so the
+/// bucket is never publicly writable. Restricted to image extensions and a
+/// 10 MB per-file ceiling.
+///
+/// Unlike the tables (create-only), the bucket is reconciled on every run:
+/// its config (allowed extensions, size, permissions) is mutable and matters,
+/// so an existing bucket is updated to match this canonical definition.
+Future<void> _setupBuckets() async {
+  const name = 'Product Images';
+  const maxFileSize = 10 * 1024 * 1024;
+  const extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+  final permissions = [Permission.read(Role.any())];
+
+  try {
+    await _storage.createBucket(
+      bucketId: Aw.productImagesBucket,
+      name: name,
+      permissions: permissions,
+      fileSecurity: false,
+      enabled: true,
+      maximumFileSize: maxFileSize,
+      allowedFileExtensions: extensions,
+      compression: Compression.none,
+      encryption: false,
+      antivirus: false,
+    );
+    stdout.writeln('[setup] bucket ${Aw.productImagesBucket} ✓');
+  } on AppwriteException catch (e) {
+    if (e.code != 409) rethrow;
+    // Already exists — converge its settings to the definition above.
+    await _storage.updateBucket(
+      bucketId: Aw.productImagesBucket,
+      name: name,
+      permissions: permissions,
+      fileSecurity: false,
+      enabled: true,
+      maximumFileSize: maxFileSize,
+      allowedFileExtensions: extensions,
+      compression: Compression.none,
+      encryption: false,
+      antivirus: false,
+    );
+    stdout.writeln('[setup] bucket ${Aw.productImagesBucket} (reconciled)');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

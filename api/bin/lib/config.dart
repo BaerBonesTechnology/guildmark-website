@@ -14,6 +14,7 @@ class AppConfig {
     // Appwrite — endpoint defaults to the in-cluster gateway; PROJECT_ID and
     // API_KEY are optional so the API still boots before a project exists.
     required this.appwriteEndpoint,
+    required this.appwritePublicEndpoint,
     this.appwriteProjectId,
     this.appwriteApiKey,
     // Square Web Payments
@@ -123,6 +124,15 @@ class AppConfig {
       mlServiceUrl: optional('ML_SERVICE_URL'),
       // Appwrite
       appwriteEndpoint: env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
+      // Browser-reachable endpoint used to build product-image view URLs. The
+      // in-cluster APPWRITE_ENDPOINT (http://appwrite/v1) is not resolvable
+      // from the browser, so production must set this to the public gateway.
+      // Falls back to APPWRITE_ENDPOINT, which is already host-reachable in
+      // local dev (e.g. http://localhost:9444/v1).
+      appwritePublicEndpoint: env(
+        'APPWRITE_PUBLIC_ENDPOINT',
+        env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
+      ),
       appwriteProjectId: optional('APPWRITE_PROJECT_ID'),
       appwriteApiKey: optional('APPWRITE_API_KEY'),
       // Square
@@ -210,6 +220,8 @@ class AppConfig {
 
   // ── Appwrite ────────────────────────────────────────────────────────────────
   final String appwriteEndpoint;
+  /// Public gateway used when building browser-facing file URLs.
+  final String appwritePublicEndpoint;
   final String? appwriteProjectId;
   final String? appwriteApiKey;
 

@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { PhotoUploader } from "./PhotoUploader";
 import { useCreateListing, usePlatformFees } from "../lib/apiHooks";
 import { useAuth } from "../hooks/useAuth";
 import type { Listing } from "../models/listing";
@@ -50,7 +51,7 @@ const EMPTY_FORM = {
   carrierLocked: false,
   // Marketplace / logistics
   dataWipeStatus: "not_wiped", warrantyStatus: "none", warrantyExpiration: "",
-  includedAccessories: "", shipsFrom: "", productImages: "", description: "",
+  includedAccessories: "", shipsFrom: "", productImages: [] as string[], description: "",
   // Quantity / price
   quantity: "", pricePerUnit: "",
   // Managed offload service
@@ -63,6 +64,8 @@ const LABEL_CLS = "text-xs uppercase tracking-wide text-muted-foreground";
 export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateListingDialogProps) {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
+  // Bumped after a successful create to remount the PhotoUploader with clean state.
+  const [photoResetKey, setPhotoResetKey] = useState(0);
   const createListing = useCreateListing();
   const { data: fees } = usePlatformFees();
   const { user } = useAuth();
@@ -112,10 +115,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
   const handleSubmit = () => {
     if (!validate()) return;
 
-    const images = formData.productImages
-      .split(/[\n,]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const images = formData.productImages;
 
     createListing.mutate(
       {
@@ -172,6 +172,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           onOpenChange(false);
           setFormData(EMPTY_FORM);
           setErrors({});
+          setPhotoResetKey((key) => key + 1);
         },
       }
     );
@@ -236,6 +237,15 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-4 py-4">
+          {/* ── Photos ───────────────────────────────────────────────── */}
+          {sectionHead("Photos")}
+          <div className="col-span-2">
+            <PhotoUploader
+              key={photoResetKey}
+              onChange={(urls) => set({ productImages: urls })}
+            />
+          </div>
+
           {/* ── Identity ─────────────────────────────────────────────── */}
           {selectField({ k: "item", label: "Category", req: true, options: [
             ["laptop", "Laptop"], ["desktop", "Desktop"], ["server", "Server"],
@@ -343,8 +353,8 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           {textField({ k: "quantity", label: "Quantity", type: "number", placeholder: "Number of units", req: true })}
           {textField({ k: "pricePerUnit", label: "Price Per Unit ($)", type: "number", placeholder: "Enter price per unit", req: true })}
 
-          {/* ── Detail & media ───────────────────────────────────────── */}
-          {sectionHead("Detail & Media")}
+          {/* ── Detail ───────────────────────────────────────────────── */}
+          {sectionHead("Detail")}
           <div className="space-y-2 col-span-2">
             <Label className={LABEL_CLS}>Known Defects (Optional)</Label>
             <textarea
@@ -362,16 +372,6 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
               value={formData.description}
               onChange={(e) => set({ description: e.target.value })}
               className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              rows={2}
-            />
-          </div>
-          <div className="space-y-2 col-span-2">
-            <Label className={LABEL_CLS}>Photo URLs (Optional)</Label>
-            <textarea
-              placeholder="One image URL per line (first is the cover image)"
-              value={formData.productImages}
-              onChange={(e) => set({ productImages: e.target.value })}
-              className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-xs"
               rows={2}
             />
           </div>
