@@ -1,3 +1,4 @@
+import { ROUTE } from "../constants/routes.constants";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
@@ -32,7 +33,7 @@ export function ResetPassword() {
     try {
       await api.post("/auth/reset_password", { token, new_password: password }, { skipAuth: true });
       setDone(true);
-      setTimeout(() => navigate("/login"), 3000);
+      setTimeout(() => navigate(ROUTE.login), 3000);
     } catch (err) {
       const msg = err instanceof ApiError
         ? err.message
@@ -53,7 +54,7 @@ export function ResetPassword() {
             This link is missing a token. Please request a new one.
           </p>
           <Button asChild variant="outline" className="">
-            <Link to="/forgot-password">Request New Link</Link>
+            <Link to={ROUTE.forgotPassword}>Request New Link</Link>
           </Button>
         </div>
       </div>
@@ -140,7 +141,7 @@ export function ResetPassword() {
 
             <div className="text-center">
               <Link
-                to="/login"
+                to={ROUTE.login}
                 className="text-xs  text-muted-foreground hover:text-foreground transition-colors"
               >
                 Back to Sign In

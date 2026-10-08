@@ -155,6 +155,8 @@ export const router = createBrowserRouter([
  * All other paths redirect to the pre-launch hero.
  */
 export const preLaunchRouter = createBrowserRouter([
+  // Email reset links use this public URL, including during prelaunch.
+  { path: "/reset-password", Component: ResetPassword },
   {
     path: "/",
     Component: PreLaunchLayout,
