@@ -1,24 +1,18 @@
-#!/bin/bash
-# GuildMark production deploy script
-# Builds images, starts Appwrite, redeploys the prod stack. Run from anywhere —
-# it anchors itself to the repo root. Mirrors scripts/deploy.cmd.
-set -e
-
-# ── Move to repo root (parent of this scripts/ folder) ──────────────────────
+#!/usr/bin/env bash
+# Deploy only the native API. Appwrite Cloud defaults are in the compose file.
+# Run after migrating the datastore and configuring an HTTPS API ingress.
+set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "[$(date '+%F %T')] Starting deployment..."
+compose=(docker compose -f docker-compose.prod.yml)
+if [[ -n "${DOPPLER_PROJECT:-}" ]]; then
+  compose=(docker compose --env-file /dev/null -f docker-compose.prod.yml)
+elif command -v doppler >/dev/null 2>&1 && [[ -f doppler.yaml ]]; then
+  compose=(doppler run -- docker compose --env-file /dev/null -f docker-compose.prod.yml)
+fi
 
-# ── Ensure the shared external network exists (Appwrite + prod declare it external) ─
-docker network inspect guildmark-net >/dev/null 2>&1 || docker network create guildmark-net
-
-# ── Build prod images (secrets injected via Doppler) ────────────────────────
-doppler run -- docker compose -f docker-compose.prod.yml build --no-cache
-
-# ── Start Appwrite stack (uses its own env file) ────────────────────────────
-docker compose --env-file .env.appwrite -f docker-compose.appwrite.yml up -d
-
-# ── Redeploy prod services ──────────────────────────────────────────────────
-doppler run -- docker compose -f docker-compose.prod.yml up -d
-
-echo "[$(date '+%F %T')] Deployment complete"
+"${compose[@]}" config --quiet
+"${compose[@]}" build api
+"${compose[@]}" up -d --no-deps api
+# Do not remove old datastore containers/volumes automatically during migration.
+printf 'API deployed. Verify health and Cloud data before retiring legacy services.\n'

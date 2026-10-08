@@ -16,10 +16,6 @@ jobs:
       matrix:
         service:
           - { name: api, context: ./api/bin }
-          - { name: ml, context: ./ml-qv }
-          - { name: guildmark, context: ./guildmark }
-          - { name: devdash, context: ./devdash }
-          - { name: nginx, context: ./nginx }
 
     steps:
       - name: Checkout code

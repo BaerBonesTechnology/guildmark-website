@@ -4,7 +4,7 @@ import 'package:guildmark_api/models/asset.dart';
 import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/services/valuation_service.dart';
 import 'package:guildmark_api/repos/appwrite/asset_repo.dart';
 import 'package:guildmark_api/repos/appwrite/asset_valuation_repo.dart';
 import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
@@ -45,7 +45,7 @@ Future<Response> onRequest(RequestContext context) async {
       }
       if (price <= 0) return badRequest('listed_price must be positive');
 
-      final ml = context.read<MlClient?>();
+      final valuationService = context.read<ValuationService>();
 
       // Resolve or auto-create the asset record.
       // When asset_id is omitted the caller is creating a brand-new listing
@@ -105,14 +105,14 @@ Future<Response> onRequest(RequestContext context) async {
         asset = found;
       }
 
-      // Get ML valuation so we can flag overpriced listings at creation time.
+      // Get a deterministic valuation so we can flag overpriced listings at creation time.
       double? fmv;
-      String? mlVersion;
-      double? mlConfidence;
+      String? modelVersion;
+      double? confidence;
       final ageMonths = _ageMonths(asset.purchaseDate);
 
       try {
-        final valuation = await ml?.estimateFairMarketValue(
+        final valuation = valuationService.estimateFairMarketValue(
           ValuationRequest(
             assetType: asset.assetType,
             modelName: asset.modelName,
@@ -124,22 +124,13 @@ Future<Response> onRequest(RequestContext context) async {
             originalPrice: asset.originalPurchasePrice,
           ),
         );
-        fmv = valuation?.fairMarketValue;
-        mlVersion = valuation?.modelVersion;
-        mlConfidence = valuation?.confidence;
-      } on MlServiceException {
+        fmv = valuation.fairMarketValue;
+        modelVersion = valuation.modelVersion;
+        confidence = valuation.confidence;
+      } on ArgumentError {
         // Non-fatal — we still create the listing; it will be flagged
         // 'insufficient_data' by the repo.
       }
-
-      // Tell the ML service about this model so the next training run fetches
-      // real eBay market data for it. Fire-and-forget — never blocks the response.
-      ml
-          ?.trackModel(
-            modelName: asset.modelName,
-            assetType: asset.assetType,
-          )
-          .ignore();
 
       final listing = await ListingRepo(aw).create(
         companyId: auth.companyId,
@@ -151,7 +142,7 @@ Future<Response> onRequest(RequestContext context) async {
 
       // Record valuation history — fire-and-forget so a DB hiccup here
       // never rolls back the listing creation.
-      if (fmv != null && mlVersion != null && mlConfidence != null) {
+      if (fmv != null && modelVersion != null && confidence != null) {
         AssetValuationRepo(aw)
             .record(
               assetId: asset.id,
@@ -162,8 +153,8 @@ Future<Response> onRequest(RequestContext context) async {
               conditionGrade: asset.conditionGrade,
               ageMonths: ageMonths,
               fairMarketValue: fmv,
-              confidence: mlConfidence,
-              modelVersion: mlVersion,
+              confidence: confidence,
+              modelVersion: modelVersion,
               listedPrice: price,
             )
             .ignore();
@@ -185,18 +176,18 @@ int _ageMonths(DateTime? purchaseDate) {
 
 /// Coerce a JSON number/string to int (null-safe, tolerant of "16" strings).
 int? _int(Object? v) => switch (v) {
-      final int i => i,
-      final num n => n.toInt(),
-      final String s => int.tryParse(s.trim()),
-      _ => null,
-    };
+  final int i => i,
+  final num n => n.toInt(),
+  final String s => int.tryParse(s.trim()),
+  _ => null,
+};
 
 /// Coerce a JSON number/string to double (null-safe).
 double? _double(Object? v) => switch (v) {
-      final num n => n.toDouble(),
-      final String s => double.tryParse(s.trim()),
-      _ => null,
-    };
+  final num n => n.toDouble(),
+  final String s => double.tryParse(s.trim()),
+  _ => null,
+};
 
 /// Parse an ISO date string to DateTime (null-safe).
 DateTime? _date(Object? v) =>

@@ -12,9 +12,9 @@
 **/.env
 **/.env.local
 **/.env.*.local
-**/.DS_Store/
+**/.DS_Store
 
-**/__pychache__/
+**/__pycache__/
 **/*.pyc
 **/build/
 **/dist/
@@ -43,3 +43,6 @@ api/POSTGRES_TO_APPWRITE.md
 PLAN.md
 /api/bin/.dart_tool
 /.claude
+
+# Generated Dart Frog route entrypoints
+/api/bin/.dart_frog/

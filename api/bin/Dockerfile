@@ -3,11 +3,11 @@
 FROM dart:3.12.1 AS build
 
 WORKDIR /app
-COPY pubspec.yaml .
-RUN dart pub get
+COPY pubspec.yaml pubspec.lock ./
+RUN dart pub get --enforce-lockfile
 
 # Install dart_frog_cli to compile routes into a single entrypoint.
-RUN dart pub global activate dart_frog_cli
+RUN dart pub global activate dart_frog_cli 1.2.14
 
 COPY . .
 
@@ -24,11 +24,10 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# WORKDIR must be /app/bin so the MigrationRunner's default relative path
-# "../migrations" resolves to /app/migrations, which is volume-mounted from
-# ./api/migrations in docker-compose.
 WORKDIR /app/bin
 COPY --from=build /app/build/bin/server ./server
+
+USER 65532:65532
 
 EXPOSE 8080
 CMD ["./server"]

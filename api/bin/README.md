@@ -1,7 +1,8 @@
-# AsTech API (Dart Frog)
+# GuildMark API (Dart Frog)
 
-HTTP layer for the AsTech platform. Talks to Postgres for state and to the
-Python ML service (`../py`) for valuation predictions.
+HTTP layer for GuildMark. Uses Appwrite Cloud for state and an in-process
+`ValuationService` for deterministic estimates and depreciation. See
+[deployment instructions](../../docs/deployment.md).
 
 ## Layout
 
@@ -15,11 +16,11 @@ api/
 │   ├── buyer/              Buyer-side offers
 │   ├── assets/             Manual assets
 │   ├── amps/               AMPS dashboard endpoints
-│   └── valuation/          Calls Python ML service for FMV + depreciation
+│   └── valuation/          Native FMV + depreciation
 ├── lib/
 │   ├── auth/               JWT, password hashing, session helpers
-│   ├── db/                 Postgres pool, migration runner
-│   ├── ml/                 HTTP client for the Python ML service
+│   ├── appwrite/           Appwrite Cloud client and schema identifiers
+│   ├── services/           Valuation, payments, shipping and email
 │   ├── models/             Plain Dart classes mirroring src/app/lib/types.ts
 │   └── repos/              Data-access layer (one file per aggregate)
 └── test/
@@ -51,7 +52,7 @@ dart compile exe build/bin/server.dart -o build/bin/server
 
 - Routes return `Response.json(body: ...)` only. Never write to the response
   body directly.
-- All DB access goes through a `Repository` class in `lib/repos/`. Routes
+- All DB access goes through a `Repository` class in `lib/repos/appwrite/`. Routes
   never touch SQL.
 - Snake_case JSON in/out — matches the frontend types.
 - All protected routes pull `userId` and `companyId` off the request context;

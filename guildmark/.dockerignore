@@ -5,6 +5,7 @@ dist/
 .env.local
 .env.*.local
 *.md
+!src/content/blog/*.md
 .DS_Store
 *.log
 coverage/

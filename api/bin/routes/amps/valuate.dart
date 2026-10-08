@@ -7,7 +7,7 @@ import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/services/valuation_service.dart';
 import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -17,10 +17,7 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final ml = context.read<MlClient?>();
-  if (ml == null) {
-    return jsonError(503, 'ML_UNAVAILABLE', 'ML service not configured');
-  }
+  final valuationService = context.read<ValuationService>();
 
   final aw = context.read<AppwriteService?>();
   if (aw == null) {
@@ -52,8 +49,10 @@ Future<Response> onRequest(RequestContext context) async {
       final assetId = row.data['asset_id'] as String;
       final prev = latestListingByAsset[assetId];
       if (prev == null || row.$updatedAt.compareTo(prev.updated) > 0) {
-        latestListingByAsset[assetId] =
-            (listingId: row.$id, updated: row.$updatedAt);
+        latestListingByAsset[assetId] = (
+          listingId: row.$id,
+          updated: row.$updatedAt,
+        );
       }
     }
     if (page.rows.length < 100) break;
@@ -89,8 +88,9 @@ Future<Response> onRequest(RequestContext context) async {
           modelName: d['model_name'] as String,
           assetType: d['asset_type'] as String,
           conditionGrade: d['condition_grade'] as String? ?? 'B',
-          purchaseDate:
-              purchaseDate == null ? null : DateTime.parse(purchaseDate),
+          purchaseDate: purchaseDate == null
+              ? null
+              : DateTime.parse(purchaseDate),
           cpuScore: (d['cpu_score'] as num?)?.toDouble(),
           ramGb: (d['ram_gb'] as num?)?.toInt(),
           storageGb: (d['storage_gb'] as num?)?.toInt(),
@@ -119,13 +119,13 @@ Future<Response> onRequest(RequestContext context) async {
 
   // Snapshot all work items before spawning the background Future.
   // The RequestContext is request-scoped and must NOT be captured by the
-  // closure — only plain values and the shared AppwriteService/MlClient
+  // closure — only plain values and the shared AppwriteService/ValuationService
   // singletons.
   final companyId = auth.companyId;
 
   _runValuationJob(
     aw: aw,
-    ml: ml,
+    valuationService: valuationService,
     companyId: companyId,
     items: items,
   ).ignore();
@@ -142,23 +142,23 @@ Future<Response> onRequest(RequestContext context) async {
 
 Future<void> _runValuationJob({
   required AppwriteService aw,
-  required MlClient ml,
+  required ValuationService valuationService,
   required String companyId,
   required List<_WorkItem> items,
 }) async {
   final repo = ListingRepo(aw);
 
   Future<void> setStatus(String status) => aw.tablesDB.updateRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.companies,
-        rowId: companyId,
-        data: {'valuation_status': status},
-      );
+    databaseId: Aw.databaseId,
+    tableId: Aw.companies,
+    rowId: companyId,
+    data: {'valuation_status': status},
+  );
 
   try {
     for (final item in items) {
       try {
-        final valuation = await ml.estimateFairMarketValue(
+        final valuation = valuationService.estimateFairMarketValue(
           ValuationRequest(
             assetType: item.assetType,
             modelName: item.modelName,
