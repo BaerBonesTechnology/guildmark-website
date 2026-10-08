@@ -11,6 +11,7 @@
  * labels; sharp borders; layered section backgrounds (--section-1/2/3).
  */
 
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useTheme } from "../hooks/useTheme";
@@ -114,12 +115,15 @@ function SubmitButton({ status, label, filled = true }: { status: Status; label:
 // ── Section 1 — IT Teams (waitlist) ─────────────────────────────────────────
 
 function ITTeamsSection() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [org, setOrg] = useState("");
   const [size, setSize] = useState("");
   const { status, error, submit } = useWaitlist();
   const { data: fees } = usePlatformFees();
-  const sellerFee = formatFeeRate(fees?.seller_fee_free);
+  const sellerFee = fees?.seller_fee_free == null
+    ? t("prelaunch.feesUnknown")
+    : t("prelaunch.sellerFee", { fee: formatFeeRate(fees.seller_fee_free) });
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -135,26 +139,23 @@ function ITTeamsSection() {
   return (
     <section className="flex flex-col" style={{ background: "var(--section-1)" }}>
       <div className="flex-1 flex justify-items-center">
-        <div className="max-w-[1800px] mx-auto px-8 md:px-20 w-full py-24">
-          <div className="grid md:grid-cols-[3fr_2fr] gap-16 md:gap-24 items-center">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 w-full py-10 md:py-16">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div>
-              <h1 className="leading-[0.93] tracking-tight mb-7"
-                style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(3.2rem, 7.5vw, 6rem)" }}>
-                GuildMark helps you<br />
-                stop leaving money<br />
-                on the table when<br />
-                you refresh hardware.
+              <h1 className="max-w-xl font-display text-5xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl mb-5">
+                {t("prelaunch.recoveryHeadline")}
               </h1>
-              <p className="text-base leading-relaxed max-w-md mb-8"
-                style={{ color: "var(--muted-foreground)", fontFamily: BODY, fontWeight: 300 }}>
-                A direct path for IT teams to sell end-of-lease and surplus equipment at fair
-                market value — no brokers skimming margin, no spreadsheet chaos.
+              <p className="text-base leading-relaxed max-w-md mb-6 text-muted-foreground font-body">
+                {t("prelaunch.recoveryDescription")}
               </p>
+              <a href="#early-access" className="mb-6 inline-flex min-h-11 items-center justify-center gap-2 bg-primary px-5 font-body text-sm font-medium text-primary-foreground lg:hidden">
+                {t("prelaunch.requestAccess")}<ArrowRight size={16} aria-hidden="true" />
+              </a>
               <div className="flex flex-col gap-2.5">
                 {[
-                  "Instant valuations against live market data",
-                  "Certified listings — graded, spec-disclosed",
-                  `${sellerFee} platform fee. $0 to list.`,
+                  t("prelaunch.estimateBenefit"),
+                  t("prelaunch.listingBenefit"),
+                  sellerFee,
                 ].map((pt) => (
                   <div key={pt} className="flex items-center gap-2.5">
                     <div className="w-1 h-1 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
@@ -164,7 +165,7 @@ function ITTeamsSection() {
               </div>
             </div>
 
-            <div className="border border-border p-7" style={{ background: "var(--card)" }}>
+            <div id="early-access" className="scroll-mt-24 border border-border p-6" style={{ background: "var(--card)" }}>
               <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-1"
                 style={{ color: "var(--primary)", fontFamily: MONO }}>Early Access</p>
               <h2 className="text-2xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>Join the waitlist.</h2>
@@ -176,18 +177,18 @@ function ITTeamsSection() {
               ) : (
                 <form onSubmit={onSubmit} className="space-y-4">
                   <div>
-                    <label className={labelClass}>Work email</label>
-                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    <label htmlFor="early-access-field-1" className={labelClass}>Work email</label>
+                    <input id="early-access-field-1" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@company.com" className={fieldClass} style={fieldStyle} />
                   </div>
                   <div>
-                    <label className={labelClass}>Organization</label>
-                    <input type="text" value={org} onChange={(e) => setOrg(e.target.value)}
+                    <label htmlFor="early-access-field-2" className={labelClass}>Organization</label>
+                    <input id="early-access-field-2" type="text" value={org} onChange={(e) => setOrg(e.target.value)}
                       placeholder="Company name" className={fieldClass} style={fieldStyle} />
                   </div>
                   <div>
-                    <label className={labelClass}>Estimated refresh size</label>
-                    <select value={size} onChange={(e) => setSize(e.target.value)}
+                    <label htmlFor="early-access-field-3" className={labelClass}>Estimated refresh size</label>
+                    <select id="early-access-field-3" value={size} onChange={(e) => setSize(e.target.value)}
                       className={`${fieldClass} appearance-none`} style={fieldStyle}>
                       <option value="">Select range</option>
                       <option>Under 50 units</option>
@@ -212,12 +213,13 @@ function ITTeamsSection() {
 
 const SUPPLY_BENEFITS = [
   { icon: Globe, title: "Reach verified buyers directly", body: "List once, reach hundreds of vetted IT teams actively looking for certified supply — no cold calls, no brokered leads." },
-  { icon: BarChart3, title: "Market-rate pricing intelligence", body: "GuildMark surfaces live comparable sales data so you list at the right price the first time, not the wrong one." },
+  { icon: BarChart3, title: "prelaunch.pricingTitle", body: "prelaunch.pricingDescription" },
   { icon: ShieldCheck, title: "Certification builds buyer trust", body: "Our grading and disclosure standards give buyers confidence to transact without inspections or back-and-forth." },
   { icon: Zap, title: "Bulk listings via CSV or MDM sync", body: "Upload your full inventory in minutes. GuildMark structures and publishes each listing with the right fields automatically." },
 ];
 
 function SupplySection() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [volume, setVolume] = useState("");
@@ -260,13 +262,13 @@ function SupplySection() {
                 ) : (
                   <form onSubmit={onSubmit} className="space-y-4">
                     <div>
-                      <label className={labelClass}>Work email</label>
-                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                      <label htmlFor="early-access-field-4" className={labelClass}>Work email</label>
+                      <input id="early-access-field-4" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@company.com" className={fieldClass} style={fieldStyle} />
                     </div>
                     <div>
-                      <label className={labelClass}>Your role</label>
-                      <select required value={role} onChange={(e) => setRole(e.target.value)}
+                      <label htmlFor="early-access-field-5" className={labelClass}>Your role</label>
+                      <select id="early-access-field-5" required value={role} onChange={(e) => setRole(e.target.value)}
                         className={`${fieldClass} appearance-none`} style={fieldStyle}>
                         <option value="">Select your role</option>
                         <option>MSR — Managed Service Reseller</option>
@@ -276,8 +278,8 @@ function SupplySection() {
                       </select>
                     </div>
                     <div>
-                      <label className={labelClass}>Avg. monthly supply volume</label>
-                      <select value={volume} onChange={(e) => setVolume(e.target.value)}
+                      <label htmlFor="early-access-field-6" className={labelClass}>Avg. monthly supply volume</label>
+                      <select id="early-access-field-6" value={volume} onChange={(e) => setVolume(e.target.value)}
                         className={`${fieldClass} appearance-none`} style={fieldStyle}>
                         <option value="">Select range</option>
                         <option>Under $25k</option>
@@ -301,20 +303,20 @@ function SupplySection() {
                     <Icon size={14} style={{ color: "var(--primary)" }} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium mb-1.5" style={{ fontFamily: BODY }}>{title}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY, fontWeight: 300 }}>{body}</p>
+                    <p className="text-sm font-medium mb-1.5" style={{ fontFamily: BODY }}>{t(title, { defaultValue: title })}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY, fontWeight: 300 }}>{t(body, { defaultValue: body })}</p>
                   </div>
                 </div>
               ))}
               <div className="py-6">
-                <div className="grid grid-cols-4 gap-8 ">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 ">
                   {[{ val: "$0", label: "To list" },
-                  { val: formatFeeRate(fees?.seller_fee_free), label: "On sale only" },
+                  { val: fees?.seller_fee_free == null ? t("prelaunch.feeOnSale") : formatFeeRate(fees.seller_fee_free), label: "On sale only" },
                   { val: "NIST 800-08", label: "Data sanitization mid-transit*" },
                   { val: "Audit Compliant", label: "Certified grading & disclosure*" },
                   ].map((s) => (
                     <div key={s.label} className="text-center">
-                      <div className="text-3xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.val}</div>
+                      <div className="text-2xl break-words mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.val}</div>
                       <div className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase" style={{ fontFamily: MONO }}>{s.label}</div>
                     </div>
                   ))}
@@ -421,23 +423,23 @@ function PartnerNetworkSection() {
                 </p>
                 <form onSubmit={onSubmit} className="space-y-4">
                   <div>
-                    <label className={labelClass}>Contact name</label>
-                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                    <label htmlFor="early-access-field-7" className={labelClass}>Contact name</label>
+                    <input id="early-access-field-7" type="text" required value={name} onChange={(e) => setName(e.target.value)}
                       placeholder="Full name" className={fieldClass} style={fieldStyle} />
                   </div>
                   <div>
-                    <label className={labelClass}>Work email</label>
-                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    <label htmlFor="early-access-field-8" className={labelClass}>Work email</label>
+                    <input id="early-access-field-8" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@itadcompany.com" className={fieldClass} style={fieldStyle} />
                   </div>
                   <div>
-                    <label className={labelClass}>Company name</label>
-                    <input type="text" value={company} onChange={(e) => setCompany(e.target.value)}
+                    <label htmlFor="early-access-field-9" className={labelClass}>Company name</label>
+                    <input id="early-access-field-9" type="text" value={company} onChange={(e) => setCompany(e.target.value)}
                       placeholder="ITAD provider name" className={fieldClass} style={fieldStyle} />
                   </div>
                   <div>
-                    <label className={labelClass}>Services offered</label>
-                    <select value={services} onChange={(e) => setServices(e.target.value)}
+                    <label htmlFor="early-access-field-10" className={labelClass}>Services offered</label>
+                    <select id="early-access-field-10" value={services} onChange={(e) => setServices(e.target.value)}
                       className={`${fieldClass} appearance-none`} style={fieldStyle}>
                       <option value="">Select primary service</option>
                       <option>Full ITAD — pickup, wipe, resale</option>
@@ -448,8 +450,8 @@ function PartnerNetworkSection() {
                     </select>
                   </div>
                   <div>
-                    <label className={labelClass}>Geographic coverage</label>
-                    <select value={coverage} onChange={(e) => setCoverage(e.target.value)}
+                    <label htmlFor="early-access-field-11" className={labelClass}>Geographic coverage</label>
+                    <select id="early-access-field-11" value={coverage} onChange={(e) => setCoverage(e.target.value)}
                       className={`${fieldClass} appearance-none`} style={fieldStyle}>
                       <option value="">Select coverage</option>
                       <option>National</option>

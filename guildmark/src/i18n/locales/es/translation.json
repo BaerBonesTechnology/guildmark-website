@@ -26,7 +26,17 @@
     "successTitle": "Estás en la lista.",
     "successBody": "Te contactaremos cuando abra el acceso anticipado.",
     "readResearch": "Leer la investigación de mercado",
-    "getInTouch": "Contactar"
+    "getInTouch": "Contactar",
+    "recoveryHeadline": "Recupera más valor de los equipos informáticos retirados.",
+    "recoveryDescription": "Vende equipos sobrantes o al final de su arrendamiento directamente a empresas. Obtén una estimación inicial y organiza tus anuncios en un solo lugar.",
+    "requestAccess": "Solicitar acceso anticipado",
+    "estimateBenefit": "Estimaciones según antigüedad, estado y especificaciones",
+    "listingBenefit": "Estado y especificaciones en cada anuncio",
+    "feesUnknown": "Publicar es gratis. Se aplican comisiones al vender.",
+    "sellerFee": "Comisión del {{fee}} al vender. Publicar es gratis.",
+    "pricingTitle": "Un punto de partida para fijar precios",
+    "pricingDescription": "Obtén un valor estimado según la antigüedad, el estado y las especificaciones del equipo. Úsalo como guía para fijar tu precio.",
+    "feeOnSale": "Al vender"
   },
   "footer": {
     "copyright": "© {{year}} Baerhous Media Group, LLC.",
@@ -58,5 +68,28 @@
     "learnMore": "Política de privacidad",
     "acceptAll": "Aceptar todo",
     "essentialOnly": "Solo esenciales"
+  },
+  "marketplaceFilters": {
+    "title": "Filtros",
+    "description": "Elige categorías y estados. Los filtros se aplican inmediatamente.",
+    "category": "Categoría",
+    "condition": "Estado",
+    "clear": "Borrar filtros",
+    "done": "Listo",
+    "remove": "Quitar filtro {{label}}",
+    "search": "Buscar equipos",
+    "sort": "Ordenar anuncios",
+    "grade": "Grado {{grade}}",
+    "loadError": "No pudimos cargar los anuncios. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "retrying": "Reintentando…",
+    "categories": {
+      "laptop": "Portátiles",
+      "desktop": "Sobremesa",
+      "server": "Servidores",
+      "phone": "Teléfonos",
+      "tablet": "Tabletas",
+      "networking": "Redes"
+    }
   }
 }

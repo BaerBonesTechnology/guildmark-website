@@ -1,18 +1,20 @@
 /** Marketplace / GuildMarket (PLP) page — View. Logic lives in the ViewModel. */
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { ListingCard } from "../components/marketplace/ListingCard";
 import { ListingCardSkeleton } from "../components/marketplace/ListingCardSkeleton";
-import { MarketplaceFilterRow } from "../components/marketplace/MarketplaceFilterRow";
-import { MarketplaceFilterSection } from "../components/marketplace/MarketplaceFilterSection";
-import { MARKETPLACE_CATEGORIES, MARKETPLACE_GRADES, MARKETPLACE_SORTS } from "../constants/marketplace.constants";
+import { useTranslation } from "react-i18next";
+import { MarketplaceFilters } from "../components/marketplace/MarketplaceFilters";
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "../components/ui/sheet";
+import { MARKETPLACE_SORTS } from "../constants/marketplace.constants";
 import { BODY, DISPLAY, MONO } from "../constants/typography";
 import { useMarketplaceViewModel } from "../viewmodels/useMarketplaceViewModel";
 
 export function Marketplace() {
+  const { t } = useTranslation();
   const {
-    anyFilter, categories, clearFilters, filteredListings, goToNextPage, goToPrevPage,
-    grades, isError, isLoading, page, pageItems, search, setSearch, setSortBy, sortBy,
-    stats, toggleCategory, toggleGrade, totalPages,
+    activeFilters, anyFilter, categoryOptions, clearFilters, filteredListings, goToNextPage, goToPrevPage,
+    gradeOptions, isError, isFetching, isLoading, retryListings, page, pageItems, search, setSearch, setSortBy, sortBy,
+    toggleCategory, toggleGrade, totalPages,
   } = useMarketplaceViewModel();
 
   return (
@@ -29,18 +31,13 @@ export function Marketplace() {
         {/* Sidebar filters */}
         <aside className="hidden lg:block">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Filters</p>
+            <p className="text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{t("marketplaceFilters.title")}</p>
             {anyFilter && (
               <button onClick={clearFilters}
-                className="text-[10px] hover:text-foreground transition-colors" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Clear</button>
+                className="text-[10px] hover:text-foreground transition-colors" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{t("marketplaceFilters.clear")}</button>
             )}
           </div>
-          <MarketplaceFilterSection title="Category">
-            {MARKETPLACE_CATEGORIES.map((category) => <MarketplaceFilterRow key={category.type} label={category.label} checked={categories.has(category.type)} onToggle={() => toggleCategory(category.type)} />)}
-          </MarketplaceFilterSection>
-          <MarketplaceFilterSection title="Condition">
-            {MARKETPLACE_GRADES.map((entry) => <MarketplaceFilterRow key={entry.grade} label={entry.label} checked={grades.has(entry.grade)} onToggle={() => toggleGrade(entry.grade)} />)}
-          </MarketplaceFilterSection>
+          <MarketplaceFilters categoryOptions={categoryOptions} gradeOptions={gradeOptions} toggleCategory={toggleCategory} toggleGrade={toggleGrade} />
         </aside>
 
         {/* Main */}
@@ -48,21 +45,56 @@ export function Marketplace() {
           <div className="flex flex-col sm:flex-row gap-3 mb-5">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets…"
+              <input aria-label={t("marketplaceFilters.search")} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets…"
                 className="w-full pl-9 pr-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary transition-colors"
                 style={{ fontFamily: BODY, background: "var(--input-background)" }} />
             </div>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+            <select aria-label={t("marketplaceFilters.sort")} value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
               className="px-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary appearance-none"
               style={{ fontFamily: BODY, background: "var(--input-background)" }}>
               {MARKETPLACE_SORTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
 
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button type="button" className="flex min-h-11 items-center gap-2 border border-border px-4 text-sm text-foreground lg:hidden">
+                  <SlidersHorizontal className="size-4" aria-hidden="true" />
+                  {t("marketplaceFilters.title")}
+                  {anyFilter && <span className="rounded-full bg-primary px-2 text-primary-foreground">{activeFilters.length}</span>}
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-full max-w-sm">
+                <SheetHeader>
+                  <SheetTitle>{t("marketplaceFilters.title")}</SheetTitle>
+                  <SheetDescription>{t("marketplaceFilters.description")}</SheetDescription>
+                </SheetHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto px-4">
+                  <MarketplaceFilters categoryOptions={categoryOptions} gradeOptions={gradeOptions} toggleCategory={toggleCategory} toggleGrade={toggleGrade} />
+                </div>
+                <SheetFooter className="border-t border-border">
+                  <button type="button" onClick={clearFilters} disabled={!anyFilter} className="min-h-11 border border-border text-sm disabled:opacity-50">{t("marketplaceFilters.clear")}</button>
+                  <SheetClose asChild><button type="button" className="min-h-11 bg-primary text-sm text-primary-foreground">{t("marketplaceFilters.done")}</button></SheetClose>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+            {activeFilters.map((filter) => (
+              <button type="button" key={filter.key} onClick={filter.remove}
+                aria-label={t("marketplaceFilters.remove", { label: filter.label })}
+                className="inline-flex min-h-11 items-center gap-2 border border-primary/30 bg-primary/10 px-3 text-xs text-foreground">
+                {filter.label}<X className="size-3" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+
           {isLoading ? (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, ndx) => <ListingCardSkeleton key={ndx} />)}</div>
           ) : isError ? (
-            <div className="border border-border py-16 text-center text-sm" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>Failed to load listings. Please try again.</div>
+            <div role="status" className="border border-border bg-card px-4 py-12 text-center text-sm text-muted-foreground">
+              <p>{t("marketplaceFilters.loadError")}</p>
+              <button type="button" onClick={retryListings} disabled={isFetching} className="mt-4 min-h-11 border border-border px-4 text-foreground disabled:opacity-50">{t(isFetching ? "marketplaceFilters.retrying" : "marketplaceFilters.retry")}</button>
+            </div>
           ) : pageItems.length === 0 ? (
             <div className="border border-border py-16 text-center" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>
               <p className="text-sm font-medium mb-1">No listings found</p>
@@ -73,7 +105,7 @@ export function Marketplace() {
             <div className="flex flex-wrap gap-px w-fit mb-6">
               <div>
                 <span className="text-[10px] tracking-widest uppercase mr-2" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Results</span>
-                <span className="text-sm" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{stats.totalListings.toLocaleString()}</span>
+                <span className="text-sm" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{filteredListings.length.toLocaleString()}</span>
               </div>
             </div>
             <div className="grid sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-4">{pageItems.map((listing) => <ListingCard key={listing.id} listing={listing} />)}</div>
