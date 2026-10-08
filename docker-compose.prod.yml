@@ -1,58 +1,20 @@
-# GuildMark — Production Docker Compose
-# ---------------------------------------------------------------------------
-# Single ingress: nginx terminates TLS on 443 (Cloudflare origin cert) and
-# proxies every public hostname — guildmark.co, api., devdash., ml-qv., and
-# db. (Appwrite via traefik on guildmark-net). Cloudflare dials the origin
-# on 443 only; NO Origin Rules and no other public ports are required.
-# (Ports 8443/2053 remain published for direct LAN/debug access only —
-# Cloudflare would attempt TLS on them and fail, so don't route to them.)
-#
-# Manual usage:
-#   docker compose -f docker-compose.prod.yml up -d
-#   docker compose -f docker-compose.prod.yml up -d --build   # force rebuild
-# ---------------------------------------------------------------------------
-
+# Production: native API only. TLS ingress must forward to localhost:8080.
+# Frontends run on Cloudflare Pages; the datastore is Appwrite Cloud.
 services:
-
-  # ── Postgres ─────────────────────────────────────────────────────────────
-  postgres:
-    image: postgres:16-alpine
-    platform: linux/amd64
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB:       ${POSTGRES_DB}
-      POSTGRES_USER:     ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test:     ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
-      interval: 5s
-      timeout:  5s
-      retries:  10
-    networks:
-      - guildmark-net
-
-  # ── Dart Frog API — exposed on 8443 (Cloudflare proxied HTTPS port) ───────
   api:
     build:
       context:    ./api/bin
       dockerfile: Dockerfile
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
-      - "8443:8080"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:8080:8080"
     environment:
-      API_PORT:                ${API_PORT:-8080}
-      DATABASE_URL:            ${DATABASE_URL}
+      API_PORT:                8080
       JWT_ACCESS_SECRET:       ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET:      ${JWT_REFRESH_SECRET}
       JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
       JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
-      ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
-      APPWRITE_ENDPOINT:       ${APPWRITE_ENDPOINT:-http://appwrite/v1}
+      APPWRITE_ENDPOINT:       ${APPWRITE_ENDPOINT:-https://cloud.appwrite.io/v1}
       APPWRITE_PROJECT_ID:     ${APPWRITE_PROJECT_ID:-}
       APPWRITE_API_KEY:        ${APPWRITE_API_KEY:-}
       CORS_ORIGIN:             ${CORS_ORIGIN}
@@ -76,96 +38,17 @@ services:
       ESCROW_API_KEY:          ${ESCROW_API_KEY:-}
       ESCROW_EMAIL:            ${ESCROW_EMAIL:-}
       ESCROW_ENVIRONMENT:      ${ESCROW_ENVIRONMENT:-production}
-      FEDEX_CLIENT_ID:         ${FEDEX_CLIENT_ID:-}
-      FEDEX_CLIENT_SECRET:     ${FEDEX_CLIENT_SECRET:-}
+      FEDEX_API_KEY:         ${FEDEX_API_KEY:-}
+      FEDEX_SECRET_KEY:     ${FEDEX_SECRET_KEY:-}
       FEDEX_WEBHOOK_SECRET:    ${FEDEX_WEBHOOK_SECRET:-}
       FEDEX_ENVIRONMENT:       ${FEDEX_ENVIRONMENT:-production}
-      ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-devdash.guildmark.co}
+      ADMIN_CORS_ORIGIN:       ${ADMIN_CORS_ORIGIN:-https://devdash.guildmark.co}
       ADMIN_AUTH_USER:         ${ADMIN_AUTH_USER:-}
       ADMIN_AUTH_PASS:         ${ADMIN_AUTH_PASS:-}
-      PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-partner.guildmark.co}
+      PARTNER_CORS_ORIGIN:     ${PARTNER_CORS_ORIGIN:-https://partner.guildmark.co}
     networks:
       - guildmark-net
 
-  # ── Python ML service (optional — opt-in with --profile ml) ──────────────
-  ml:
-    build: ./ml-qv
-    profiles: ["ml"]
-    restart: unless-stopped
-    environment:
-      ML_PORT:      ${ML_PORT:-8001}
-      ML_MODEL_DIR: /app/model_artifacts
-      EBAY_APP_ID:  ${EBAY_APP_ID:-}
-      EBAY_CERT_ID: ${EBAY_CERT_ID:-}
-      RETRAIN:      ${RETRAIN:-0}
-      # Daily in-app retrain (cron, UTC). "off" to disable. Default 03:00.
-      ML_RETRAIN_CRON: ${ML_RETRAIN_CRON:-0 3 * * *}
-    volumes:
-      - ml_artifacts:/app/model_artifacts
-    healthcheck:
-      test:         ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
-      interval:     30s
-      timeout:      10s
-      retries:      10
-      start_period: 120s
-    networks:
-      - guildmark-net
-
-  # ── GuildMark marketplace frontend — served via nginx on 443 ─────────────
-  guildmark:
-    build:
-      context:    ./guildmark
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL:   ${VITE_API_URL:-https://api.guildmark.co}
-        VITE_IS_LAUNCH: ${VITE_IS_LAUNCH:-true}
-        VITE_IS_DEBUG:  ${VITE_IS_DEBUG:-false}
-    restart: unless-stopped
-    depends_on:
-      - api
-    networks:
-      - guildmark-net
-
-  # ── DevDash admin panel — exposed on 2053 (Cloudflare proxied HTTPS port) ─
-  devdash:
-    build:
-      context:    ./devdash
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL:       ${VITE_API_URL:-https://api.guildmark.co}
-        ADMIN_VITE_API_URL: ${ADMIN_VITE_API_URL:-https://api.guildmark.co}
-    restart: unless-stopped
-    depends_on:
-      - api
-    ports:
-      - "2053:80"
-    networks:
-      - guildmark-net
-
-  # ── NGINX — single TLS ingress for all public hostnames (80/443) ─────────
-  nginx:
-    build:
-      context:    ./nginx
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    depends_on:
-      - guildmark
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/certs:/etc/nginx/certs:ro
-    networks:
-      - guildmark-net
-
-volumes:
-  postgres_data:
-  ml_artifacts:
-
-# Shared external network — also used by docker-compose.appwrite.yml so the
-# prod api can reach Appwrite (http://appwrite/v1) and nginx can proxy
-# db.guildmark.co → appwrite-traefik. Created by deploy.sh / deploy.cmd.
 networks:
   guildmark-net:
-    name: guildmark-net
-    external: true
+    driver: bridge

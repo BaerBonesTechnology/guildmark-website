@@ -3,14 +3,9 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-# Install pnpm (Using corepack)
-RUN corepack enable && corepack prepare pnpm@10.33.3 --activate
-
-# Copy package files. The '*' makes the lockfile optional if it doesn't exist yet.
-COPY package.json pnpm-lock.yaml* ./
-
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
+# Install exactly the dependencies recorded in the committed npm lockfile.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 # Copy the rest of the source code
 COPY . .
@@ -24,7 +19,7 @@ ARG VITE_IS_DEBUG=false
 RUN VITE_API_URL=$VITE_API_URL \
     VITE_IS_LAUNCH=$VITE_IS_LAUNCH \
     VITE_IS_DEBUG=$VITE_IS_DEBUG \
-    pnpm build
+    npm run build
 
 # Runtime — nginx serving the static bundle.
 FROM nginx:1.27-alpine AS runtime

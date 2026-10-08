@@ -3,47 +3,46 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/services/valuation_service.dart';
 import 'package:guildmark_api/repos/appwrite/asset_valuation_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
-  // Gate ML access — anonymous traffic shouldn't reach the inference service.
+  // Require an authenticated account for estimates.
   if (context.read<AuthPrincipal?>() == null) return unauthorized();
 
-  // Degrade gracefully when the ML service is not configured.
-  final ml = context.read<MlClient?>();
-  if (ml == null) {
-    return jsonError(
-      503,
-      'ML_UNAVAILABLE',
-      'Valuation service is not available in this environment.',
-    );
-  }
-
-  final body = await context.request.json() as Map<String, dynamic>?;
-  if (body == null) return badRequest('Missing body');
-
-  final assetType = body['asset_type'] as String?;
-  final modelName = body['model_name'] as String?;
-  final condition = body['condition_grade'] as String?;
-  final ageMonths = body['age_months'] as int?;
-  // Optional — when provided, the valuation is recorded in asset_valuations.
-  final assetId = body['asset_id'] as String?;
-
-  if (assetType == null ||
-      modelName == null ||
-      condition == null ||
-      ageMonths == null) {
-    return badRequest(
-      'asset_type, model_name, condition_grade, age_months required',
-    );
-  }
+  final valuationService = context.read<ValuationService>();
 
   try {
-    final result = await ml.estimateFairMarketValue(
+    final decoded = await context.request.json();
+    if (decoded is! Map<String, dynamic>)
+      return badRequest('Expected JSON object');
+    final body = decoded;
+    final assetType = body['asset_type'];
+    final modelName = body['model_name'] ?? '';
+    final condition = body['condition_grade'];
+    final ageMonths = body['age_months'];
+    final assetId = body['asset_id'];
+    if (assetType is! String ||
+        modelName is! String ||
+        condition is! String ||
+        ageMonths is! int ||
+        (assetId != null && assetId is! String)) {
+      return badRequest(
+        'asset_type, condition_grade and integer age_months required',
+      );
+    }
+    for (final key in ['cpu_score', 'original_price']) {
+      if (body[key] != null && body[key] is! num)
+        return badRequest('$key must be numeric');
+    }
+    for (final key in ['ram_gb', 'storage_gb']) {
+      if (body[key] != null && body[key] is! int)
+        return badRequest('$key must be an integer');
+    }
+    final result = valuationService.estimateFairMarketValue(
       ValuationRequest(
         assetType: assetType,
         modelName: modelName,
@@ -62,7 +61,7 @@ Future<Response> onRequest(RequestContext context) async {
     // datastore is not configured the estimate still succeeds — we just skip
     // the history write instead of returning 503.
     final aw = context.read<AppwriteService?>();
-    if (assetId != null && aw != null) {
+    if (assetId is String && aw != null) {
       AssetValuationRepo(aw)
           .record(
             assetId: assetId,
@@ -85,11 +84,13 @@ Future<Response> onRequest(RequestContext context) async {
         'model_version': result.modelVersion,
       },
     );
-  } on MlServiceException catch (e) {
+  } on FormatException {
+    return badRequest('Invalid JSON');
+  } on ArgumentError catch (e) {
     return jsonError(
-      502,
-      'ML_UNAVAILABLE',
-      'Valuation service error: ${e.statusCode}',
+      400,
+      'INVALID_VALUATION',
+      e.message.toString(),
     );
   }
 }

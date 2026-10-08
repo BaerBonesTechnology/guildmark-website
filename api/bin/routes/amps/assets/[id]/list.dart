@@ -3,7 +3,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/services/valuation_service.dart';
 import 'package:guildmark_api/repos/appwrite/asset_repo.dart';
 import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
 
@@ -18,16 +18,16 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
-  final ml = context.read<MlClient>();
+  final valuationService = context.read<ValuationService>();
 
   // Validate the asset belongs to this company.
   final asset = await AssetRepo(aw).findById(id: id, companyId: auth.companyId);
   if (asset == null) return notFound('Asset $id not found');
 
-  // Request fair market value from the ML service.
+  // Request fair market value from the valuation service.
   double? fmv;
   try {
-    final valuation = await ml.estimateFairMarketValue(
+    final valuation = valuationService.estimateFairMarketValue(
       ValuationRequest(
         assetType: asset.assetType,
         modelName: asset.modelName,
@@ -40,7 +40,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
       ),
     );
     fmv = valuation.fairMarketValue;
-  } on MlServiceException {
+  } on ArgumentError {
     // Non-fatal — proceed without FMV; listing will be flagged 'insufficient_data'.
   }
 
@@ -51,7 +51,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   if (listedPrice <= 0) {
     return badRequest(
-      'ML service returned no estimate and no listed_price was provided',
+      'valuation service returned no estimate and no listed_price was provided',
     );
   }
 

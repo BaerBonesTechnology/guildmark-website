@@ -9,7 +9,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
-import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/services/valuation_service.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 import 'package:guildmark_api/services/fedex_service.dart';
@@ -18,17 +18,7 @@ import 'package:guildmark_api/services/square_service.dart';
 Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final cfg = AppConfig.fromEnv();
 
-  // ML service is optional — the API degrades gracefully when unavailable.
-  // Routes that require ML must check for a null MlClient and return a 503.
-  final ml = cfg.mlServiceUrl != null
-      ? MlClient(baseUrl: cfg.mlServiceUrl!)
-      : null;
-
-  if (ml == null) {
-    stdout.writeln(
-      '[boot] ML_SERVICE_URL not set — valuation endpoints will return 503.',
-    );
-  }
+  final valuationService = ValuationService();
 
   // Appwrite is THE datastore (Postgres was removed at the cutover — see
   // api/POSTGRES_TO_APPWRITE.md). The provider stays nullable so the server
@@ -56,9 +46,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
 
   final square = SquareService(
     accessToken: cfg.squareAccessToken,
-    locationId:  cfg.squareLocationId,
+    locationId: cfg.squareLocationId,
     environment: cfg.squareEnvironment,
-    apiUrl:      cfg.squareApiUrl,
+    apiUrl: cfg.squareApiUrl,
   );
 
   final email = EmailService(
@@ -70,29 +60,33 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   }
 
   final escrow = EscrowService(
-    apiKey:       cfg.escrowApiKey ?? '',
-    accountEmail: cfg.escrowEmail  ?? '',
-    sandbox:      cfg.escrowSandbox,
-    apiUrl:       cfg.escrowApiUrl,
+    apiKey: cfg.escrowApiKey ?? '',
+    accountEmail: cfg.escrowEmail ?? '',
+    sandbox: cfg.escrowSandbox,
+    apiUrl: cfg.escrowApiUrl,
   );
   if (!escrow.isConfigured) {
-    stdout.writeln('[boot] ESCROW_API_KEY/ESCROW_EMAIL not set — escrow steps will be skipped.');
+    stdout.writeln(
+      '[boot] ESCROW_API_KEY/ESCROW_EMAIL not set — escrow steps will be skipped.',
+    );
   }
 
   final fedex = FedexService(
-    clientId:     cfg.fedexApiKey    ?? '',
+    clientId: cfg.fedexApiKey ?? '',
     clientSecret: cfg.fedexSecretKey ?? '',
-    sandbox:      cfg.fedexSandbox,
-    apiUrl:       cfg.fedexApiUrl,
+    sandbox: cfg.fedexSandbox,
+    apiUrl: cfg.fedexApiUrl,
   );
   if (!fedex.isConfigured) {
-    stdout.writeln('[boot] FEDEX_API_KEY/FEDEX_SECRET_KEY not set — tracking lookups disabled.');
+    stdout.writeln(
+      '[boot] FEDEX_API_KEY/FEDEX_SECRET_KEY not set — tracking lookups disabled.',
+    );
   }
 
   // Inject singletons. Routes read via `context.read<T>()`.
   final wrapped = handler
       .use(provider<AppConfig>((_) => cfg))
-      .use(provider<MlClient?>((_) => ml))
+      .use(provider<ValuationService>((_) => valuationService))
       .use(provider<AppwriteService?>((_) => appwrite))
       .use(provider<JwtService>((_) => jwt))
       .use(provider<PartnerJwtService>((_) => partnerJwt))

@@ -1,1 +1,15 @@
-{}
+{
+  "name": "guildmark-platform",
+  "private": true,
+  "scripts": {
+    "build:guildmark": "npm --prefix guildmark run build",
+    "install:guildmark": "npm --prefix guildmark ci",
+    "build:devdash": "npm --prefix devdash run build",
+    "install:devdash": "pnpm --dir devdash install --frozen-lockfile",
+    "build:partners": "npm --prefix partners run build",
+    "install:partners": "pnpm --dir partners install --frozen-lockfile",
+    "build:all": "npm run build:guildmark && npm run build:devdash && npm run build:partners",
+    "install:all": "npm run install:guildmark && npm run install:devdash && npm run install:partners",
+    "build": "npm run build:all"
+  }
+}

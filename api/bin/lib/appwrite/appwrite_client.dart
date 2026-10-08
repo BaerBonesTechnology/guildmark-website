@@ -4,7 +4,7 @@ import 'package:guildmark_api/config.dart';
 
 /// Thin wrapper around the Appwrite server SDK.
 ///
-/// Appwrite is optional and degrades gracefully (mirrors the MlClient pattern):
+/// Appwrite is optional and degrades gracefully (allows diagnostic startup):
 /// the API boots even before an Appwrite project + API key exist. Routes that
 /// need Appwrite read a nullable `AppwriteService?` from the request context
 /// and return 503 when it is null.

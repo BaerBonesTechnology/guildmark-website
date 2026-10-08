@@ -34,7 +34,7 @@ final List<_IndexSpec> _pendingIndexes = [];
 Future<void> main() async {
   final endpoint = _env(
     'APPWRITE_ENDPOINT',
-    fallback: 'http://localhost:8444/v1',
+    fallback: 'https://cloud.appwrite.io/v1',
   );
   final projectId = _require('APPWRITE_PROJECT_ID');
   final apiKey = _require('APPWRITE_API_KEY');
