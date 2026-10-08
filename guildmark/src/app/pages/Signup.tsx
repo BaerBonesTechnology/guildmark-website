@@ -1,3 +1,4 @@
+import { ROUTE } from "../constants/routes.constants";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
@@ -76,7 +77,7 @@ export function Signup() {
         company_size: "0",
         industry:     "unknown",
       });
-      navigate("/dashboard");
+      navigate(ROUTE.dashboard);
     } catch {
       // error message is surfaced via useAuth's error state below
     }
@@ -309,7 +310,7 @@ export function Signup() {
 
               <p className="text-center text-sm text-muted-foreground ">
                 Already have an account?{" "}
-                <Link to="/login" className="text-primary hover:underline">
+                <Link to={ROUTE.login} className="text-primary hover:underline">
                   Sign in
                 </Link>
               </p>

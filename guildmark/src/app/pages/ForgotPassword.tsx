@@ -1,5 +1,6 @@
+import { ROUTE } from "../constants/routes.constants";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -48,7 +49,7 @@ export function ForgotPassword() {
               The link expires in 1 hour.
             </p>
             <Button asChild variant="outline" className="w-full  mt-2">
-              <Link to="/login">Back to Sign In</Link>
+              <Link to={ROUTE.login}>Back to Sign In</Link>
             </Button>
           </div>
         ) : (
@@ -86,7 +87,7 @@ export function ForgotPassword() {
 
             <div className="text-center">
               <Link
-                to="/login"
+                to={ROUTE.login}
                 className="inline-flex items-center gap-1 text-xs  text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="h-3 w-3" />

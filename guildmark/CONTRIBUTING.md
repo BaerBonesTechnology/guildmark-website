@@ -5,7 +5,7 @@ far more often than it is written, so **readability and consistency win over
 cleverness**. Every rule below exists to make the code predictable: a new
 engineer should be able to open any file and know where things are.
 
-The stack is **React 19 + TypeScript + Vite + Tailwind**, organised as
+The stack is **React 18 + TypeScript + Vite + Tailwind**, organised as
 **MVVM** with **SOLID** principles.
 
 ---
