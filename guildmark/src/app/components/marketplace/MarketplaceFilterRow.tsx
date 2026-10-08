@@ -1,6 +1,3 @@
-/** A single multi-select checkbox row in the marketplace filter sidebar. */
-import { BODY } from "../../constants/typography";
-
 interface MarketplaceFilterRowProps {
   checked: boolean;
   label: string;
@@ -9,12 +6,10 @@ interface MarketplaceFilterRowProps {
 
 export function MarketplaceFilterRow({ checked, label, onToggle }: MarketplaceFilterRowProps) {
   return (
-    <button onClick={onToggle} className="flex items-center gap-2 w-full text-left group py-0.5">
-      <span className="w-3.5 h-3.5 border flex items-center justify-center shrink-0 transition-colors"
-        style={{ borderColor: checked ? "var(--primary)" : "var(--border)", background: checked ? "var(--primary)" : "transparent" }}>
-        {checked && <span className="w-1.5 h-1.5" style={{ background: "#fff" }} />}
-      </span>
-      <span className="text-xs group-hover:text-foreground transition-colors" style={{ color: checked ? "var(--foreground)" : "var(--muted-foreground)", fontFamily: BODY }}>{label}</span>
-    </button>
+    <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-foreground">
+      <input type="checkbox" checked={checked} onChange={onToggle}
+        className="size-4 shrink-0 accent-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring" />
+      <span>{label}</span>
+    </label>
   );
 }

@@ -26,7 +26,17 @@
     "successTitle": "Vous êtes sur la liste.",
     "successBody": "Nous vous contacterons à l'ouverture de l'accès anticipé.",
     "readResearch": "Lire l'étude de marché",
-    "getInTouch": "Nous contacter"
+    "getInTouch": "Nous contacter",
+    "recoveryHeadline": "Récupérez plus de valeur de votre matériel informatique retiré.",
+    "recoveryDescription": "Vendez vos équipements excédentaires ou en fin de location directement à des entreprises. Obtenez une première estimation et regroupez vos annonces.",
+    "requestAccess": "Demander un accès anticipé",
+    "estimateBenefit": "Estimations selon l’âge, l’état et les caractéristiques",
+    "listingBenefit": "État et caractéristiques dans chaque annonce",
+    "feesUnknown": "Publication gratuite. Des frais s’appliquent à la vente.",
+    "sellerFee": "Frais de {{fee}} à la vente. Publication gratuite.",
+    "pricingTitle": "Un point de départ pour fixer vos prix",
+    "pricingDescription": "Obtenez une estimation selon l’âge, l’état et les caractéristiques du matériel. Utilisez-la comme repère pour fixer votre prix.",
+    "feeOnSale": "À la vente"
   },
   "footer": {
     "copyright": "© {{year}} Baerhous Media Group, LLC.",
@@ -58,5 +68,28 @@
     "learnMore": "Politique de confidentialité",
     "acceptAll": "Tout accepter",
     "essentialOnly": "Essentiels uniquement"
+  },
+  "marketplaceFilters": {
+    "title": "Filtres",
+    "description": "Choisissez les catégories et les états. Les filtres s’appliquent immédiatement.",
+    "category": "Catégorie",
+    "condition": "État",
+    "clear": "Effacer les filtres",
+    "done": "Terminé",
+    "remove": "Retirer le filtre {{label}}",
+    "search": "Rechercher du matériel",
+    "sort": "Trier les annonces",
+    "grade": "Grade {{grade}}",
+    "loadError": "Impossible de charger les annonces. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "retrying": "Nouvelle tentative…",
+    "categories": {
+      "laptop": "Portables",
+      "desktop": "Ordinateurs de bureau",
+      "server": "Serveurs",
+      "phone": "Téléphones",
+      "tablet": "Tablettes",
+      "networking": "Réseau"
+    }
   }
 }

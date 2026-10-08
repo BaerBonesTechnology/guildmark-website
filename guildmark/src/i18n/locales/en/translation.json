@@ -26,7 +26,17 @@
     "successTitle": "You're on the list.",
     "successBody": "We'll be in touch when early access opens.",
     "readResearch": "Read the market research",
-    "getInTouch": "Get in touch"
+    "getInTouch": "Get in touch",
+    "recoveryHeadline": "Recover more value from retired IT hardware.",
+    "recoveryDescription": "Sell surplus and end-of-lease equipment directly to business buyers. Get a starting price estimate and keep your listings in one place.",
+    "requestAccess": "Request early access",
+    "estimateBenefit": "Price estimates based on age, condition, and specifications",
+    "listingBenefit": "Condition grades and specifications on every listing",
+    "feesUnknown": "Free to list. Platform fees apply when you sell.",
+    "sellerFee": "{{fee}} platform fee when you sell. Free to list.",
+    "pricingTitle": "A starting point for pricing",
+    "pricingDescription": "Get an estimated value based on device age, condition, and specifications. Use it as a guide when setting your asking price.",
+    "feeOnSale": "At sale"
   },
   "footer": {
     "copyright": "© {{year}} Baerhous Media Group, LLC.",
@@ -58,5 +68,28 @@
     "learnMore": "Privacy Policy",
     "acceptAll": "Accept all",
     "essentialOnly": "Essential only"
+  },
+  "marketplaceFilters": {
+    "title": "Filters",
+    "description": "Choose categories and condition grades. Your selections apply immediately.",
+    "category": "Category",
+    "condition": "Condition",
+    "clear": "Clear filters",
+    "done": "Done",
+    "remove": "Remove {{label}} filter",
+    "search": "Search assets",
+    "sort": "Sort listings",
+    "grade": "Grade {{grade}}",
+    "loadError": "We couldn’t load listings. Please try again.",
+    "retry": "Retry",
+    "retrying": "Retrying…",
+    "categories": {
+      "laptop": "Laptops",
+      "desktop": "Desktops",
+      "server": "Servers",
+      "phone": "Phones",
+      "tablet": "Tablets",
+      "networking": "Networking"
+    }
   }
 }

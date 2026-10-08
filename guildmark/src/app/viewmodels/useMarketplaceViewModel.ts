@@ -1,8 +1,9 @@
 /** ViewModel for the Marketplace (PLP): search, filters, sort, paging, stats. */
+import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { useMarketplaceListings } from "../lib/apiHooks";
 import { api } from "../lib/api";
-import { PAGE_SIZE } from "../constants/marketplace.constants";
+import { MARKETPLACE_CATEGORIES, MARKETPLACE_GRADES, PAGE_SIZE } from "../constants/marketplace.constants";
 import { filterAndSortListings, toggleSetValue } from "../services/marketplace.service";
 import type { MarketplaceSort } from "../constants/marketplace.constants";
 
@@ -14,6 +15,7 @@ interface MarketplaceStats {
 }
 
 export function useMarketplaceViewModel() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Set<string>>(new Set());
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [grades, setGrades] = useState<Set<string>>(new Set());
@@ -42,7 +44,7 @@ export function useMarketplaceViewModel() {
 
   // Search is server-side; category/condition are multi-select and filtered
   // client-side, so we pull a generous page (fine pre-launch).
-  const { data, isError, isLoading } = useMarketplaceListings({ search: debouncedSearch || undefined, page: 1, page_size: 100 });
+  const { data, isError, isLoading, isFetching, refetch } = useMarketplaceListings({ search: debouncedSearch || undefined, page: 1, page_size: 100 });
   const allListings = data?.data ?? [];
 
   const filteredListings = useMemo(
@@ -50,6 +52,16 @@ export function useMarketplaceViewModel() {
     [allListings, categories, grades, sortBy],
   );
 
+  const categoryOptions = MARKETPLACE_CATEGORIES.map(({ type }) => ({
+    value: type, label: t(`marketplaceFilters.categories.${type}`), checked: categories.has(type),
+  }));
+  const gradeOptions = MARKETPLACE_GRADES.map(({ grade }) => ({
+    value: grade, label: t("marketplaceFilters.grade", { grade }), checked: grades.has(grade),
+  }));
+  const activeFilters = [
+    ...categoryOptions.filter((option) => option.checked).map((option) => ({ ...option, key: `category-${option.value}`, remove: () => toggleCategory(option.value) })),
+    ...gradeOptions.filter((option) => option.checked).map((option) => ({ ...option, key: `grade-${option.value}`, remove: () => toggleGrade(option.value) })),
+  ];
   const anyFilter = categories.size > 0 || grades.size > 0;
   const totalPages = Math.max(1, Math.ceil(filteredListings.length / PAGE_SIZE));
   const pageItems = filteredListings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -76,6 +88,11 @@ export function useMarketplaceViewModel() {
   }
 
   return {
+    activeFilters,
+    categoryOptions,
+    gradeOptions,
+    isFetching,
+    retryListings: () => { void refetch(); },
     anyFilter,
     categories,
     clearFilters,
