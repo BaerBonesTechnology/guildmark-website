@@ -52,6 +52,7 @@ services:
       JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
       JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
       ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
       APPWRITE_ENDPOINT:       ${APPWRITE_ENDPOINT:-http://appwrite/v1}
       APPWRITE_PROJECT_ID:     ${APPWRITE_PROJECT_ID:-}
       APPWRITE_API_KEY:        ${APPWRITE_API_KEY:-}
@@ -95,6 +96,7 @@ services:
     environment:
       ML_PORT:      ${ML_PORT:-8001}
       ML_MODEL_DIR: /app/model_artifacts
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
       EBAY_APP_ID:  ${EBAY_APP_ID:-}
       EBAY_CERT_ID: ${EBAY_CERT_ID:-}
       RETRAIN:      ${RETRAIN:-0}

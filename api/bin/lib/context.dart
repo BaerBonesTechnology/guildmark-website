@@ -11,17 +11,22 @@ class AuthPrincipal {
     required this.userId,
     required this.companyId,
     required this.role,
+    this.audience = 'customer',
   });
 
   factory AuthPrincipal.fromClaims(AccessClaims c) => AuthPrincipal(
         userId: c.userId,
         companyId: c.companyId,
         role: c.role,
+        audience: c.audience,
       );
 
   final String userId;
   final String companyId;
   final String role;
+  final String audience;
+
+  bool get isStaffAdministrator => audience == 'staff' && role == 'admin';
 }
 
 /// Injected into all /partner/* requests. Null when no valid partner JWT is

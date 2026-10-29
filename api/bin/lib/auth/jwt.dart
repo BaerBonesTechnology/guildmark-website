@@ -13,22 +13,26 @@ class AccessClaims {
     required this.userId,
     required this.companyId,
     required this.role,
+    this.audience = 'customer',
   });
 
   final String userId;
   final String companyId;
   final String role;
+  final String audience;
 
   Map<String, dynamic> toJson() => {
         'sub': userId,
         'company_id': companyId,
         'role': role,
+        'aud': audience,
       };
 
   static AccessClaims fromJson(Map<String, dynamic> json) => AccessClaims(
         userId: json['sub'] as String,
         companyId: json['company_id'] as String,
         role: json['role'] as String,
+        audience: json['aud'] as String,
       );
 }
 
@@ -51,7 +55,11 @@ class JwtService {
   AccessClaims? verifyAccessToken(String token) {
     try {
       final jwt = JWT.verify(token, SecretKey(accessSecret));
-      return AccessClaims.fromJson(jwt.payload as Map<String, dynamic>);
+      final payload = jwt.payload as Map<String, dynamic>;
+      if (!{'customer', 'staff', 'staff_setup'}.contains(payload['aud'])) {
+        return null;
+      }
+      return AccessClaims.fromJson(payload);
     } catch (_) {
       return null;
     }

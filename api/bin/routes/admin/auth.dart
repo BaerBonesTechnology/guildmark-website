@@ -126,7 +126,7 @@ Future<Response> onRequest(RequestContext context) async {
       } else {
         // ── Path B: no passkeys yet — issue a setup token ───────────────────
         final setupToken = jwt.issueAccessToken(
-          AccessClaims(userId: id, companyId: 'devdash_setup', role: role),
+          AccessClaims(userId: id, companyId: 'devdash_setup', role: role, audience: 'staff_setup'),
         );
         return Response.json(
           body: {
@@ -145,7 +145,7 @@ Future<Response> onRequest(RequestContext context) async {
 
     // ── Path C: passkeys not configured — issue full JWT immediately ─────────
     final token = jwt.issueAccessToken(
-      AccessClaims(userId: id, companyId: 'devdash', role: 'admin'),
+      AccessClaims(userId: id, companyId: 'devdash', role: role, audience: 'staff'),
     );
     return Response.json(
       body: {
@@ -166,7 +166,7 @@ Future<Response> onRequest(RequestContext context) async {
     final passMatch = constantTimeEquals(password, cfg.adminAuthPass!);
     if (userMatch && passMatch) {
       final token = jwt.issueAccessToken(
-        AccessClaims(userId: 'admin', companyId: 'devdash', role: 'admin'),
+        AccessClaims(userId: 'admin', companyId: 'devdash', role: 'admin', audience: 'staff'),
       );
       return Response.json(
         body: {

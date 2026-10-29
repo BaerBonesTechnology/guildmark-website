@@ -63,17 +63,23 @@ class ValuationResponse {
 }
 
 class MlClient {
-  MlClient({required this.baseUrl, http.Client? client})
+  MlClient({required this.baseUrl, this.serviceToken, http.Client? client})
       : _client = client ?? http.Client();
 
   final String baseUrl;
+  final String? serviceToken;
+
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    if (serviceToken != null) 'Authorization': 'Bearer $serviceToken',
+  };
   final http.Client _client;
 
   Future<ValuationResponse> estimateFairMarketValue(
       ValuationRequest req) async {
     final resp = await _client.post(
       Uri.parse('$baseUrl/predict/valuation'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode(req.toJson()),
     );
     if (resp.statusCode != 200) {
@@ -89,7 +95,7 @@ class MlClient {
   }) async {
     final resp = await _client.post(
       Uri.parse('$baseUrl/predict/depreciation'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({
         'company_id': companyId,
         'horizon_months': horizonMonths,
@@ -115,7 +121,7 @@ class MlClient {
     try {
       await _client.post(
         Uri.parse('$baseUrl/data/track'),
-        headers: const {'Content-Type': 'application/json'},
+        headers: _headers,
         body: jsonEncode({'model_name': modelName, 'asset_type': assetType}),
       );
     } catch (_) {

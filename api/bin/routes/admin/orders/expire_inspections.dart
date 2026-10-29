@@ -18,7 +18,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
-  if (auth.role != 'admin') return forbidden('Admin role required');
+  if (!auth.isStaffAdministrator) return forbidden('Admin role required');
 
   final aw = context.read<AppwriteService?>();
   if (aw == null) {

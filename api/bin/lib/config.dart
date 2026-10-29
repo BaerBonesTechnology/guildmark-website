@@ -11,6 +11,7 @@ class AppConfig {
     required this.isDebug,
     // ML service is optional — API degrades gracefully when unavailable.
     this.mlServiceUrl,
+    this.mlServiceToken,
     // Appwrite — endpoint defaults to the in-cluster gateway; PROJECT_ID and
     // API_KEY are optional so the API still boots before a project exists.
     required this.appwriteEndpoint,
@@ -122,6 +123,7 @@ class AppConfig {
       }(),
       isDebug: optionalBool('GM_DEBUG'),
       mlServiceUrl: optional('ML_SERVICE_URL'),
+      mlServiceToken: optional('ML_SERVICE_TOKEN'),
       // Appwrite
       appwriteEndpoint: env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
       // Browser-reachable endpoint used to build product-image view URLs. The
@@ -217,6 +219,7 @@ class AppConfig {
   final bool isDebug;
 
   final String? mlServiceUrl;
+  final String? mlServiceToken;
 
   // ── Appwrite ────────────────────────────────────────────────────────────────
   final String appwriteEndpoint;

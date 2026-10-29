@@ -21,13 +21,16 @@ class SquareService {
     required this.locationId,
     required String environment,
     String? apiUrl,
+    http.Client? client,
+    void Function(String)? paymentErrorLogger,
   }) : _baseUrl = _normalizeUrl(
             apiUrl,
             environment == 'production'
                 ? 'https://connect.squareup.com/'
                 : 'https://connect.squareupsandbox.com/',
           ),
-       _client = http.Client();
+       _client = client ?? http.Client(),
+       _paymentErrorLogger = paymentErrorLogger ?? stderr.writeln;
 
   /// Strips trailing slashes from [url] so that `$_baseUrl/payments` never
   /// produces a double slash (which Square's CDN silently 404s with no body).
@@ -40,6 +43,7 @@ class SquareService {
   final String locationId;
   final String _baseUrl;
   final http.Client _client;
+  final void Function(String) _paymentErrorLogger;
 
   Map<String, String> get _headers => {
         'Authorization': 'Bearer $accessToken',
@@ -88,8 +92,6 @@ class SquareService {
         'billing_address': billingAddress.toJson(),
     };
 
-    print(_headers);
-    print(jsonEncode(body));
 
     final resp = await _client.post(
       Uri.parse('$_baseUrl/v2/payments'),
@@ -98,7 +100,7 @@ class SquareService {
     );
 
     if (resp.statusCode != 200) {
-      stderr.writeln('[Square] POST $_baseUrl/v2/payments → ${resp.statusCode}  body: ${resp.body}');
+      _paymentErrorLogger('[Square] payment request failed: HTTP ${resp.statusCode}');
       if (resp.body.isEmpty) {
         // Empty body usually means the URL was wrong (double slash, wrong host)
         // or the nonce was already consumed by a previous attempt.

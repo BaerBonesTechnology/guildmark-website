@@ -34,7 +34,7 @@ Future<Response> onRequest(RequestContext context) async {
   final raw = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
   final claims = jwt.verifyAccessToken(raw);
 
-  if (claims == null || claims.companyId != 'devdash_setup') {
+  if (claims == null || claims.companyId != 'devdash_setup' || claims.audience != 'staff_setup') {
     return unauthorized('Valid setup token required');
   }
 

@@ -8,7 +8,7 @@ import 'package:guildmark_api/repos/appwrite/mailing_list_repo.dart';
 Future<Response> onRequest(RequestContext context, String id) async {
   final principal = context.read<AuthPrincipal?>();
   if (principal == null) return unauthorized();
-  if (principal.role != 'admin') return forbidden();
+  if (!principal.isStaffAdministrator) return forbidden();
 
   if (context.request.method != HttpMethod.patch) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'PATCH only');

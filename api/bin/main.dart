@@ -21,7 +21,7 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   // ML service is optional — the API degrades gracefully when unavailable.
   // Routes that require ML must check for a null MlClient and return a 503.
   final ml = cfg.mlServiceUrl != null
-      ? MlClient(baseUrl: cfg.mlServiceUrl!)
+      ? MlClient(baseUrl: cfg.mlServiceUrl!, serviceToken: cfg.mlServiceToken)
       : null;
 
   if (ml == null) {

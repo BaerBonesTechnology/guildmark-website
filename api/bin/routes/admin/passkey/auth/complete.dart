@@ -205,7 +205,7 @@ Future<Response> onRequest(RequestContext context) async {
   );
 
   final token = jwt.issueAccessToken(
-    AccessClaims(userId: employeeId, companyId: 'devdash', role: role),
+    AccessClaims(userId: employeeId, companyId: 'devdash', role: role, audience: 'staff'),
   );
 
   return Response.json(
