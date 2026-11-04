@@ -38,6 +38,9 @@ spec:
             - {name: ADMIN_CORS_ORIGIN, value: 'https://guildmark-dev-devdash.web.app'}
             - {name: PARTNER_CORS_ORIGIN, value: 'https://guildmark-dev-partners.web.app'}
             - {name: GM_DEBUG, value: 'false'}
+            - name: RESEND_API_KEY
+              valueFrom: {secretKeyRef: {name: guildmark-resend-api-key, key: '1'}}
+            - {name: RESEND_API_URL, value: 'https://api.resend.com/emails'}
             - {name: SQUARE_ENVIRONMENT, value: sandbox}
             - {name: SQUARE_RECURRING_ENABLED, value: 'true'}
             - {name: SQUARE_MERCHANT_ID, value: 'MLYMTMJTF74E0'}
