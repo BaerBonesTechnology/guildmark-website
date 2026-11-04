@@ -1,0 +1,80 @@
+{
+  "firestore": {
+    "rules": "deployment/firebase/firestore.rules",
+    "indexes": "deployment/firebase/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "deployment/firebase/storage.rules"
+  },
+  "hosting": [
+    {
+      "public": "guildmark/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/**",
+          "run": {
+            "serviceId": "guildmark-api",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "guildmark-dev"
+    },
+    {
+      "public": "devdash/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/**",
+          "run": {
+            "serviceId": "guildmark-api",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "guildmark-dev-devdash"
+    },
+    {
+      "public": "partners/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/**",
+          "run": {
+            "serviceId": "guildmark-api",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "guildmark-dev-partners"
+    }
+  ],
+  "remoteconfig": {
+    "template": "deployment/firebase/remoteconfig.dev.template.json"
+  }
+}

@@ -13,9 +13,9 @@ export function Dashboard() {
   const { logout } = useAuth();
 
   return (
-    <div className="min-h-screen flex bg-slate-950">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-950">
       {/* Sidebar */}
-      <aside className="w-56 border-r border-slate-800 flex flex-col shrink-0">
+      <aside className="w-full md:w-56 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col shrink-0">
         <div className="px-5 py-5 border-b border-slate-800">
           <p className="text-sm font-mono text-white">
             Guild<span className="text-blue-500">Mark</span>
@@ -23,7 +23,7 @@ export function Dashboard() {
           <p className="text-xs text-slate-600 font-mono mt-0.5">DevDash</p>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 grid grid-cols-2 md:block md:space-y-1">
           <NavLink to="/analytics" className={navLink}>
             <BarChart2 className="w-4 h-4" />
             Analytics
@@ -62,7 +62,7 @@ export function Dashboard() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 min-w-0 overflow-auto">
         <Outlet />
       </main>
     </div>

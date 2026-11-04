@@ -1,0 +1,47 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: guildmark-api
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '2'
+        run.googleapis.com/cpu-throttling: 'true'
+    spec:
+      serviceAccountName: guildmark-api@guildmark-dev.iam.gserviceaccount.com
+      containerConcurrency: 20
+      timeoutSeconds: 60
+      containers:
+        - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:ee93c1df937f2c53a95f966c8695ad13d746d24296572a755a4b67dfa0553e86
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          env:
+            - {name: FIREBASE_PROJECT_ID, value: guildmark-dev}
+            - {name: AUTH_MODE, value: firebase}
+            - {name: WEBAUTHN_RP_ID, value: guildmark-dev-devdash.web.app}
+            - {name: WEBAUTHN_RP_NAME, value: GuildMark}
+            - {name: FIREBASE_REMOTE_CONFIG_ENABLED, value: 'true'}
+            - name: FIREBASE_WEB_API_KEY
+              valueFrom: {secretKeyRef: {name: guildmark-firebase-web-api-key, key: latest}}
+            - {name: FIRESTORE_DATABASE_ID, value: '(default)'}
+            - {name: FIREBASE_STORAGE_BUCKET, value: guildmark-dev.firebasestorage.app}
+            - {name: PUBLIC_API_PREFIX, value: /api}
+            - {name: CORS_ORIGIN, value: 'https://guildmark-dev.web.app'}
+            - {name: ADMIN_CORS_ORIGIN, value: 'https://guildmark-dev-devdash.web.app'}
+            - {name: PARTNER_CORS_ORIGIN, value: 'https://guildmark-dev-partners.web.app'}
+            - {name: GM_DEBUG, value: 'false'}
+            - {name: JWT_ACCESS_TTL_SECONDS, value: '900'}
+            - {name: JWT_REFRESH_TTL_SECONDS, value: '2592000'}
+            - {name: ML_SERVICE_URL, value: ''}
+            - name: JWT_ACCESS_SECRET
+              valueFrom: {secretKeyRef: {name: guildmark-jwt-access, key: latest}}
+            - name: JWT_REFRESH_SECRET
+              valueFrom: {secretKeyRef: {name: guildmark-jwt-refresh, key: latest}}

@@ -63,3 +63,6 @@ storage-debug.log
 
 # Generated verification artifacts and local build output
 /outputs/
+
+# Firebase CLI upload caches
+/.firebase/

@@ -166,7 +166,7 @@ export function Analytics() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-mono text-white flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-blue-500" />
@@ -176,7 +176,7 @@ export function Analytics() {
             {days === 0 ? "All time" : `Last ${days} days`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Period selector */}
           <div className="flex bg-slate-800 border border-slate-700 rounded-lg p-0.5">
             {PERIODS.map(p => (

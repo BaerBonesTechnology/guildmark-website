@@ -1,6 +1,6 @@
 # GuildMark Firebase migration
 
-Status: local migration foundation targeting `guildmark-prod`. Billing remains disabled. No cloud deployment, DNS change, production-data import, or resource deletion has been performed.
+Status: `guildmark-dev` is deployed for HTTPS staging as of November 4, 2026. The user authorized dev billing and deployment. Production resources, billing, DNS and data were not changed. Earlier local-only milestone notes below are historical; see the current dev rollout record at the end.
 
 Both CLIs were verified as `jtwilliams@guildmark.co`. Firebase lists `guildmark-dev` for development and `guildmark-prod` (display name “GuildMark”) for production. Local aliases `dev` and `prod` point to those existing projects; emulator commands explicitly use `demo-guildmark`.
 
@@ -219,3 +219,43 @@ The API caches successful reads for 60 seconds per instance. On failure both fla
 - Firebase Hosting, Firestore and Storage infrastructure files already exist. No APIs, billing, IAM, DNS, resources, cloud data or live Remote Config templates were changed in this pass.
 
 References: [session verification](https://firebase.google.com/docs/auth/admin/manage-cookies), [Hosting cookie forwarding](https://firebase.google.com/docs/hosting/manage-cache#using_cookies), [Remote Config REST API](https://firebase.google.com/docs/reference/remote-config/rest/v1/projects/getRemoteConfig).
+
+
+## Deployed dev HTTPS staging — November 4, 2026
+
+The user explicitly authorized linking **guildmark-dev only** to their existing billing account and deploying/testing the integration. Every cloud mutation used the dev project; neither the active CLI default nor production aliases were changed.
+
+- Storefront: https://guildmark-dev.web.app
+- Staff dashboard: https://guildmark-dev-devdash.web.app
+- Partner portal: https://guildmark-dev-partners.web.app
+- API: Cloud Run service `guildmark-api`, region `us-central1`, revision `guildmark-api-00001-qp6`, minimum 0 / maximum 2 instances. The tested image digest is pinned in `cloudrun.dev.yaml`.
+- Firestore: default Native database in `us-central1`; 71 composite indexes are ready. Browser database access remains denied by rules.
+- Storage: `guildmark-dev.firebasestorage.app`, US-CENTRAL1; API runtime has bucket-scoped object access, browser writes denied, product-image reads permitted.
+- Authentication: email/password enabled; dev HTTPS domains authorized. Runtime admin operations use the dev service identity. No service-account key was downloaded.
+- Remote Config: the dev template enables storefront and AMPS presentation. Auth, entitlement and pricing checks still run on the API.
+- Secret Manager: dev-only API key and generated JWT secret versions; secret-level accessor grants for the API identity. No secret values are stored in these manifests or verification reports.
+- Build identity: dedicated `guildmark-build` service account with source-bucket read, repository write, and build log write permissions. Docker uses the committed dependency lock and Dart Frog CLI 1.2.14.
+
+`firebase.dev.json` uses explicit dev Hosting site IDs and a separate Remote Config template. Deploy with `firebase deploy --config firebase.dev.json --project guildmark-dev ...`; do not rely on the default project in `.firebaserc`. The production template and production Remote Config template were not deployed.
+
+### Real HTTPS verification
+
+Tests used the deployed services, synthetic `.test` identities and actual Firestore/Storage records; API responses were not mocked. Browser tests ran Chromium/Edge at 1440×1000 and 390×844. Passkeys used a virtual WebAuthn authenticator, not physical-device enrollment.
+
+Verified on desktop and mobile viewports:
+
+- Signup; secure, HttpOnly, SameSite=Strict `__session` cookies through Hosting rewrites; reload recovery; account records and logout.
+- Photo upload via API and anonymous download from Firebase Storage; create/edit/publish/withdraw listings; actual marketplace detail; buyer offer and seller acceptance.
+- Cross-company listing mutation denial; staff tokens denied on customer routes; unauthenticated direct database reads and object uploads denied.
+- Password-reset request; reset using an admin-issued Firebase recovery code for a synthetic address; previous API session revoked; new-password sign-in. Delivery into a real email inbox was not verified.
+- Fleet Dashboard, subscription/plan record, Orders, Offload and Market Pulse loading against real data.
+- Staff passkey enrollment, passkey sign-in, analytics response, session persistence, and responsive layout.
+- Partner sign-in, workboard/account responses, secure session recovery, logout, and responsive layout.
+
+Cloud verification exposed two missing descending indexes: company/snapshot_date on valuation_snapshots and company/_createdAt on subscription_invoices. Both were added to the shared index manifest, deployed **only to dev**, and covered by `test/deployment_indexes_test.dart`. Emulator success alone does not establish production index completeness. Narrow portal layouts also required sidebar stacking and a wrapping analytics header; those frontend fixes were deployed only to dev.
+
+Local evidence is under ignored `outputs/firebase-dev-https/` (JSON reports and screenshots). Test credentials and recovery tokens are not included in reports. Synthetic listings are withdrawn after verification, and test-only privileged identity records are deactivated after the final portal checks.
+
+### Remaining limitations
+
+Square, escrow, carrier, email-provider and ML credentials/services are not configured in the dev runtime. No card capture, seller payout, funded shipping, paid AMPS entitlement or ML inference was claimed or performed. Real inbox delivery and physical phone/passkey hardware remain separate rehearsals. This deployment is dev staging, not approval for production or paid traffic. The Cloud SQL deferral remains in effect.

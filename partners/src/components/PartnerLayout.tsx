@@ -27,12 +27,12 @@ export function PartnerLayout() {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="min-h-screen flex flex-col md:flex-row"
       style={{ background: "var(--prt-bg)" }}
     >
       {/* Sidebar */}
       <aside
-        className="fixed left-0 top-0 z-40 flex h-screen w-60 flex-col border-r"
+        className="relative md:fixed left-0 top-0 z-40 flex h-auto md:h-screen w-full md:w-60 flex-col border-b md:border-b-0 md:border-r"
         style={{
           background: "var(--prt-surface)",
           borderColor: "var(--prt-border)",
@@ -66,7 +66,7 @@ export function PartnerLayout() {
         {partner && (
           <div className="px-5 py-3">
             <span
-              className="inline-block rounded px-2 py-0.5 text-xs font-mono font-medium"
+              className="inline-block max-w-full break-all rounded px-2 py-0.5 text-xs font-mono font-medium"
               style={{
                 background: "rgba(37,99,235,0.12)",
                 color: "var(--prt-accent-light)",
@@ -97,7 +97,7 @@ export function PartnerLayout() {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-2 space-y-0.5">
+        <nav className="flex-1 px-3 py-2 grid grid-cols-1 sm:grid-cols-3 md:block md:space-y-0.5">
           {NAV.map(({ label, href, icon: Icon }) => {
             const active = location.pathname === href;
             return (
@@ -155,8 +155,8 @@ export function PartnerLayout() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 pl-60">
-        <main className="min-h-screen p-8">
+      <div className="flex-1 min-w-0 md:pl-60">
+        <main className="min-h-screen p-4 md:p-8">
           <Outlet />
         </main>
       </div>

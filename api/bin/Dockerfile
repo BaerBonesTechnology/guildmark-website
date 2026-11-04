@@ -3,11 +3,11 @@
 FROM dart:3.12.1 AS build
 
 WORKDIR /app
-COPY pubspec.yaml .
+COPY pubspec.yaml pubspec.lock ./
 RUN dart pub get
 
 # Install dart_frog_cli to compile routes into a single entrypoint.
-RUN dart pub global activate dart_frog_cli
+RUN dart pub global activate dart_frog_cli 1.2.14
 
 COPY . .
 
