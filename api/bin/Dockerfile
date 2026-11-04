@@ -17,6 +17,7 @@ RUN dart run build_runner build --delete-conflicting-outputs
 
 RUN /root/.pub-cache/bin/dart_frog build
 RUN dart compile exe build/bin/server.dart -o build/bin/server
+RUN dart compile exe tool/reconcile_billing.dart -o build/bin/billing-reconcile
 
 # Runtime image — distroless-ish, AOT binary only.
 FROM debian:bookworm-slim AS runtime
@@ -29,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 # ./api/migrations in docker-compose.
 WORKDIR /app/bin
 COPY --from=build /app/build/bin/server ./server
+COPY --from=build /app/build/bin/billing-reconcile ./billing-reconcile
 
 EXPOSE 8080
 CMD ["./server"]

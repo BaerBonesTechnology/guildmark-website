@@ -577,6 +577,7 @@ export interface SubscriptionData {
   usage?: { asset_units: number; active_seats: number; valuation_used: number; valuation_reserved: number; valuation_remaining: number; period_start: string | null; period_end: string | null; over_asset_limit: boolean; over_seat_limit: boolean };
   eligibility?: { paid: boolean; can_add_assets: boolean; can_value_assets: boolean; can_view_assets?: boolean };
   launch_gates?: string[];
+  billing?: { recurring: boolean; cancel_at_period_end: boolean; provider_subscription_id: string | null };
 }
 
 export function useSubscription() {
@@ -599,6 +600,7 @@ export function useSubscriptionCheckout() {
       idempotency_key: string;
       expected_price_cents?: number;
       save_card?:      boolean;
+      recurring_consent?: boolean;
       cardholder_name?: string;
       billing_address?: {
         business_name?:  string;
@@ -619,6 +621,11 @@ export function useSubscriptionCheckout() {
       qc.invalidateQueries({ queryKey: ["auth-user"] });
     },
   });
+}
+
+export function useReconcileSubscription() {
+  const qc = useQueryClient();
+  return useMutation({mutationFn: () => api.post<SubscriptionPaymentResult>("/subscriptions/reconcile", {}), onSuccess: () => qc.invalidateQueries({queryKey: ["subscription"]})});
 }
 
 export function useCancelSubscription() {

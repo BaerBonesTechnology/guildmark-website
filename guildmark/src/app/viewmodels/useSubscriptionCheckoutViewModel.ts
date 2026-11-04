@@ -1,10 +1,10 @@
 /** ViewModel for the subscription checkout dialog: Square + billing flow. */
 import { useEffect, useRef, useState } from "react";
-import { squareApplicationId, squareLocationId, squareEnvironment } from "../config";
+import { squareApplicationId, squareLocationId } from "../config";
 import { PLAN_META, type PaidPlan } from "../constants/subscriptionCheckout.constants";
 import { useAuth } from "../hooks/useAuth";
 import { useSubscriptionCheckout } from "../lib/apiHooks";
-import { isSquareSandbox, loadSquareSdk, type SquareCardForm } from "../services/square.service";
+import { loadSquareSdk, type SquareCardForm } from "../services/square.service";
 import { loadSubscriptionPayment, subscriptionPaymentOutcome, subscriptionCanRestart } from "../services/subscriptionPayment.service";
 
 type Step = "card" | "confirm" | "success" | "pending";
@@ -22,7 +22,7 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
   const [step, setStep] = useState<Step>(attempt.submitted ? "pending" : "confirm");
   const [cardError, setCardError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [saveCard, setSaveCard] = useState(true);
+  const [saveCard, setSaveCard] = useState(false);
   const [cardholderName, setCardholderName] = useState("");
   const [bizName, setBizName] = useState("");
   const [addr1, setAddr1] = useState("");
@@ -52,7 +52,7 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
         await loadSquareSdk();
         if (!window.Square) throw new Error("Square SDK not available");
 
-        console.log('[Square] init appId=%s locationId=%s env=%s', squareApplicationId, squareLocationId, squareEnvironment);
+        console.log('[Square] init appId=%s locationId=%s env=%s', squareApplicationId, squareLocationId);
         const payments = await window.Square.payments(squareApplicationId, squareLocationId);
         const card = await payments.card();
 
@@ -82,7 +82,7 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
   // Reset when dialog closes.
   useEffect(() => {
     if (!open) {
-      setStep("confirm");
+      setStep(attempt.submitted ? "pending" : "confirm");
       setCardError("");
       setIsLoading(false);
       setCardInitKey(0);
@@ -96,39 +96,8 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
   async function handlePay() {
     if (attempt.submitted || !attempt.key) { setStep("pending"); return; }
     const markSubmitted = () => { sessionStorage.setItem(scope, JSON.stringify({key: attempt.key, submitted: true})); attempt.submitted = true; };
-    // Sandbox shortcut — bypass the SDK card form and use Square's static test
-    // nonce so backend config can be verified without a matching frontend appId.
-    if (isSquareSandbox()) {
-      setIsLoading(true);
-      setCardError("");
-      try {
-        markSubmitted();
-        const payment = await checkout.mutateAsync({
-          plan,
-          idempotency_key: attempt.key,
-          expected_price_cents: meta.price * 100,
-          source_id: "cnon:card-nonce-ok",
-          save_card: saveCard,
-          cardholder_name: cardholderName.trim() || "Sandbox Test",
-          billing_address: {
-            address_line_1: addr1.trim() || "123 Test St",
-            city: city.trim() || "New York",
-            state: stateAb.trim().toUpperCase() || "NY",
-            postal_code: zip.trim() || "10001",
-          },
-        });
-        const outcome = subscriptionPaymentOutcome(payment, plan, meta.price * 100);
-        if (outcome === "success") sessionStorage.removeItem(scope);
-        setStep(outcome);
-      } catch (err) {
-        handlePaymentFailure(err);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // Production flow — real SDK tokenization.
+    // Use the hosted card form in both sandbox and production.
+    if (!saveCard) { setCardError("Authorize monthly recurring billing to continue."); return; }
     if (!cardRef.current) {
       setCardError("Payment form not ready — please wait.");
       return;
@@ -160,7 +129,8 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
         idempotency_key: attempt.key,
         expected_price_cents: meta.price * 100,
         source_id: result.token,
-        save_card: saveCard,
+        save_card: true,
+        recurring_consent: saveCard,
         cardholder_name: cardholderName.trim(),
         billing_address: {
           business_name: bizName.trim() || undefined,

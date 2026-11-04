@@ -27,6 +27,10 @@ class AppConfig {
     this.authMode,
     this.firebaseAuthEmulatorHost,
     this.firebaseWebApiKey,
+    this.recurringBillingEnabled = false,
+    this.squareWebhookKey,
+    this.squareWebhookUrl,
+    this.squareMerchantId,
     this.firestoreDatabaseId = '(default)',
     this.firebaseStorageBucket,
     this.publicApiPrefix = '',
@@ -133,6 +137,10 @@ class AppConfig {
       authMode: env('AUTH_MODE', 'firebase-emulator'),
       firebaseAuthEmulatorHost: optional('FIREBASE_AUTH_EMULATOR_HOST'),
       firebaseWebApiKey: optional('FIREBASE_WEB_API_KEY'),
+      recurringBillingEnabled: optionalBool('SQUARE_RECURRING_ENABLED'),
+      squareWebhookKey: optional('SQUARE_WEBHOOK_SIGNATURE_KEY'),
+      squareWebhookUrl: optional('SQUARE_WEBHOOK_URL'),
+      squareMerchantId: optional('SQUARE_MERCHANT_ID'),
       firestoreDatabaseId: env('FIRESTORE_DATABASE_ID', '(default)'),
       firebaseStorageBucket: optional('FIREBASE_STORAGE_BUCKET'),
       publicApiPrefix: env('PUBLIC_API_PREFIX', ''),
@@ -223,6 +231,8 @@ class AppConfig {
   final String? authMode;
   final String? firebaseAuthEmulatorHost;
   final String? firebaseWebApiKey;
+  final bool recurringBillingEnabled;
+  final String? squareWebhookKey, squareWebhookUrl, squareMerchantId;
   final String firestoreDatabaseId;
   final String? firebaseStorageBucket;
   final String publicApiPrefix;

@@ -21,7 +21,7 @@ export function AMPSLayout() {
   const plan = (subscription.data?.plan ?? user?.subscription_plan ?? "free") as PlanKey;
   if (subscription.isPending) return <p role="status" className="p-8">Loading your AMPS access…</p>;
   if (subscription.isError) return <div role="alert" className="p-8"><p>Your AMPS access could not be confirmed.</p><button className="mt-3 underline" onClick={() => subscription.refetch()}>Retry</button></div>;
-  if (!subscription.data?.eligibility?.can_view_assets) return <UpgradeWall plan={plan} />;
+  if (!subscription.data?.eligibility?.can_view_assets && !location.pathname.endsWith("/settings")) return <UpgradeWall plan={plan} />;
 
   return (
     <div className="min-h-screen font-sans bg-amps-surface ">

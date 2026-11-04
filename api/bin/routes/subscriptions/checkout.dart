@@ -8,6 +8,7 @@ import 'package:guildmark_api/services/billing_owner.dart';
 import 'package:guildmark_api/services/request_json.dart';
 import 'package:guildmark_api/services/square_service.dart';
 import 'package:guildmark_api/services/subscription_checkout.dart';
+import 'package:guildmark_api/services/recurring_billing.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -51,6 +52,45 @@ Future<Response> onRequest(RequestContext context) async {
     }
     final cfg = context.read<AppConfig>();
     final variation = cfg.monthlyVariationId(plan);
+    if (cfg.recurringBillingEnabled &&
+        cfg.firebaseProjectId == 'guildmark-dev' &&
+        cfg.squareEnvironment == 'sandbox') {
+      if (variation == null)
+        return jsonError(
+          503,
+          'SQUARE_NOT_CONFIGURED',
+          'Recurring plan configuration is unavailable.',
+        );
+      if (body['source_id'] != null && body['recurring_consent'] != true)
+        return badRequest(
+          'Authorize monthly recurring billing before subscribing.',
+        );
+      await square.verifyMonthlyPlan(variation, catalog.priceCents);
+      final user = await db.tablesDB.getRow(
+        databaseId: '',
+        tableId: 'users',
+        rowId: auth.userId,
+      );
+      final company = await db.tablesDB.getRow(
+        databaseId: '',
+        tableId: 'companies',
+        rowId: auth.companyId,
+      );
+      final result = await RecurringBilling(db, square).checkout(
+        company: auth.companyId,
+        email: user.data['email'] as String,
+        companyName: company.data['name'] as String? ?? 'GuildMark company',
+        plan: plan,
+        variation: variation,
+        key: body['idempotency_key'] as String,
+        source: body['source_id'] as String?,
+        expected: body['expected_price_cents'] as int?,
+      );
+      return Response.json(
+        statusCode: result['granted'] == true ? 200 : 202,
+        body: result,
+      );
+    }
     if (variation != null) {
       await square.verifyMonthlyPlan(variation, catalog.priceCents);
       return jsonError(
@@ -81,8 +121,14 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(e.status, e.code, e.message);
   } on SquareException catch (e) {
     return jsonError(
-      e.statusCode == 409 ? 409 : 502,
-      e.statusCode == 409
+      {400, 402, 422}.contains(e.statusCode)
+          ? 402
+          : e.statusCode == 409
+          ? 409
+          : 502,
+      {400, 402, 422}.contains(e.statusCode)
+          ? 'PAYMENT_FAILED'
+          : e.statusCode == 409
           ? 'SUBSCRIPTION_CATALOG_MISMATCH'
           : 'PAYMENT_UNCONFIRMED',
       e.detail,

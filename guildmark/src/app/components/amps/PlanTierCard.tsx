@@ -15,9 +15,10 @@ interface PlanTierCardProps {
   onAddSeats: () => void;
   plan: PlanTier;
   subActive: boolean;
+  billingLocked?: boolean;
 }
 
-export function PlanTierCard({ currentPlan, fees, onCancel, onSelect, onAddSeats, plan: p, subActive }: PlanTierCardProps) {
+export function PlanTierCard({ currentPlan, fees, onCancel, onSelect, onAddSeats, plan: p, subActive, billingLocked }: PlanTierCardProps) {
   const isCurrent = p.key === currentPlan;
   const isUpgrade = PLAN_RANK[p.key] > PLAN_RANK[currentPlan];
   const isDowngrade = p.key !== "free" && PLAN_RANK[p.key] < PLAN_RANK[currentPlan];
@@ -44,8 +45,8 @@ export function PlanTierCard({ currentPlan, fees, onCancel, onSelect, onAddSeats
         </button>
       )}
       {!isCurrent && p.key !== "free" && (
-        <button onClick={() => onSelect(p.key as PaidPlan)}
-          className="w-full py-1.5 text-xs font-medium transition-opacity hover:opacity-90"
+        <button disabled={billingLocked} onClick={() => onSelect(p.key as PaidPlan)}
+          className="w-full py-1.5 text-xs font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={isUpgrade ? { background: AMPS_ACCENT, color: "var(--amps-accent-foreground)" } : { border: "1px solid var(--border)" }}>
           {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Switch"}
         </button>

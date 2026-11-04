@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { NotificationKey, PlanKey } from "../constants/ampsSettings.constants";
 import type { PaidPlan } from "../components/SubscriptionCheckoutDialog";
 import { useAuth } from "../hooks/useAuth";
-import { useCancelSubscription, usePlatformFees, useSubscription } from "../lib/apiHooks";
+import { useCancelSubscription, usePlatformFees, useReconcileSubscription, useSubscription } from "../lib/apiHooks";
 
 export interface CompanyProfile {
   industry: string;
@@ -19,6 +19,7 @@ export function useAmpsSettingsViewModel() {
   const currentPlan = ((subData?.plan ?? user?.subscription_plan) ?? "free") as PlanKey;
   const { data: fees } = usePlatformFees();
   const cancelSub = useCancelSubscription();
+  const reconcile = useReconcileSubscription();
 
   const [companyData, setCompanyData] = useState<CompanyProfile>({ name: "", industry: "", size: "" });
   const [notifications, setNotifications] = useState<NotificationState>({ syncFailures: true, valuationAlerts: true, offerActivity: false });
@@ -33,6 +34,6 @@ export function useAmpsSettingsViewModel() {
   return {
     cancelConfirm, cancelSub, checkoutPlan, companyData, currentPlan, fees, handleCancel,
     notifications, setCancelConfirm, setCheckoutPlan, setCompanyData, setNotifications,
-    subData, subLoading,
+    subData, subLoading, reconcile,
   };
 }

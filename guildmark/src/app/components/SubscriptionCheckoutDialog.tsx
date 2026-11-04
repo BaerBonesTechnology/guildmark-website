@@ -243,9 +243,9 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
                 disabled={isLoading}
               />
               <div>
-                <p className="text-sm ">Save card for future payments</p>
+                <p className="text-sm ">I authorize ${meta.price}/month recurring billing</p>
                 <p className="text-xs text-muted-foreground ">
-                  Your card is stored securely by Square — we never see or store your card number.
+                  Square will save this card and charge it monthly until you cancel. Cancel in Settings before renewal; paid access continues through the current period.
                 </p>
               </div>
             </label>
@@ -263,11 +263,11 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
               <Button
                 className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground  gap-2"
                 onClick={handlePay}
-                disabled={isLoading}
+                disabled={isLoading || !saveCard}
               >
                 {isLoading
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
-                  : <><CreditCard className="w-4 h-4" /> Pay ${meta.price}</>
+                  : <><CreditCard className="w-4 h-4" /> Subscribe · ${meta.price}/mo</>
                 }
               </Button>
               <Button

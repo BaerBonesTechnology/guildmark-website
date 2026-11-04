@@ -25,3 +25,13 @@ export function InvoiceRow({ inv }: { inv: SubscriptionInvoice }) {
     </tr>
   );
 }
+
+/** Stacked billing facts keep payment state visible on small screens. */
+export function InvoiceCard({ inv }: { inv: SubscriptionInvoice }) {
+  const plan = PLANS.find((p) => p.key === inv.plan);
+  return <article className="p-4 space-y-3" aria-label={`${plan?.label ?? inv.plan} invoice`}>
+    <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{plan?.label ?? inv.plan}</p><p className="text-xs text-muted-foreground">{fmtDate(inv.created_at)}</p></div><div className="text-right"><p className="font-semibold">{fmtAmount(inv.amount_cents)}</p><p className="text-xs capitalize" style={{color: inv.status === "paid" ? "var(--grade-a)" : "var(--chart-4)"}}>{inv.status}</p></div></div>
+    <p className="text-xs text-muted-foreground">Billing period (UTC)<br /><span className="text-foreground">{inv.period_start && inv.period_end ? `${fmtDate(inv.period_start)}  -  ${fmtDate(inv.period_end)}` : "Awaiting verified period"}</span></p>
+    {inv.receipt_url && <a href={inv.receipt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs underline">Receipt <ArrowUpRight size={12} /></a>}
+  </article>;
+}

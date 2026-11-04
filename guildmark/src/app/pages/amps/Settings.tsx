@@ -7,7 +7,7 @@ import { useState } from "react";
 import { AlertCircle, Bell, Building2, CreditCard, Loader2, Receipt } from "lucide-react";
 import { SeatPricingDialog } from "../../components/amps/SeatPricingDialog";
 import { CancelSubscriptionDialog } from "../../components/amps/CancelSubscriptionDialog";
-import { InvoiceRow } from "../../components/amps/InvoiceRow";
+import { InvoiceRow, InvoiceCard } from "../../components/amps/InvoiceRow";
 import { PlanTierCard } from "../../components/amps/PlanTierCard";
 import { SettingsPanel } from "../../components/amps/SettingsPanel";
 import { SubscriptionCheckoutDialog } from "../../components/SubscriptionCheckoutDialog";
@@ -25,7 +25,7 @@ export function Settings() {
   const {
     cancelConfirm, cancelSub, checkoutPlan, companyData, currentPlan, fees, handleCancel,
     notifications, setCancelConfirm, setCheckoutPlan, setCompanyData, setNotifications,
-    subData, subLoading,
+    subData, subLoading, reconcile,
   } = useAmpsSettingsViewModel();
 
   return (
@@ -37,6 +37,7 @@ export function Settings() {
       </div>
 
       <PlanUsage />
+      <div className="space-y-2"><button className="border border-border px-4 py-2 text-sm" disabled={reconcile.isPending} onClick={() => reconcile.mutate()}>{reconcile.isPending ? "Checking billing…" : "Refresh billing status"}</button>{subData?.billing?.recurring && !subData.billing.cancel_at_period_end && <button className="ml-3 border border-border px-4 py-2 text-sm" onClick={() => setCancelConfirm(true)} disabled={cancelSub.isPending}>Cancel recurring billing</button>}{reconcile.isError && <p role="alert" className="text-sm text-destructive">Billing could not be confirmed. Your existing agreement has been retained; try refreshing again.</p>}{cancelSub.isError && <p role="alert" className="text-sm text-destructive">Cancellation was not confirmed. Refresh billing status before retrying.</p>}{subData?.billing?.recurring && <p className="text-sm text-muted-foreground">{subData.billing.cancel_at_period_end ? `Renewal cancelled. Paid access ends ${subData.currentPeriodEnd ? fmtDate(subData.currentPeriodEnd) : "after the verified period"} (UTC).` : "This plan renews monthly using your saved card. Plan changes are unavailable while this recurring agreement is active."}</p>}</div>
       <p className="text-xs text-muted-foreground">Company-profile and notification editing below are local prototypes. Saving these preferences is not available yet. Subscription and billing records use your company account.</p>
       {/* Company Profile */}
       <SettingsPanel icon={Building2} title="Company Profile" subtitle="Your organization details and account information">
@@ -79,13 +80,14 @@ export function Settings() {
               onSelect={setCheckoutPlan}
               onAddSeats={() => setSeatPricingOpen(true)}
               plan={p}
-              subActive={subData?.status === "active"}
+              subActive={subData?.status === "active" && !subData?.billing?.recurring}
+              billingLocked={subData?.billing?.recurring}
             />
           ))}
         </div>
         {subData?.currentPeriodEnd && currentPlan !== "free" && subData.status === "active" && (
           <div className="flex items-center justify-between p-3 mt-4 border border-border text-sm" style={{ background: "var(--secondary)" }}>
-            <span style={{ color: "var(--muted-foreground)" }}>Next billing date</span>
+            <span style={{ color: "var(--muted-foreground)" }}>{subData?.billing?.cancel_at_period_end ? "Paid access ends" : subData?.billing?.recurring ? "Next billing date (UTC)" : "Paid access ends (UTC)"}</span>
             <span className="font-medium" style={{ fontFamily: MONO }}>{fmtDate(subData.currentPeriodEnd)}</span>
           </div>
         )}
@@ -103,7 +105,9 @@ export function Settings() {
             <p className="text-sm">No billing history yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-border">{(subData?.invoices ?? []).map(inv => <InvoiceCard key={inv.id} inv={inv} />)}</div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
@@ -115,6 +119,7 @@ export function Settings() {
               <tbody>{(subData?.invoices ?? []).map((inv) => <InvoiceRow key={inv.id} inv={inv} />)}</tbody>
             </table>
           </div>
+          </>
         )}
       </SettingsPanel>
 

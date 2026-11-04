@@ -46,17 +46,76 @@ class SquareService {
   final void Function(String) _paymentErrorLogger;
 
   /// Read-only guard: configured recurring prices must match the local catalog.
-  Future<void> verifyMonthlyPlan(String variationId,int amountCents) async {
-    final response=await _client.get(Uri.parse('$_baseUrl/catalog/object/${Uri.encodeComponent(variationId)}'),headers:_headers).timeout(const Duration(seconds:15));
-    if(response.statusCode!=200)throw SquareException(503,'Unable to verify the configured subscription catalog.');
-    final body=jsonDecode(response.body) as Map<String,dynamic>;
-    final object=body['object'] as Map?;
-    final phases=(object?['subscription_plan_variation_data'] as Map?)?['phases'] as List?;
-    if(object?['type']!='SUBSCRIPTION_PLAN_VARIATION'||object?['id']!=variationId||object?['is_deleted']==true||phases==null||phases.length!=1)throw SquareException(409,'Configured subscription catalog does not match the approved monthly plan.');
-    final phase=phases.single as Map;
-    final pricing=phase['pricing'] as Map?;
-    final price=pricing?['price_money'] as Map?;
-    if(phase['cadence']!='MONTHLY'||phase['periods']!=null||pricing?['type']!='STATIC'||price?['currency']!='USD'||price?['amount']!=amountCents)throw SquareException(409,'Configured subscription catalog price must match the approved monthly USD price.');
+  Future<void> verifyMonthlyPlan(String variationId, int amountCents) async {
+    final response = await _client
+        .get(
+          Uri.parse(
+            '$_baseUrl/catalog/object/${Uri.encodeComponent(variationId)}',
+          ),
+          headers: _headers,
+        )
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200)
+      throw SquareException(
+        503,
+        'Unable to verify the configured subscription catalog.',
+      );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final object = body['object'] as Map?;
+    final phases =
+        (object?['subscription_plan_variation_data'] as Map?)?['phases']
+            as List?;
+    if (object?['type'] != 'SUBSCRIPTION_PLAN_VARIATION' ||
+        object?['id'] != variationId ||
+        object?['is_deleted'] == true ||
+        phases == null ||
+        phases.length != 1)
+      throw SquareException(
+        409,
+        'Configured subscription catalog does not match the approved monthly plan.',
+      );
+    final phase = phases.single as Map;
+    final pricing = phase['pricing'] as Map?;
+    final price = pricing?['price_money'] as Map?;
+    if (phase['cadence'] != 'MONTHLY' ||
+        phase['periods'] != null ||
+        pricing?['type'] != 'STATIC' ||
+        price?['currency'] != 'USD' ||
+        price?['amount'] != amountCents)
+      throw SquareException(
+        409,
+        'Configured subscription catalog price must match the approved monthly USD price.',
+      );
+  }
+
+  /// Recurring-billing transport: fixed provider origin, bounded calls, no raw upstream logging.
+  Future<Map<String, dynamic>> billing(
+    String method,
+    String path, [
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+  ]) async {
+    if (!RegExp(
+      r'^/(customers|cards|subscriptions|invoices|orders|payments)(/[A-Za-z0-9:%_-]+)*$',
+    ).hasMatch(path)) {
+      throw ArgumentError('Invalid billing resource');
+    }
+    final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: query);
+    final request = http.Request(method, uri)..headers.addAll(_headers);
+    if (body != null) request.body = jsonEncode(body);
+    final streamed = await _client
+        .send(request)
+        .timeout(const Duration(seconds: 15));
+    final response = await http.Response.fromStream(
+      streamed,
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SquareException(
+        response.statusCode,
+        'Recurring billing provider request was not confirmed.',
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Map<String, String> get _headers => {
@@ -417,7 +476,11 @@ class SquareSubscriptionResult {
 /// Square field names follow their v2 address schema.
 class SquareBillingAddress {
   SquareBillingAddress({
-    required this.addressLine1, required this.city, required this.state, required this.postalCode, this.businessName,
+    required this.addressLine1,
+    required this.city,
+    required this.state,
+    required this.postalCode,
+    this.businessName,
     this.addressLine2,
     this.country = 'US',
   });

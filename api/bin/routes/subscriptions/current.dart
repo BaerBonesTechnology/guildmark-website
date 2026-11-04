@@ -26,6 +26,11 @@ Future<Response> onRequest(RequestContext context) async {
     return notFound('Subscription not found');
   }
 
+  final billingRow = await aw.tablesDB.getRow(
+    databaseId: '',
+    tableId: 'subscriptions',
+    rowId: sub.id,
+  );
   // Fetch billing invoices (latest 24)
   final invoiceRows = await aw.tablesDB.listRows(
     databaseId: Collections.databaseId,
@@ -57,6 +62,11 @@ Future<Response> onRequest(RequestContext context) async {
       ...sub.toJson(),
       'id': sub.id,
       'company_id': sub.companyId,
+      'billing': {
+        'recurring': billingRow.data['billing_mode'] == 'recurring',
+        'cancel_at_period_end': billingRow.data['cancel_at_period_end'] == true,
+        'provider_subscription_id': sub.squareSubscriptionId,
+      },
       'invoices': invoices,
       ...await ampsEntitlements(aw, sub),
     },

@@ -45,6 +45,7 @@ export function UpgradeWall({ plan }: { plan: string }) {
               View Plans &amp; Upgrade
             </Link>
           </Button>
+          <p className="mt-4"><Link className="text-sm underline" to={`${prefix}/amps/settings`}>Manage billing and cancellation</Link></p>
           <p className="text-xs text-muted-foreground mt-3">
             No contracts · Cancel anytime
           </p>

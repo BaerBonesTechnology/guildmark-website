@@ -1,5 +1,7 @@
 import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/services/recurring_billing.dart';
 import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/repos/firestore/subscription_repo.dart';
@@ -29,6 +31,33 @@ Future<Response> onRequest(RequestContext context) async {
   final currentSub = await repo.findByCompany(auth.companyId);
   if (currentSub == null) return notFound('Subscription record not found');
 
+  final cfg = context.read<AppConfig>();
+  if (cfg.recurringBillingEnabled &&
+      cfg.firebaseProjectId == 'guildmark-dev' &&
+      cfg.squareEnvironment == 'sandbox' &&
+      currentSub.squareSubscriptionId != null) {
+    if (square == null)
+      return jsonError(
+        503,
+        'BILLING_UNAVAILABLE',
+        'Provider cancellation is unavailable.',
+      );
+    try {
+      await RecurringBilling(aw, square).cancel(auth.companyId);
+      return Response.json(
+        body: {
+          'status': 'cancellation_requested',
+          'access_until': currentSub.currentPeriodEnd?.toIso8601String(),
+        },
+      );
+    } on Exception {
+      return jsonError(
+        503,
+        'CANCELLATION_UNCONFIRMED',
+        'Provider cancellation was not confirmed. Check billing before retrying.',
+      );
+    }
+  }
   if (!currentSub.isActive) {
     return badRequest('Subscription is already cancelled or past due');
   }
