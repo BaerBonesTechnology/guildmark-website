@@ -25,6 +25,12 @@ spec:
               memory: 512Mi
           env:
             - {name: FIREBASE_PROJECT_ID, value: guildmark-prod}
+            - {name: AUTH_MODE, value: firebase}
+            - {name: WEBAUTHN_RP_ID, value: devdash.guildmark.co}
+            - {name: WEBAUTHN_RP_NAME, value: GuildMark}
+            - {name: FIREBASE_REMOTE_CONFIG_ENABLED, value: 'true'}
+            - name: FIREBASE_WEB_API_KEY
+              valueFrom: {secretKeyRef: {name: guildmark-firebase-web-api-key, key: latest}}
             - {name: FIRESTORE_DATABASE_ID, value: '(default)'}
             - {name: FIREBASE_STORAGE_BUCKET, value: guildmark-prod.firebasestorage.app}
             - {name: PUBLIC_API_PREFIX, value: /api}

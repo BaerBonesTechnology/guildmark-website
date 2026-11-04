@@ -16,7 +16,7 @@ architecture:
   model_state: "Keep model artifacts, tracked queries, job status, and required recovery state in durable storage; do not rely on instance-local files or process locks."
   connectivity: "Avoid reserved public IPs, VPC connectors, NAT, and external load balancers unless a verified requirement justifies their recurring cost."
 launch_gates:
-  - "Implement and verify production identity-token validation, secure session cookies, provisioning, recovery, and abuse controls; current Firebase path is emulator-only."
+  - "Implement and verify production identity-token validation, secure session cookies, provisioning, recovery, and abuse controls; the explicit cloud adapter now has signature, revocation and cookie tests, while HTTPS staging verification and abuse controls remain required."
   - "Package a reviewed ML artifact and prove missing/corrupt artifacts fail readiness rather than trigger cold-start training."
   - "Implement service-account invocation and Google ID-token authentication for private ML; the existing shared application bearer token alone does not satisfy Cloud Run IAM."
   - "Replace required fire-and-forget workflows and process-local scheduling/state with durable, retry-safe execution."

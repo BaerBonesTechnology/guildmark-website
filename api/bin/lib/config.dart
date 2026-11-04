@@ -10,13 +10,23 @@ class AppConfig {
     required this.corsOrigin,
     required this.isDebug,
     // Square Web Payments
-    required this.squareAccessToken, required this.squareApplicationId, required this.squareLocationId, required this.squareEnvironment, required this.squareApiUrl, // MDM — only the shared Graph API base URL lives here; credentials are per-company in DB
-    required this.intuneApiUrl, required this.ebayApiUrl, required this.backmarketApiUrl, required this.resendApiUrl, required this.escrowApiUrl, required this.fedexApiUrl, // ML service is optional — API degrades gracefully when unavailable.
+    required this.squareAccessToken,
+    required this.squareApplicationId,
+    required this.squareLocationId,
+    required this.squareEnvironment,
+    required this.squareApiUrl, // MDM — only the shared Graph API base URL lives here; credentials are per-company in DB
+    required this.intuneApiUrl,
+    required this.ebayApiUrl,
+    required this.backmarketApiUrl,
+    required this.resendApiUrl,
+    required this.escrowApiUrl,
+    required this.fedexApiUrl, // ML service is optional — API degrades gracefully when unavailable.
     this.mlServiceUrl,
     this.mlServiceToken,
     this.firebaseProjectId,
     this.authMode,
     this.firebaseAuthEmulatorHost,
+    this.firebaseWebApiKey,
     this.firestoreDatabaseId = '(default)',
     this.firebaseStorageBucket,
     this.publicApiPrefix = '',
@@ -81,7 +91,8 @@ class AppConfig {
     int requireInt(String key) => int.parse(require(key));
 
     bool optionalBool(String key, {bool defaultValue = false}) =>
-        (Platform.environment[key] ?? '').toLowerCase() == 'true' || defaultValue;
+        (Platform.environment[key] ?? '').toLowerCase() == 'true' ||
+        defaultValue;
 
     final squareEnvironment =
         Platform.environment['SQUARE_ENVIRONMENT'] ?? 'sandbox';
@@ -121,6 +132,7 @@ class AppConfig {
           optional('FIREBASE_PROJECT_ID') ?? optional('GOOGLE_CLOUD_PROJECT'),
       authMode: env('AUTH_MODE', 'firebase-emulator'),
       firebaseAuthEmulatorHost: optional('FIREBASE_AUTH_EMULATOR_HOST'),
+      firebaseWebApiKey: optional('FIREBASE_WEB_API_KEY'),
       firestoreDatabaseId: env('FIRESTORE_DATABASE_ID', '(default)'),
       firebaseStorageBucket: optional('FIREBASE_STORAGE_BUCKET'),
       publicApiPrefix: env('PUBLIC_API_PREFIX', ''),
@@ -210,6 +222,7 @@ class AppConfig {
   final String? firebaseProjectId;
   final String? authMode;
   final String? firebaseAuthEmulatorHost;
+  final String? firebaseWebApiKey;
   final String firestoreDatabaseId;
   final String? firebaseStorageBucket;
   final String publicApiPrefix;

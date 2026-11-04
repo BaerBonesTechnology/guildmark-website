@@ -7,7 +7,7 @@
 
 /** Platform is live and accepting sign-ups. When false, the pre-launch page
  *  is shown for all routes. Set VITE_IS_LAUNCH=true to open the platform. */
-export const isLaunch: boolean = import.meta.env.VITE_IS_LAUNCH === 'true';
+export let isLaunch: boolean = import.meta.env.VITE_IS_LAUNCH === 'true';
 
 /** Debug mode — enables verbose logging, dev tooling, and mock data helpers.
  *  Never set to true in production. */
@@ -18,7 +18,7 @@ export const apiUrl: string = import.meta.env.VITE_API_URL ?? 'http://localhost:
 
 /** GM Pro / AMPS (Asset Management) suite. Hidden by default until the section
  *  is ready — set VITE_AMPS_ENABLED=true to surface the nav pill and routes. */
-export const ampsEnabled: boolean = import.meta.env.VITE_AMPS_ENABLED === 'true';
+export let ampsEnabled: boolean = import.meta.env.VITE_AMPS_ENABLED === 'true';
 
 // ── Square Web Payments SDK (frontend-only, public identifiers) ───────────────
 //
@@ -41,3 +41,13 @@ export const squareLocationId: string =
 
 export const squareEnvironment: string =
   import.meta.env.VITE_SQUARE_ENVIRONMENT ?? 'sandbox';
+/** Loaded once before routes are constructed. Flags are presentation, never access control. */
+export async function initializeRemoteFeatures(): Promise<void> {
+  if (import.meta.env.VITE_REMOTE_CONFIG_ENABLED !== 'true') return;
+  isLaunch = false;
+  ampsEnabled = false;
+  const {fetchPublicFeatures} = await import('./services/remoteFeatures.service');
+  const flags = await fetchPublicFeatures(apiUrl);
+  isLaunch = flags.launch_enabled;
+  ampsEnabled = flags.amps_enabled;
+}

@@ -28,7 +28,9 @@ Future<Response> firebaseAuthRoute(
   if (origin != null && !allowed.contains(origin)) {
     return forbidden('Origin not allowed');
   }
-  final cookieName = 'gm_${kind}_session';
+  final cookieName = cfg.authMode == 'firebase'
+      ? '__session'
+      : 'gm_${kind}_session';
   final path =
       '${cfg.publicApiPrefix}${kind == 'customer'
           ? '/auth'
@@ -36,7 +38,7 @@ Future<Response> firebaseAuthRoute(
           ? '/partner/auth'
           : '/admin'}';
   String cookie(String token) =>
-      '$cookieName=$token; Path=$path; Max-Age=${token.isEmpty ? 0 : 28800}; HttpOnly; SameSite=Strict';
+      '$cookieName=$token; Path=$path; Max-Age=${token.isEmpty ? 0 : 28800}; HttpOnly; SameSite=Strict${cfg.authMode == 'firebase' ? '; Secure' : ''}';
   // Secure is deliberately omitted only in this strictly loopback emulator mode.
   String? sessionToken() {
     final header = context.request.headers['cookie'] ?? '';
@@ -129,7 +131,10 @@ Future<Response> firebaseAuthRoute(
       await sessions.resetPassword(code, next);
       return Response.json(body: {'message': 'Password updated successfully'});
     }
-    if (email == null || email.isEmpty || password == null || password.isEmpty) {
+    if (email == null ||
+        email.isEmpty ||
+        password == null ||
+        password.isEmpty) {
       return badRequest('email and password required');
     }
     if (action == 'signup') {

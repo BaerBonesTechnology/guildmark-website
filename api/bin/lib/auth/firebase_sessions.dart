@@ -13,10 +13,12 @@ class FirebaseSessions {
   FirebaseSessions(this.auth, this.store) {
     final endpoint = Uri.parse(store.endpoint);
     if (store.projectId != auth.projectId ||
-        endpoint.scheme != 'http' ||
-        !{'localhost', '127.0.0.1', '::1'}.contains(endpoint.host)) {
+        (auth.isCloud
+            ? endpoint.toString() != 'https://firestore.googleapis.com'
+            : endpoint.scheme != 'http' ||
+                  !{'localhost', '127.0.0.1', '::1'}.contains(endpoint.host))) {
       throw ArgumentError(
-        'Auth and Firestore must use the same local demo project',
+        'Auth and Firestore must use the same project and environment',
       );
     }
   }
@@ -244,7 +246,7 @@ FirebaseSessions? firebaseSessions(RequestContext context) {
   } on StateError {
     return null;
   }
-  if (cfg.authMode != 'firebase-emulator') return null;
+  if (!{'firebase-emulator', 'firebase'}.contains(cfg.authMode)) return null;
   return context.read<FirebaseSessions>();
 }
 

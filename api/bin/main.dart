@@ -10,6 +10,7 @@ import 'package:guildmark_api/auth/firebase_sessions.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/firebase/remote_config.dart';
 import 'package:guildmark_api/http_routing.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
 import 'package:guildmark_api/services/email_service.dart';
@@ -48,15 +49,29 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   }
 
   if (cfg.authMode != null &&
-      !{'legacy', 'firebase-emulator'}.contains(cfg.authMode)) {
+      !{'legacy', 'firebase-emulator', 'firebase'}.contains(cfg.authMode)) {
     throw StateError('Unsupported AUTH_MODE');
   }
-  final firebaseAuth = cfg.authMode == 'firebase-emulator'
+  final cloudAuth = cfg.authMode == 'firebase';
+  if (cloudAuth &&
+      [
+        cfg.firebaseAuthEmulatorHost,
+        Platform.environment['FIRESTORE_EMULATOR_HOST'],
+        Platform.environment['FIREBASE_STORAGE_EMULATOR_HOST'],
+      ].any((value) => value != null && value.isNotEmpty)) {
+    throw StateError('Cloud Firebase Auth cannot use emulators');
+  }
+  final firebaseAuth = {'firebase-emulator', 'firebase'}.contains(cfg.authMode)
       ? FirebaseSessions(
-          FirebaseAuth(
-            projectId: cfg.firebaseProjectId ?? '',
-            host: cfg.firebaseAuthEmulatorHost ?? '',
-          ),
+          cloudAuth
+              ? FirebaseAuth.cloud(
+                  projectId: cfg.firebaseProjectId ?? '',
+                  apiKey: cfg.firebaseWebApiKey ?? '',
+                )
+              : FirebaseAuth(
+                  projectId: cfg.firebaseProjectId ?? '',
+                  host: cfg.firebaseAuthEmulatorHost ?? '',
+                ),
           firestore!,
         )
       : null;
@@ -113,11 +128,17 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     );
   }
 
+  final remoteConfig =
+      Platform.environment['FIREBASE_REMOTE_CONFIG_ENABLED'] == 'true'
+      ? FirebaseRemoteConfig(projectId: cfg.firebaseProjectId ?? '')
+      : null;
+
   // Inject singletons. Routes read via `context.read<T>()`.
   var wrapped = apiRouter(handler)
       .use(provider<AppConfig>((_) => cfg))
       .use(provider<MlClient?>((_) => ml))
       .use(provider<FirebaseService?>((_) => firestore))
+      .use(provider<FirebaseRemoteConfig?>((_) => remoteConfig))
       .use(provider<JwtService>((_) => jwt))
       .use(provider<PartnerJwtService>((_) => partnerJwt))
       .use(provider<SquareService?>((_) => square))
@@ -130,7 +151,8 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   }
 
   final bindAddress =
-      (Platform.environment['GM_LOCAL_STACK'] == 'true' || firebaseAuth != null)
+      (Platform.environment['GM_LOCAL_STACK'] == 'true' ||
+          cfg.authMode == 'firebase-emulator')
       ? InternetAddress.loopbackIPv4
       : ip;
   return serve(wrapped, bindAddress, cfg.port);

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, useLocation } from "react-router";
 import { ExecutiveDashboard } from "./pages/ExecutiveDashboard";
 import { MarketCalculator } from "./pages/MarketCalculator";
 import { OffloadWorkflow } from "./pages/OffloadWorkflow";
@@ -49,7 +49,13 @@ const complianceChildren = [
   { path: "partner-agreement", Component: PartnerGuildmarkAgreement },
 ];
 
+function LivePreviewRedirect() {
+  const location = useLocation();
+  return <Navigate to={`${location.pathname.replace(/^\/pre(?=\/|$)/, "") || "/"}${location.search}${location.hash}`} replace />;
+}
+
 export const router = createBrowserRouter([
+  { path: "/pre/*", Component: LivePreviewRedirect },
   {
     path: "/",
     Component: Layout,

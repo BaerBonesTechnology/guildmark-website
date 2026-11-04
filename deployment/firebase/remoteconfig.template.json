@@ -1,0 +1,6 @@
+{
+  "parameters": {
+    "launch_enabled": {"defaultValue": {"value": "false"}, "valueType": "BOOLEAN", "description": "Storefront routing; not an authorization control"},
+    "amps_enabled": {"defaultValue": {"value": "false"}, "valueType": "BOOLEAN", "description": "AMPS navigation and routes; server still enforces entitlement"}
+  }
+}

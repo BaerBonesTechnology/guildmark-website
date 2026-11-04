@@ -1,8 +1,11 @@
-/// Local-only Firebase Auth adapter. No cloud fallback is permitted in this
-/// migration stage. Firebase credentials and session cookies stay on the API.
+/// Firebase identity with explicitly isolated cloud and emulator modes.
 library;
 
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:googleapis_auth/auth_io.dart' as google;
+import 'package:guildmark_api/auth/firebase_session_verifier.dart';
 import 'package:http/http.dart' as http;
 
 class FirebaseAuthFailure implements Exception {
@@ -33,6 +36,35 @@ class FirebaseAuth {
     }
     _base = uri;
   }
+  FirebaseAuth.cloud({
+    required this.projectId,
+    required String apiKey,
+    http.Client? client,
+    Future<http.Client> Function()? adminClient,
+  }) : _client = client ?? http.Client() {
+    if (!RegExp(r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$').hasMatch(projectId) ||
+        projectId.startsWith('demo-') ||
+        apiKey.trim().isEmpty) {
+      throw ArgumentError(
+        'Cloud Firebase Auth requires a real project and API key',
+      );
+    }
+    _base = Uri.https('identitytoolkit.googleapis.com', '');
+    _apiKey = apiKey;
+    _cloud = true;
+    _adminFactory =
+        adminClient ??
+        () => google.clientViaApplicationDefaultCredentials(
+          scopes: ['https://www.googleapis.com/auth/identitytoolkit'],
+        );
+    _verifier = FirebaseSessionVerifier(projectId: projectId, client: _client);
+  }
+  bool _cloud = false;
+  bool get isCloud => _cloud;
+  String _apiKey = 'local-emulator-key';
+  Future<http.Client> Function()? _adminFactory;
+  Future<http.Client>? _admin;
+  FirebaseSessionVerifier? _verifier;
   final String projectId;
   final http.Client _client;
   late final Uri _base;
@@ -42,19 +74,23 @@ class FirebaseAuth {
     Map<String, dynamic> body, {
     bool admin = false,
   }) async {
+    final prefix = _cloud ? '' : '/identitytoolkit.googleapis.com';
     final path = admin
-        ? '/identitytoolkit.googleapis.com/v1/projects/$projectId${operation.startsWith(':') ? '' : '/'}$operation'
-        : '/identitytoolkit.googleapis.com/v1/$operation';
+        ? '$prefix/v1/projects/$projectId${operation.startsWith(':') ? '' : '/'}$operation'
+        : '$prefix/v1/$operation';
     try {
-      final response = await _client
+      final client = _cloud && admin
+          ? await (_admin ??= _adminFactory!())
+          : _client;
+      final response = await client
           .post(
             _base.replace(
               path: path,
-              queryParameters: {'key': 'local-emulator-key'},
+              queryParameters: admin && _cloud ? null : {'key': _apiKey},
             ),
             headers: {
               'Content-Type': 'application/json',
-              if (admin) 'Authorization': 'Bearer owner',
+              if (admin && !_cloud) 'Authorization': 'Bearer owner',
             },
             body: jsonEncode(body),
           )
@@ -118,7 +154,7 @@ class FirebaseAuth {
   Future<String> sessionCookie(String idToken) async {
     final response = await call(':createSessionCookie', {
       'idToken': idToken,
-      'validDuration': 28800,
+      'validDuration': '28800',
     }, admin: true);
     return response['sessionCookie'] as String;
   }
@@ -145,6 +181,7 @@ class FirebaseAuth {
   /// directly from a caller. Emulator unsigned tokens must never reach cloud.
   Future<bool> validSession(String cookie, String uid) async {
     try {
+      if (_cloud && !await _verifier!.verify(cookie, uid)) return false;
       final parts = cookie.split('.');
       if (parts.length != 3) return false;
       final claims =
@@ -173,5 +210,8 @@ class FirebaseAuth {
     }
   }
 
-  void close() => _client.close();
+  void close() {
+    _client.close();
+    unawaited(_admin?.then((client) => client.close()));
+  }
 }
