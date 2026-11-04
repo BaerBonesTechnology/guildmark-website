@@ -3,10 +3,18 @@ import 'package:guildmark_api/auth/firebase_sessions.dart';
 
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Handler middleware(Handler handler) {
   return (context) async {
     final principal = await _extractPartnerPrincipal(context);
+    final path = context.request.uri.path.replaceFirst(RegExp(r'^/api'), '');
+    if (principal != null &&
+        principal.status != 'active' &&
+        !path.startsWith('/partner/auth/') &&
+        !(path == '/partner/account' &&
+            context.request.method == HttpMethod.get))
+      return forbidden('Partner approval required for service work.');
     return handler(context.provide<PartnerPrincipal?>(() => principal));
   };
 }

@@ -8,6 +8,7 @@ import 'package:guildmark_api/models/plan_catalog.dart';
 import 'package:guildmark_api/repos/firestore/amps_inventory_repo.dart';
 import 'package:guildmark_api/repos/firestore/subscription_repo.dart';
 import 'package:guildmark_api/services/paid_invoice.dart';
+import 'package:guildmark_api/services/billing_payment_method.dart';
 import 'package:guildmark_api/services/square_service.dart';
 
 class RecurringBilling {
@@ -238,6 +239,7 @@ class RecurringBilling {
     if (id == null) return pending();
     final i = await row('recurring_billing_intents', id);
     if (i == null) return pending();
+    await BillingPaymentMethod(store, square).resumePending(company);
     // Resume every persisted step, including linkage after provider creation.
     return checkout(
       company: company,
@@ -383,6 +385,14 @@ class RecurringBilling {
           patch['status'] = 'past_due';
         }
       }
+      if (end == null &&
+          facts.any(
+            (f) =>
+                !f.eligible &&
+                {'unpaid', 'partially_paid', 'failed'}.contains(f.state) &&
+                !f.start.isAfter(clock().toUtc()),
+          ))
+        patch['status'] = 'past_due';
       final version = sub['version'] as int? ?? 0;
       if (version >= (binding.data['provider_version'] as int? ?? -1)) {
         final actions = sub['actions'] as List? ?? [];

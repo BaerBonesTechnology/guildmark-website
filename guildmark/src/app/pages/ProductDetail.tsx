@@ -10,6 +10,7 @@ import { categoryIcon } from "../services/marketplace.service";
 import { buildSpecRows } from "../services/product.service";
 import { money } from "../services/square.service";
 import { useProductDetailViewModel } from "../viewmodels/useProductDetailViewModel";
+import { BusinessBadge } from "../components/signup/BusinessBadge";
 
 function BackLink() {
   return <Link to={ROUTE.marketplace} className="gm-back-link"><ArrowLeft size={15} /> Back to marketplace</Link>;
@@ -43,6 +44,7 @@ export function ProductDetail() {
           <p className="gm-eyebrow">{listing.asset_type ?? "Business hardware"}</p>
           <h1 id="product-title">{listing.model_name ?? "Hardware listing"}</h1>
           <p className="gm-product-seller"><Building2 size={16} /> {listing.seller_name ?? "Business seller"}</p>
+          <BusinessBadge companyId={listing.company_id} />
           <div className="gm-product-price"><strong>{price > 0 ? money(price) : "Price unavailable"}</strong>{price > 0 && <span>per unit · USD</span>}</div>
           <p className="gm-product-stock">{available} {available === 1 ? "unit" : "units"} available</p>
           {purchased || submitted ? <div className="gm-feedback gm-feedback-success" role="status"><CheckCircle2 size={21} /><div><h2>{purchased ? "Order placed" : "Offer submitted"}</h2><p>{purchased ? "Payment confirmed. Track your order and payment details under My Orders." : "The seller can accept, counter, or decline. Track the response under My Offers."}</p></div></div> : <>

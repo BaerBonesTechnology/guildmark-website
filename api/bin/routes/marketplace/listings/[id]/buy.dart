@@ -8,6 +8,7 @@ import 'package:guildmark_api/repos/firestore/order_repo.dart';
 import 'package:guildmark_api/repos/firestore/subscription_repo.dart';
 import 'package:guildmark_api/services/checkout_service.dart';
 import 'package:guildmark_api/services/square_service.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.post) {
@@ -126,6 +127,12 @@ Future<Response> onRequest(RequestContext context, String id) async {
         viewerCompanyId: auth.companyId,
         productName: result.data['product_name'] as String?,
       ).toJson(),
+    );
+  } on SellerVerificationRequired {
+    return jsonError(
+      403,
+      SellerVerificationRequired.code,
+      SellerVerificationRequired.message,
     );
   } on CheckoutConflict catch (error) {
     return jsonError(error.status, error.code, error.message);

@@ -1,3 +1,5 @@
+import { finishStaffSignIn } from "../lib/authHandoff";
+import { usePortalPath } from "../lib/portal";
 /**
  * RegisterPasskey — shown when an employee logs in for the first time and has
  * no passkey registered yet.
@@ -32,6 +34,7 @@ interface RegisterOptions {
 }
 
 export function RegisterPasskey() {
+  const portalPath = usePortalPath();
   const navigate    = useNavigate();
   const { token, completePasskeySetup } = useAuth();
   const [status, setStatus]   = useState<"idle" | "busy" | "done" | "error">("idle");
@@ -43,7 +46,7 @@ export function RegisterPasskey() {
   const employee     = employeeJson ? JSON.parse(employeeJson) as { full_name: string; email: string } : null;
 
   // Redirect if there's no setup token — shouldn't land here otherwise
-  if (!setupToken) return <Navigate to={token ? "/" : "/login"} replace />;
+  if (!setupToken) return <Navigate to={portalPath(token ? "/" : "/login")} replace />;
 
   async function handleRegister() {
     setStatus("busy");
@@ -114,7 +117,7 @@ export function RegisterPasskey() {
 
       // Update the provider before the protected route renders.
       completePasskeySetup(data.access_token);
-      navigate("/", { replace: true });
+      if (!await finishStaffSignIn(data.access_token)) navigate(portalPath("/"), { replace: true });
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Registration failed");
@@ -122,16 +125,16 @@ export function RegisterPasskey() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="text-xl font-mono text-white">
+          <p className="text-xl font-mono text-slate-900">
             Guild<span className="text-blue-500">Mark</span>
           </p>
-          <p className="text-xs text-slate-500 font-mono mt-1">DevDash · Admin Terminal</p>
+          <p className="text-xs text-slate-500 font-mono mt-1">Administration · Secure staff sign-in</p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 space-y-5">
+        <div className="bg-white border border-slate-300 rounded-xl p-6 space-y-5">
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
@@ -140,9 +143,9 @@ export function RegisterPasskey() {
                   d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
             </div>
-            <p className="text-sm font-mono text-white">Set up your passkey</p>
+            <p className="text-sm font-mono text-slate-900">Set up your passkey</p>
             {employee && (
-              <p className="text-xs text-slate-400 font-mono">{employee.full_name} · {employee.email}</p>
+              <p className="text-xs text-slate-600 font-mono">{employee.full_name} · {employee.email}</p>
             )}
             <p className="text-xs text-slate-500 font-mono leading-relaxed">
               Passkeys replace IP allowlisting as your second factor.
@@ -167,7 +170,7 @@ export function RegisterPasskey() {
           {/* Friendly name input */}
           {status !== "done" && (
             <div className="space-y-1">
-              <label className="text-xs text-slate-400 font-mono uppercase tracking-wide">
+              <label className="text-xs text-slate-600 font-mono uppercase tracking-wide">
                 Device name <span className="text-slate-600 normal-case">(optional)</span>
               </label>
               <input
@@ -176,7 +179,7 @@ export function RegisterPasskey() {
                 onChange={e => setFriendlyName(e.target.value)}
                 disabled={status === "busy"}
                 maxLength={64}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono text-slate-900 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
                 placeholder="Work MacBook"
               />
             </div>
@@ -197,7 +200,7 @@ export function RegisterPasskey() {
           {status === "error" && (
             <button
               onClick={() => { setStatus("idle"); setMessage(""); }}
-              className="w-full text-xs text-slate-500 hover:text-slate-300 font-mono py-1 transition-colors"
+              className="w-full text-xs text-slate-500 hover:text-slate-900 font-mono py-1 transition-colors"
             >
               Try again
             </button>

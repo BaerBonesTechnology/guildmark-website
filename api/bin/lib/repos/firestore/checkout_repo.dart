@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 class CheckoutConflict implements Exception {
   const CheckoutConflict(this.code, this.message, [this.status = 409]);
@@ -65,6 +66,7 @@ class CheckoutRepo {
       );
     }
     final seller = listing.data['company_id'] as String;
+    await BusinessVerification.requireSeller(tx, seller);
     if (seller == buyer) {
       throw const CheckoutConflict(
         'SELF_PURCHASE',

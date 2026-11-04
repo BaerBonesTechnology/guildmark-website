@@ -23,7 +23,13 @@ Future<Response> onRequest(RequestContext context, String id) async {
       final data = <String, dynamic>{};
 
       if (body.containsKey('role')) {
-        const validRoles = ['superadmin', 'engineer', 'support', 'marketing'];
+        const validRoles = [
+          'superadmin',
+          'compliance',
+          'engineer',
+          'support',
+          'marketing',
+        ];
         final role = body['role'] as String?;
         if (role == null || !validRoles.contains(role)) {
           return badRequest('Invalid role');

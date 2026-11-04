@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T21:09:18.503722+00:00",
+  "title": "Design System: GuildMark customer registration subset",
+  "extensions": {
+    "breakpoints": [
+      {
+        "name": "shell-stack",
+        "value": "800px"
+      },
+      {
+        "name": "field-stack",
+        "value": "420px"
+      },
+      {
+        "name": "prompt-wrap",
+        "value": "700px"
+      }
+    ],
+    "motion": [
+      {
+        "name": "primary-hover",
+        "value": "filter .15s",
+        "purpose": "Brightness state response; disabled under reduced motion."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "description": "Observed customer registration primitive; source remains authoritative.",
+      "html": "<button class=\"ds-primary\">Create account</button>",
+      "css": ".ds-primary{background:var(--primary);color:var(--primary-foreground);border:0;border-radius:var(--radius);padding:.75rem 1rem;min-height:3rem;font:600 .875rem \"DM Sans\",sans-serif;transition:filter .15s}.ds-primary:hover{filter:brightness(.92)}.ds-primary:focus-visible{outline:2px solid var(--ring);outline-offset:3px}"
+    },
+    {
+      "name": "Business field",
+      "kind": "input",
+      "description": "Observed customer registration primitive; source remains authoritative.",
+      "html": "<label class=\"ds-field\">Company<input autocomplete=\"organization\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:.5rem;font:500 .8125rem \"DM Sans\",sans-serif;color:var(--foreground)}.ds-field input{border:1px solid var(--border);border-radius:var(--radius);background:var(--background);color:var(--foreground);font:400 1rem \"DM Sans\",sans-serif;padding:.75rem;min-height:3rem}.ds-field input:focus-visible{outline:2px solid var(--ring);outline-offset:3px}"
+    },
+    {
+      "name": "Story surface",
+      "kind": "card",
+      "description": "Observed customer registration primitive; source remains authoritative.",
+      "html": "<aside class=\"ds-story\">Create your account. Verify when ready to sell.</aside>",
+      "css": ".ds-story{padding:2.5rem;background:var(--muted);color:var(--foreground);border-radius:var(--radius);font:400 .9375rem/1.8 \"DM Sans\",sans-serif}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "description": "Observed customer registration primitive; source remains authoritative.",
+      "html": "<button class=\"ds-secondary\">Show passwords</button>",
+      "css": ".ds-secondary{border:0;background:transparent;color:var(--primary);text-decoration:underline;text-underline-offset:3px;font:400 .75rem \"DM Sans\",sans-serif;cursor:pointer}.ds-secondary:focus-visible{outline:2px solid var(--ring);outline-offset:3px}"
+    },
+    {
+      "name": "Business badge",
+      "kind": "chip",
+      "description": "Observed customer registration primitive; source remains authoritative.",
+      "html": "<span class=\"ds-badge\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z\"/><path d=\"m8 12 3 3 5-6\"/></svg>Verified business</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:.35rem;color:var(--primary);font:500 .75rem \"DM Sans\",sans-serif}"
+    }
+  ]
+}

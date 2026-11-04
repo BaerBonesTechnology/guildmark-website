@@ -20,7 +20,7 @@ import '../routes/payments/index.dart' as unbound;
 
 class FaultFirestore extends FirebaseService {
   FaultFirestore(String host)
-    : super(projectId: 'demo-guildmark', emulatorHost: host);
+    : super(projectId: 'demo-guildmark-checkout', emulatorHost: host);
   bool failFinalize = false;
   @override
   Future<dynamic> request(
@@ -103,6 +103,39 @@ void main() {
       late String buyer;
       late http.Client client;
       final servers = <HttpServer>[];
+      setUpAll(() async {
+        final fixture = FaultFirestore(host!);
+        const fees = <String, dynamic>{
+          'seller_fee_free': .14,
+          'seller_fee_starter': .10,
+          'seller_fee_growth': .08,
+          'seller_fee_pro': .06,
+          'buyer_fee': .028,
+          'deferral_fee': 0,
+          'data_wipe_price_cents': 0,
+          'payment_terms_enabled': false,
+        };
+        try {
+          try {
+            await fixture.tablesDB.updateRow(
+              databaseId: '',
+              tableId: 'platform_config',
+              rowId: 'config',
+              data: fees,
+            );
+          } on DatastoreException catch (error) {
+            if (error.code != 404) rethrow;
+            await fixture.tablesDB.createRow(
+              databaseId: '',
+              tableId: 'platform_config',
+              rowId: 'config',
+              data: fees,
+            );
+          }
+        } finally {
+          fixture.close();
+        }
+      });
       Future<Row> row(String table, String id) =>
           db.tablesDB.getRow(databaseId: '', tableId: table, rowId: id);
       Future<Row> put(String table, String id, Map<String, dynamic> data) => db
@@ -169,6 +202,11 @@ void main() {
         asset = ID.unique();
         listing = ID.unique();
         await put('companies', seller, {'name': 'Seller'});
+        await put('business_verifications', seller, {
+          'status': 'approved',
+          'method': 'manual',
+          'company_id': seller,
+        });
         await put('companies', buyer, {'name': 'Buyer'});
         await put('assets', asset, {
           'company_id': seller,
@@ -213,6 +251,38 @@ void main() {
             (await row('assets', asset)).data['reserved_quantity'],
             isNull,
           );
+        },
+      );
+
+      test(
+        'seller approval is required before payment, while buyer verification is not',
+        () async {
+          await db.tablesDB.updateRow(
+            databaseId: '',
+            tableId: 'business_verifications',
+            rowId: seller,
+            data: {'status': 'pending'},
+          );
+          final key = ID.unique();
+          final response = await request(data: payload(key));
+          expect(response.statusCode, 403);
+          expect(
+            (jsonDecode(response.body) as Map)['code'],
+            'SELLER_VERIFICATION_REQUIRED',
+          );
+          expect(square.requests, 0);
+          expect(
+            (await row('assets', asset)).data['reserved_quantity'],
+            isNull,
+          );
+          await db.tablesDB.updateRow(
+            databaseId: '',
+            tableId: 'business_verifications',
+            rowId: seller,
+            data: {'status': 'approved'},
+          );
+          expect((await request(data: payload(key))).statusCode, 201);
+          expect(square.requests, 1);
         },
       );
 

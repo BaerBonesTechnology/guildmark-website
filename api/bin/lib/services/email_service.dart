@@ -29,6 +29,18 @@ class EmailService {
   // Public send methods
   // ---------------------------------------------------------------------------
 
+  Future<bool> sendBusinessEmailCode({
+    required String toEmail,
+    required String code,
+  }) => _send(
+    to: toEmail,
+    subject: 'Confirm your GuildMark work email',
+    html:
+        '<p>Your GuildMark email confirmation code is <strong>$code</strong>.</p><p>It expires in 10 minutes. This confirms your email address; business approval is a separate review.</p>',
+    text:
+        'Your GuildMark email confirmation code is $code. It expires in 10 minutes. Business approval is a separate review.',
+  );
+
   /// Sends a waitlist confirmation to a newly-subscribed address.
   Future<bool> sendWaitlistConfirmation(String toEmail) => _send(
         to: toEmail,

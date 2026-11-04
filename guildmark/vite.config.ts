@@ -21,6 +21,7 @@ export default defineConfig(({ command }) => ({
   define: command === 'serve' ? { 'import.meta.env.VITE_API_URL': JSON.stringify('/api') } : undefined,
   envDir: process.env.GM_LOCAL_STACK === 'true' ? false : undefined,
   server: {
+    fs: { allow: [path.resolve(__dirname, "..")] },
     proxy: {
       '/api': { target: process.env.GM_LOCAL_API_TARGET ?? 'http://127.0.0.1:8080', changeOrigin: true },
     },
@@ -33,6 +34,7 @@ export default defineConfig(({ command }) => ({
     tailwindcss(),
   ],
   resolve: {
+    dedupe: ["react", "react-dom", "react-router", "@tanstack/react-query"],
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),

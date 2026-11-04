@@ -307,3 +307,6 @@
 .gm-billing-locality { display:grid; grid-template-columns:1.2fr .8fr 1fr; gap:12px; }
 .gm-billing-locality .gm-field>span { display:block; font-size:10px; margin-top:4px; }
 @media(max-width:600px) { .gm-billing-locality{grid-template-columns:1fr 1fr}.gm-billing-locality>.gm-field:first-child{grid-column:1 / -1}.gm-billing-locality .gm-field>span{display:inline}.gm-billing-locality .gm-zip-field{max-width:none} }
+
+/* Keep anchor destinations visible beneath the public sticky header. */
+.gm-public :is(#amps-workflow,#partner-network,#amps-plans,#early-access) { scroll-margin-top:110px; }

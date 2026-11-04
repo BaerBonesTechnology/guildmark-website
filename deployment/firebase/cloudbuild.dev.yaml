@@ -1,7 +1,7 @@
 steps:
   - name: gcr.io/cloud-builders/docker
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:recurring-20261104-v4', '.']
-images: ['us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:recurring-20261104-v4']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:portals-20261104-v3', '.']
+images: ['us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:portals-20261104-v3']
 serviceAccount: projects/guildmark-dev/serviceAccounts/guildmark-build@guildmark-dev.iam.gserviceaccount.com
 options:
   logging: CLOUD_LOGGING_ONLY

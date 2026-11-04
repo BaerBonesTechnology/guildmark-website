@@ -18,6 +18,7 @@ import { BILLING_HEADERS, PLANS, SETTINGS_NOTIFICATION_ROWS } from "../../consta
 import { BODY, DISPLAY, MONO } from "../../constants/typography";
 import { fmtDate } from "../../services/ampsSettings.service";
 import { useAmpsSettingsViewModel } from "../../viewmodels/useAmpsSettingsViewModel";
+import { BillingRecovery } from "../../components/amps/BillingRecovery";
 import { PlanUsage } from "../../components/amps/PlanUsage";
 
 export function Settings() {
@@ -39,6 +40,7 @@ export function Settings() {
       <PlanUsage />
       <div className="space-y-2"><button className="border border-border px-4 py-2 text-sm" disabled={reconcile.isPending} onClick={() => reconcile.mutate()}>{reconcile.isPending ? "Checking billing…" : "Refresh billing status"}</button>{subData?.billing?.recurring && !subData.billing.cancel_at_period_end && <button className="ml-3 border border-border px-4 py-2 text-sm" onClick={() => setCancelConfirm(true)} disabled={cancelSub.isPending}>Cancel recurring billing</button>}{reconcile.isError && <p role="alert" className="text-sm text-destructive">Billing could not be confirmed. Your existing agreement has been retained; try refreshing again.</p>}{cancelSub.isError && <p role="alert" className="text-sm text-destructive">Cancellation was not confirmed. Refresh billing status before retrying.</p>}{subData?.billing?.recurring && <p className="text-sm text-muted-foreground">{subData.billing.cancel_at_period_end ? `Renewal cancelled. Paid access ends ${subData.currentPeriodEnd ? fmtDate(subData.currentPeriodEnd) : "after the verified period"} (UTC).` : "This plan renews monthly using your saved card. Plan changes are unavailable while this recurring agreement is active."}</p>}</div>
       <p className="text-xs text-muted-foreground">Company-profile and notification editing below are local prototypes. Saving these preferences is not available yet. Subscription and billing records use your company account.</p>
+      <BillingRecovery recurring={subData?.billing?.recurring === true} />
       {/* Company Profile */}
       <SettingsPanel icon={Building2} title="Company Profile" subtitle="Your organization details and account information">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

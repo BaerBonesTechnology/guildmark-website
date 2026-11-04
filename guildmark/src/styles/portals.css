@@ -1,0 +1,25 @@
+@source "../../../partners/src/**/*.{ts,tsx}";
+@source "../../../devdash/src/**/*.{ts,tsx}";
+.gm-workspace { --foreground:#172b42; --background:#f5f7fb; --card:#fff; --muted-foreground:#63768b; --border:#dfe7f0; --primary:#1d59c6; min-height:100dvh; background:#f5f7fb; color:#172b42; font-family:'DM Sans',sans-serif; }
+.gm-workspace-sidebar { background:white; border-right:1px solid #dfe7f0; }
+.gm-workspace-nav { display:flex; align-items:center; gap:10px; border-radius:8px; padding:11px 13px; font-size:14px; color:#61748a; }
+.gm-workspace-nav:hover { background:#f1f5fa; color:#1b3959; }
+.gm-workspace-nav[aria-current=page] { color:#1c57b8; background:#edf3ff; font-weight:600; }
+.gm-workspace :is(a,button,input,select,textarea):focus-visible { outline:2px solid #2563eb; outline-offset:3px; }
+.gm-workspace-main { min-width:0; max-width:1600px; margin-inline:auto; }
+.gm-workspace .gm-workspace-page { padding:24px; }
+.gm-partner-portal { --prt-bg:#f5f7fb; --prt-surface:#fff; --prt-card:#fff; --prt-border:#dfe7f0; --prt-accent:#1d59c6; --prt-accent-light:#1d59c6; --prt-success:#16804a; --prt-warning:#a96707; --prt-danger:#c53030; --prt-text:#172b42; --prt-muted:#63768b; --prt-font-mono:'DM Sans',sans-serif; }
+.gm-admin-portal { --color-blue-400:#1d4ed8; --color-green-400:#15803d; --color-red-400:#c02626; --color-amber-400:#a96707; --color-slate-950:#f5f7fb; --color-slate-900:#fff; --color-slate-800:#dfe7f0; --color-slate-700:#c8d5e3; --color-slate-600:#63768b; --color-slate-500:#63768b; --color-slate-400:#526b85; --color-slate-300:#304d6b; }
+.gm-admin-portal .text-white { color:#172b42; }
+.gm-admin-portal :is(button,a)[class*="bg-blue-"] { color:#fff; }
+.gm-admin-portal input,.gm-admin-portal textarea,.gm-admin-portal select { color:#172b42; }
+.gm-admin-portal th { white-space:nowrap; }
+.gm-admin-portal table { min-width:640px; }
+.gm-admin-portal .overflow-x-auto { max-width:100%; }
+@media(max-width:767px) { .gm-workspace .gm-workspace-page { padding:20px 16px; } .gm-admin-portal .p-8 { padding:20px 16px; } }
+@media(prefers-reduced-motion:reduce) { .gm-workspace * { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+.gm-admin-portal .text-slate-200 { color:#304d6b; }
+.gm-admin-portal .text-slate-100 { color:#172b42; }
+
+.gm-admin-portal .recharts-cartesian-grid line { stroke:#e2e8f0; }

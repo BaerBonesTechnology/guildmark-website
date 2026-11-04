@@ -1,3 +1,4 @@
+import { usePortalPath } from "../lib/portal";
 import { Outlet, NavLink } from "react-router";
 import { Mail, LogOut, Users, BarChart2, Handshake, DollarSign, UsersRound } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
@@ -10,6 +11,7 @@ const navLink = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function Dashboard() {
+  const portalPath = usePortalPath();
   const { logout } = useAuth();
 
   return (
@@ -24,27 +26,27 @@ export function Dashboard() {
         </div>
 
         <nav className="flex-1 px-3 py-4 grid grid-cols-2 md:block md:space-y-1">
-          <NavLink to="/analytics" className={navLink}>
+          <NavLink to={portalPath("/analytics")} className={navLink}>
             <BarChart2 className="w-4 h-4" />
             Analytics
           </NavLink>
-          <NavLink to="/users" className={navLink}>
+          <NavLink to={portalPath("/users")} className={navLink}>
             <Users className="w-4 h-4" />
             Users
           </NavLink>
-          <NavLink to="/mailing-list" className={navLink}>
+          <NavLink to={portalPath("/mailing-list")} className={navLink}>
             <Mail className="w-4 h-4" />
             Mailing List
           </NavLink>
-          <NavLink to="/partners" className={navLink}>
+          <NavLink to={portalPath("/partners")} className={navLink}>
             <Handshake className="w-4 h-4" />
             Partners
           </NavLink>
-          <NavLink to="/pricing" className={navLink}>
+          <NavLink to={portalPath("/pricing")} className={navLink}>
             <DollarSign className="w-4 h-4" />
             Pricing
           </NavLink>
-          <NavLink to="/team" className={navLink}>
+          <NavLink to={portalPath("/team")} className={navLink}>
             <UsersRound className="w-4 h-4" />
             Team
           </NavLink>

@@ -3,6 +3,7 @@
 library;
 
 import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/repos/firestore/checkout_repo.dart';
@@ -11,7 +12,8 @@ import 'package:guildmark_api/repos/firestore/checkout_repo.dart';
 // Model
 // ---------------------------------------------------------------------------
 
-class Order { // "sale" | "purchase"
+class Order {
+  // "sale" | "purchase"
 
   /// Build from an Appwrite row plus the stitched lookups that replaced the
   /// SQL joins (§1b). `$id`/`$createdAt`/`$updatedAt` are system fields.
@@ -297,6 +299,7 @@ class OrderRepo {
       throw StateError('Deferred payment is unavailable');
     }
     final created = await _db.transaction((tx) async {
+      await BusinessVerification.requireSeller(tx, callerCompanyId);
       final offer = await tx.get('buyer_offers', offerId);
       if (offer == null ||
           offer.data['status'] != 'accepted' ||

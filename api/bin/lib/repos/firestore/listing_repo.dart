@@ -3,6 +3,7 @@
 library;
 
 import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/models/json_helpers.dart';
@@ -192,18 +193,16 @@ class ListingRepo {
     required String id,
     required String companyId,
   }) async {
-    final existing = await _getRowOrNull(Collections.listings, id);
-    if (existing == null ||
-        existing.data['company_id'] != companyId ||
-        existing.data['status'] != 'draft') {
-      throw StateError('Listing $id not found or is not a draft');
-    }
-    final row = await _db.updateRow(
-      databaseId: Collections.databaseId,
-      tableId: Collections.listings,
-      rowId: id,
-      data: {'status': 'active'},
-    );
+    final row = await _db.transaction((transaction) async {
+      await BusinessVerification.requireSeller(transaction, companyId);
+      final existing = await transaction.get(Collections.listings, id);
+      if (existing == null ||
+          existing.data['company_id'] != companyId ||
+          existing.data['status'] != 'draft') {
+        throw StateError('Listing $id not found or is not a draft');
+      }
+      return transaction.update(Collections.listings, id, {'status': 'active'});
+    });
     return _listingFromRows(row);
   }
 

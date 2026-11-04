@@ -5,6 +5,7 @@ library;
 import 'dart:io';
 
 import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/models/json_helpers.dart';
@@ -68,6 +69,14 @@ class OfferRepo {
     }
 
     final listingStatus = listing.data['status'] as String?;
+    if (BusinessVerification.status(
+          await BusinessVerification(
+            _db,
+          ).record(listing.data['company_id'] as String),
+        ) !=
+        'approved') {
+      throw const SellerVerificationRequired();
+    }
     if (listingStatus != 'active') {
       throw StateError(
         'Listing $listingId is not active (status: $listingStatus)',
@@ -114,6 +123,9 @@ class OfferRepo {
     }
 
     final row = await _db.transaction((tx) async {
+      if (action == 'accept' || action == 'counter') {
+        await BusinessVerification.requireSeller(tx, sellerCompanyId);
+      }
       final offer = await tx.get('buyer_offers', offerId);
       if (offer == null ||
           offer.data['status'] != 'pending' ||

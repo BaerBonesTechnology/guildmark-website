@@ -1,3 +1,4 @@
+import { HashScroll } from "./HashScroll";
 import { Outlet, ScrollRestoration } from "react-router";
 
 /**
@@ -11,6 +12,7 @@ export function PreLaunchLayout() {
     <div className="min-h-screen bg-background text-foreground">
       <Outlet />
       <ScrollRestoration />
+        <HashScroll />
     </div>
   );
 }

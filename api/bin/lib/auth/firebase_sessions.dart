@@ -153,6 +153,7 @@ class FirebaseSessions {
         : PartnerPrincipal(
             partnerId: record.$id,
             partnerCode: record.data['partner_code'] as String,
+            status: record.data['status'] as String? ?? 'pending',
           );
   }
 

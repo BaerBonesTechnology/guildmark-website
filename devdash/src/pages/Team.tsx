@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 
 const API = import.meta.env.VITE_API_URL ?? "https://api.guildmark.co";
 
-type EmployeeRole = "superadmin" | "engineer" | "support" | "marketing";
+type EmployeeRole = "superadmin" | "compliance" | "engineer" | "support" | "marketing";
 
 interface Employee {
   id:            string;
@@ -17,13 +17,14 @@ interface Employee {
 }
 
 const ROLE_COLORS: Record<EmployeeRole, string> = {
+  compliance: "text-blue-400 bg-blue-400/10 border-blue-400/20",
   superadmin: "text-purple-400 bg-purple-400/10 border-purple-400/20",
   engineer:   "text-blue-400 bg-blue-400/10 border-blue-400/20",
   support:    "text-green-400 bg-green-400/10 border-green-400/20",
   marketing:  "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
 };
 
-const ALL_ROLES: EmployeeRole[] = ["superadmin", "engineer", "support", "marketing"];
+const ALL_ROLES: EmployeeRole[] = ["superadmin", "compliance", "engineer", "support", "marketing"];
 
 type Status = "idle" | "loading" | "success" | "error";
 

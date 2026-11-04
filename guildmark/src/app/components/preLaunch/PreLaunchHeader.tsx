@@ -16,9 +16,9 @@ export function PreLaunchHeader() {
     <a href="#main-content" className="gm-skip-link">Skip to content</a>
     <div className="gm-container gm-header-inner">
       <Link to="/" className="gm-wordmark" aria-label="GuildMark home">GuildMark<span>.</span></Link>
-      <nav className="gm-desktop-nav" aria-label="Main navigation"><a href="/#amps-workflow">AMPS</a><Link to="/pre/marketplace">GuildMarket</Link><a href="/#partner-network">Partners</a><a href="/#amps-plans">Pricing</a></nav>
-      <div className="gm-header-actions"><Link to="/pre/login" className="gm-signin">Sign in</Link><a href="/#early-access" className="gm-button gm-button-small">Get early access <ArrowUpRight size={15} /></a><button ref={menuButton} className="gm-menu-toggle" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="gm-mobile-nav" onClick={() => setOpen(!open)}>{open ? <X size={21} /> : <Menu size={21} />}</button></div>
+      <nav className="gm-desktop-nav" aria-label="Main navigation"><Link to="/#amps-workflow">AMPS</Link><Link to="/pre/marketplace">GuildMarket</Link><Link to="/#partner-network">Partners</Link><Link to="/#amps-plans">Pricing</Link><Link to="/workspaces">Workspaces</Link></nav>
+      <div className="gm-header-actions"><Link to="/pre/login" className="gm-signin">Sign in</Link><Link to="/#early-access" className="gm-button gm-button-small">Get early access <ArrowUpRight size={15} /></Link><button ref={menuButton} className="gm-menu-toggle" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="gm-mobile-nav" onClick={() => setOpen(!open)}>{open ? <X size={21} /> : <Menu size={21} />}</button></div>
     </div>
-    {open && <nav id="gm-mobile-nav" className="gm-mobile-nav" aria-label="Mobile navigation" onClick={() => setOpen(false)}><a href="/#amps-workflow">AMPS workflow</a><Link to="/pre/marketplace">GuildMarket</Link><a href="/#partner-network">Partner network</a><a href="/#amps-plans">AMPS pricing</a><Link to="/blog">Perspectives</Link><Link to="/pre/login">Sign in</Link></nav>}
+    {open && <nav id="gm-mobile-nav" className="gm-mobile-nav" aria-label="Mobile navigation" onClick={() => setOpen(false)}><Link to="/#amps-workflow">AMPS workflow</Link><Link to="/pre/marketplace">GuildMarket</Link><Link to="/#partner-network">Partner network</Link><Link to="/#amps-plans">AMPS pricing</Link><Link to="/blog">Perspectives</Link><Link to="/workspaces">Workspaces</Link><Link to="/pre/login">Sign in</Link></nav>}
   </header>;
 }

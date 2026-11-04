@@ -1,0 +1,55 @@
+.registration-page { --registration-gap:clamp(2rem,5vw,5rem); padding:clamp(2rem,5vw,4.5rem) 1.5rem; background:var(--background); color:var(--foreground); }
+.registration-layout { max-width:70rem; margin-inline:auto; display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:var(--registration-gap); align-items:start; }
+.registration-story { padding:2.5rem; background:var(--muted); border-radius:var(--radius); }
+.registration-mark { color:var(--primary); margin-bottom:1.75rem; }
+.registration-story h2 { font-size:clamp(1.9rem,3vw,2.75rem); line-height:1.12; letter-spacing:-.035em; font-weight:500; text-wrap:balance; max-width:14ch; margin:0 0 1.25rem; }
+.registration-story-intro { font-size:.9375rem; line-height:1.8; color:var(--muted-foreground); margin:0; }
+.registration-steps { display:grid; gap:1.5rem; list-style:none; padding:0; margin:2.25rem 0; }
+.registration-steps li { display:flex; gap:1rem; align-items:start; }
+.registration-steps li>span { display:grid; place-items:center; width:1.75rem; height:1.75rem; flex-shrink:0; border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:.75rem; border-radius:50%; }
+.registration-steps li[aria-current=step]>span { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.registration-steps strong { display:block; font-weight:600; font-size:.875rem; line-height:1.75; }
+.registration-steps p,.registration-story-note { margin:.15rem 0 0; font-size:.8125rem; color:var(--muted-foreground); line-height:1.7; }
+.registration-story-note { border-top:1px solid var(--border); padding-top:1.25rem; }
+.registration-form { padding-block:.25rem; min-width:0; }
+.registration-form header { margin-bottom:2rem; }
+.registration-form h1 { font-size:clamp(1.75rem,3vw,2.125rem); line-height:1.2; letter-spacing:-.035em; font-weight:500; margin:0 0 .75rem; text-wrap:balance; }
+.registration-form header>p { color:var(--muted-foreground); font-size:.9375rem; line-height:1.75; margin:0; }
+.registration-form fieldset { border:0; padding:0; margin:0; min-width:0; }
+.registration-field { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1.25rem; font-size:.8125rem; font-weight:500; }
+.registration-field input,.registration-field select,.registration-field textarea { width:100%; min-width:0; border:1px solid var(--border); border-radius:var(--radius); background:var(--background); color:var(--foreground); font:inherit; font-size:1rem; font-weight:400; padding:.75rem; min-height:3rem; caret-color:var(--primary); }
+.registration-field input::placeholder { color:var(--muted-foreground); }
+.registration-page :focus-visible { outline:2px solid var(--ring); outline-offset:3px; }
+.registration-page ::selection { background:var(--primary); color:var(--primary-foreground); }
+.registration-pair { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.registration-hint { font-size:.75rem; font-weight:400; color:var(--muted-foreground); line-height:1.65; margin:0; }
+.registration-password-heading { display:flex; justify-content:space-between; gap:1rem; align-items:center; margin:1.5rem 0 1rem; font-size:.8125rem; font-weight:600; }
+.registration-password-heading button { display:flex; align-items:center; gap:.4rem; color:var(--muted-foreground); font-size:.75rem; font-weight:400; cursor:pointer; }
+.registration-primary { display:flex; align-items:center; justify-content:center; gap:.75rem; width:100%; min-height:3rem; padding:.75rem 1rem; background:var(--primary); color:var(--primary-foreground); border-radius:var(--radius); font-size:.875rem; font-weight:600; margin-top:1.5rem; cursor:pointer; transition:filter .15s; }
+.registration-primary:hover { filter:brightness(.92); }
+.registration-page button:disabled,.registration-page fieldset:disabled { opacity:.6; cursor:wait; }
+.registration-fineprint,.registration-signin { font-size:.75rem; line-height:1.75; color:var(--muted-foreground); margin:1rem 0 0; }
+.registration-signin { font-size:.8125rem; padding-top:1.5rem; margin-top:1.5rem; border-top:1px solid var(--border); }
+.registration-page a,.registration-secondary { color:var(--primary); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.registration-page a.registration-primary { color:var(--primary-foreground); text-decoration:none; }
+.registration-error { font-size:.875rem; color:var(--destructive); margin-block:1rem; line-height:1.6; }
+.registration-email { padding:1.25rem; margin-bottom:1.5rem; background:var(--muted); border:1px solid var(--border); border-radius:var(--radius); }
+.registration-email p { margin:0 0 .75rem; font-size:.875rem; overflow-wrap:anywhere; }
+.registration-email-actions { display:flex; gap:1rem; flex-wrap:wrap; align-items:center; }
+.registration-email-actions input { max-width:10rem; }
+.registration-status-icon { color:var(--primary); margin-bottom:1.5rem; }
+.registration-summary { margin:1.5rem 0; border-block:1px solid var(--border); }
+.registration-summary div { padding:1rem 0; display:grid; grid-template-columns:1fr 1fr; gap:1rem; font-size:.875rem; }
+.registration-summary dt { color:var(--muted-foreground); }
+.registration-summary dd { margin:0; overflow-wrap:anywhere; }
+.registration-reason { padding:1.25rem; background:var(--muted); font-size:.875rem; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; margin-block:1.5rem; }
+@media(max-width:800px) { .registration-layout { grid-template-columns:1fr; max-width:36rem; } .registration-story { padding:1.5rem; } .registration-story h2 { max-width:none; font-size:1.75rem; } .registration-mark,.registration-story-intro,.registration-story-note { display:none; } .registration-steps { grid-template-columns:repeat(3,minmax(0,1fr)); margin:1.5rem 0 0; gap:.75rem; } .registration-steps li { flex-direction:column; gap:.5rem; } .registration-steps p { display:none; } .registration-steps strong { font-size:.75rem; } }
+@media(max-width:420px) { .registration-page { padding:1.5rem 1.25rem 3rem; } .registration-pair { grid-template-columns:1fr; gap:0; } .registration-story { padding:1.25rem; } }
+@media(prefers-reduced-motion:reduce) { .registration-page * { transition:none!important; animation:none!important; } }
+.verification-prompt { display:flex; align-items:center; gap:1rem; border-block:1px solid var(--border); padding:1.25rem 0; margin-bottom:2rem; font-size:.875rem; }
+.verification-prompt>svg { flex-shrink:0; color:var(--primary); }
+.verification-prompt strong { font-weight:600; }
+.verification-prompt p { margin:.25rem 0 0; font-size:.8125rem; color:var(--muted-foreground); line-height:1.7; max-width:65ch; }
+.verification-prompt a { margin-left:auto; display:flex; align-items:center; gap:.5rem; color:var(--primary); font-weight:500; flex-shrink:0; }
+.business-badge { display:inline-flex; align-items:center; gap:.35rem; font-size:.75rem; font-weight:500; color:var(--primary); }
+@media(max-width:700px) { .verification-prompt { flex-wrap:wrap; align-items:start; } .verification-prompt>div { flex:1; } .verification-prompt a { margin-left:2.5rem; width:100%; } }

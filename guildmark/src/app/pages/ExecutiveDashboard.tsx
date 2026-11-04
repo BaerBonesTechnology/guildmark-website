@@ -6,12 +6,14 @@ import { ResaleCliffChart } from "../components/dashboard/ResaleCliffChart";
 import { useDashboardViewModel } from "../viewmodels/useDashboardViewModel";
 import { dashboardMoney, dashboardCount } from "../services/dashboard.service";
 import "../../styles/dashboard.css";
+import { VerificationPrompt } from "../components/signup/VerificationPrompt";
 
 export function ExecutiveDashboard() {
   const vm = useDashboardViewModel();
   const base = useLocation().pathname.startsWith("/pre/") ? "/pre" : "";
   const d = vm.data;
   return <div className="gm-fleet gm-container">
+    <VerificationPrompt />
     <header className="gm-fleet-heading"><div><h1>Your fleet.<br />A clearer next move.</h1><p>Review listing value, pricing signals, and the offers that need your attention.</p></div>
       <Link className="gm-button gm-button-primary" to={`${base}/my-listings`}>Manage listings <span aria-hidden="true">â†—</span></Link></header>
     <div className="gm-fleet-toolbar"><h2>Fleet overview</h2><button className="gm-button" disabled={vm.isFetching} onClick={() => void vm.refetch()}><RefreshCw size={14} aria-hidden="true" />{vm.isFetching ? "Refreshingâ€¦" : "Refresh overview"}</button></div>

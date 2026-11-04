@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+import { Workspaces } from "./pages/Workspaces";
 import { createBrowserRouter, Navigate, useLocation } from "react-router";
 import { ExecutiveDashboard } from "./pages/ExecutiveDashboard";
 import { MarketCalculator } from "./pages/MarketCalculator";
@@ -13,6 +15,7 @@ import { ResetPassword } from "./pages/ResetPassword";
 import { AccountSettings } from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
+import { BusinessVerification } from "./pages/BusinessVerification";
 import { HowItWorks } from "./pages/HowItWorks";
 import { Layout } from "./components/Layout";
 import { PreLaunchLayout } from "./components/PreLaunchLayout";
@@ -39,6 +42,14 @@ import { PartnerGuildmarkAgreement } from "./pages/compliance/PartnerGuildmarkAg
 import { ProSignup } from "./pages/amps/ProSignup";
 import { ampsEnabled } from "./config";
 
+const AdminPortal = lazy(() => import("./portals/AdminPortal"));
+const PartnerPortal = lazy(() => import("./portals/PartnerPortal"));
+const workspaceRoutes = [
+  {path: "/workspaces", Component: Workspaces},
+  {path: "/admin/*", element: <Suspense fallback={<p role="status" className="p-8">Loading administration…</p>}><AdminPortal /></Suspense>},
+  {path: "/partners/*", element: <Suspense fallback={<p role="status" className="p-8">Loading partner hub…</p>}><PartnerPortal /></Suspense>},
+];
+
 // ── Shared compliance children ─────────────────────────────────────────────
 const complianceChildren = [
   { path: "terms", Component: TermsOfService },
@@ -55,6 +66,7 @@ function LivePreviewRedirect() {
 }
 
 export const router = createBrowserRouter([
+  ...workspaceRoutes,
   { path: "/pre/*", Component: LivePreviewRedirect },
   {
     path: "/",
@@ -64,6 +76,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/marketplace" replace /> },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
+      { path: "business-verification", Component: BusinessVerification },
       { path: "forgot-password", Component: ForgotPassword },
       { path: "reset-password", Component: ResetPassword },
       { path: "how-it-works", Component: HowItWorks },
@@ -163,6 +176,7 @@ export const router = createBrowserRouter([
  * All other paths redirect to the pre-launch hero.
  */
 export const preLaunchRouter = createBrowserRouter([
+  ...workspaceRoutes,
   {
     path: "/",
     Component: PreLaunchLayout,
@@ -189,6 +203,7 @@ export const preLaunchRouter = createBrowserRouter([
       { index: true, element: <Navigate to="/pre/marketplace" replace /> },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
+      { path: "business-verification", Component: BusinessVerification },
       { path: "forgot-password", Component: ForgotPassword },
       { path: "reset-password", Component: ResetPassword },
       { path: "how-it-works", Component: HowItWorks },

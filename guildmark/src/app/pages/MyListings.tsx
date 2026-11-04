@@ -5,11 +5,13 @@ import { ImportListingsDialog } from "../components/ImportListingsDialog";
 import { ListingRow } from "../components/listings/ListingRow";
 import { useMyListingsViewModel } from "../viewmodels/useMyListingsViewModel";
 import "../../styles/listings.css";
+import { VerificationPrompt } from "../components/signup/VerificationPrompt";
 
 export function MyListings() {
   const vm = useMyListingsViewModel();
   return (
     <div className="gm-inventory gm-container">
+      <VerificationPrompt />
       <header className="gm-inventory-heading">
         <div>
           <h1>

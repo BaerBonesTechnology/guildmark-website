@@ -195,9 +195,10 @@ void main() {
       final p = Provider();
       p.invoice('one', '2026-01-31');
       expect(p.fact('one').eligible, isTrue);
-      p.payments['payment-one']!['customer_id'] = 'other';
+      (p.invoices['one']!['primary_recipient'] as Map)['customer_id'] = 'other';
       expect(() => p.fact('one'), throwsStateError);
-      p.payments['payment-one']!['customer_id'] = 'customer';
+      (p.invoices['one']!['primary_recipient'] as Map)['customer_id'] =
+          'customer';
       (p.invoices['one']!['payment_requests']
               as List)[0]['computed_amount_money']['currency'] =
           'EUR';

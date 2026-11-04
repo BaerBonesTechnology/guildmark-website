@@ -56,18 +56,7 @@ class PaidInvoice {
     Map<String, dynamic>? order,
     List<Map<String, dynamic>> payments,
   ) {
-    for (final pair in [
-      ('id', 'square_subscription_id'),
-      ('customer_id', 'customer_id'),
-      ('location_id', 'location_id'),
-      ('plan_variation_id', 'variation_id'),
-    ]) {
-      if (subscription[pair.$1] != link[pair.$2])
-        throw StateError('Subscription ownership mismatch');
-    }
-    if (subscription['timezone'] != 'UTC' ||
-        subscription['start_date'] != link['start_date'])
-      throw StateError('Subscription cadence changed');
+    verifyBillingSubscription(link, subscription);
     if (invoice['subscription_id'] != link['square_subscription_id'] ||
         invoice['location_id'] != link['location_id'] ||
         invoice['timezone'] != 'UTC' ||
@@ -104,13 +93,19 @@ class PaidInvoice {
           payments.isEmpty)
         throw StateError('Paid invoice lacks matching completed payment');
       var total = 0;
+      final tenderIds = (order['tenders'] as List? ?? [])
+          .map((t) => (t as Map)['payment_id'] ?? t['id'])
+          .toSet();
+      final seen = <String>{};
       for (final p in payments) {
         final amount = p['amount_money'] as Map?;
-        if (p['status'] != 'COMPLETED' ||
+        if (p['id'] is! String ||
+            !tenderIds.contains(p['id']) ||
+            !seen.add(p['id'] as String) ||
+            p['status'] != 'COMPLETED' ||
             p['source_type'] != 'CARD' ||
             p['order_id'] != order['id'] ||
             p['location_id'] != link['location_id'] ||
-            p['customer_id'] != link['customer_id'] ||
             amount?['currency'] != 'USD' ||
             amount?['amount'] is! int)
           throw StateError('Payment ownership mismatch');
@@ -137,4 +132,22 @@ class PaidInvoice {
       state,
     );
   }
+}
+
+void verifyBillingSubscription(
+  Map<String, dynamic> link,
+  Map<String, dynamic> subscription,
+) {
+  for (final pair in [
+    ('id', 'square_subscription_id'),
+    ('customer_id', 'customer_id'),
+    ('location_id', 'location_id'),
+    ('plan_variation_id', 'variation_id'),
+  ]) {
+    if (subscription[pair.$1] != link[pair.$2])
+      throw StateError('Subscription ownership mismatch');
+  }
+  if (subscription['timezone'] != 'UTC' ||
+      subscription['start_date'] != link['start_date'])
+    throw StateError('Subscription cadence changed');
 }

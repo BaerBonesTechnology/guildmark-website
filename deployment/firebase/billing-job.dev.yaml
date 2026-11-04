@@ -13,7 +13,7 @@ spec:
           maxRetries: 2
           timeoutSeconds: '600'
           containers:
-            - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:7984238bb63881672259ef1051082d713b04e953468a62993fa1f3cd2eea8dfd
+            - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:59af5ff6ce116133e0210245a5aa4579e5c04effc7ed93a9e1d1b55938cb5593
               command: ['/app/bin/billing-reconcile']
               resources:
                 limits: {cpu: '1', memory: 512Mi}

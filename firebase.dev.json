@@ -49,7 +49,44 @@
           "destination": "/index.html"
         }
       ],
-      "site": "guildmark-dev-devdash"
+      "site": "guildmark-dev-devdash",
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "https://guildmark-dev.web.app/admin",
+          "type": 302
+        },
+        {
+          "source": "/analytics",
+          "destination": "https://guildmark-dev.web.app/admin/analytics",
+          "type": 302
+        },
+        {
+          "source": "/users",
+          "destination": "https://guildmark-dev.web.app/admin/users",
+          "type": 302
+        },
+        {
+          "source": "/mailing-list",
+          "destination": "https://guildmark-dev.web.app/admin/mailing-list",
+          "type": 302
+        },
+        {
+          "source": "/partners",
+          "destination": "https://guildmark-dev.web.app/admin/partners",
+          "type": 302
+        },
+        {
+          "source": "/pricing",
+          "destination": "https://guildmark-dev.web.app/admin/pricing",
+          "type": 302
+        },
+        {
+          "source": "/team",
+          "destination": "https://guildmark-dev.web.app/admin/team",
+          "type": 302
+        }
+      ]
     },
     {
       "public": "partners/dist",
@@ -71,7 +108,34 @@
           "destination": "/index.html"
         }
       ],
-      "site": "guildmark-dev-partners"
+      "site": "guildmark-dev-partners",
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "https://guildmark-dev.web.app/partners",
+          "type": 302
+        },
+        {
+          "source": "/login",
+          "destination": "https://guildmark-dev.web.app/partners/login",
+          "type": 302
+        },
+        {
+          "source": "/workboard",
+          "destination": "https://guildmark-dev.web.app/partners/workboard",
+          "type": 302
+        },
+        {
+          "source": "/services",
+          "destination": "https://guildmark-dev.web.app/partners/services",
+          "type": 302
+        },
+        {
+          "source": "/account",
+          "destination": "https://guildmark-dev.web.app/partners/account",
+          "type": 302
+        }
+      ]
     }
   ],
   "remoteconfig": {

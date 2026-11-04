@@ -1,8 +1,8 @@
 /** ViewModel for the Signup page: registration form state + platform fee copy. */
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import { usePlatformFees } from "../lib/apiHooks";
+import { useTranslation } from "react-i18next";
 
 export interface SignupForm {
   company: string;
@@ -13,10 +13,9 @@ export interface SignupForm {
 }
 
 export function useSignupViewModel() {
-  const { data: fees } = usePlatformFees();
-
-  // Format a decimal fee rate as a percentage string, falling back while loading.
-  const freeFee = fees ? `${parseFloat((fees.seller_fee_free * 100).toFixed(2))}%` : "—";
+  const { t } = useTranslation("registration");
+  const [submitting, setSubmitting] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
 
   const [formData, setFormData] = useState<SignupForm>({
     company: "",
@@ -26,18 +25,22 @@ export function useSignupViewModel() {
     confirmPassword: "",
   });
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const { signup, error } = useAuth();
+  const { signup, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const prefix = useLocation().pathname.startsWith("/pre/") ? "/pre" : "";
 
   const handleSubmit = async (evt: React.FormEvent) => {
     evt.preventDefault();
+    if (submitting) return;
+    clearError();
     setPasswordError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      setPasswordError("Passwords do not match");
+      setPasswordError(t("passwordMismatch"));
       return;
     }
 
+    setSubmitting(true);
     try {
       await signup({
         email: formData.email,
@@ -47,11 +50,11 @@ export function useSignupViewModel() {
         company_size: "0",
         industry: "unknown",
       });
-      navigate("/dashboard");
+      navigate(`${prefix}/dashboard`);
     } catch {
       // error message is surfaced via useAuth's error state below
-    }
+    } finally { setSubmitting(false); }
   };
 
-  return { error, formData, freeFee, handleSubmit, passwordError, setFormData };
+  return { error, formData, handleSubmit, passwordError, setFormData, submitting, showPasswords, loginPath: `${prefix}/login`, togglePasswords: () => setShowPasswords(value => !value) };
 }

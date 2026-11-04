@@ -8,6 +8,7 @@ import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 Handler middleware(Handler handler) {
   return handler
@@ -21,6 +22,12 @@ Middleware _errorMiddleware() {
     return (context) async {
       try {
         return await handler(context);
+      } on SellerVerificationRequired {
+        return jsonError(
+          403,
+          SellerVerificationRequired.code,
+          SellerVerificationRequired.message,
+        );
       } on FirebaseAuthFailure catch (e) {
         if (e.code != 'AUTH_UNAVAILABLE') {
           return unauthorized('Invalid credentials');

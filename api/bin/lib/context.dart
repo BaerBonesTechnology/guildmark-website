@@ -15,31 +15,37 @@ class AuthPrincipal {
   });
 
   factory AuthPrincipal.fromClaims(AccessClaims c) => AuthPrincipal(
-        userId: c.userId,
-        companyId: c.companyId,
-        role: c.role,
-        audience: c.audience,
-      );
+    userId: c.userId,
+    companyId: c.companyId,
+    role: c.role,
+    audience: c.audience,
+  );
 
   final String userId;
   final String companyId;
   final String role;
   final String audience;
 
-  bool get isStaffAdministrator => audience == 'staff' && role == 'admin';
+  bool get isStaffAdministrator =>
+      audience == 'staff' && {'admin', 'superadmin'}.contains(role);
 }
 
 /// Injected into all /partner/* requests. Null when no valid partner JWT is
 /// present — auth routes use the null case to issue a new token; protected
 /// routes return 401 when this is null.
 class PartnerPrincipal {
-  PartnerPrincipal({required this.partnerId, required this.partnerCode});
+  PartnerPrincipal({
+    required this.partnerId,
+    required this.partnerCode,
+    this.status = "active",
+  });
 
   factory PartnerPrincipal.fromClaims(PartnerClaims c) => PartnerPrincipal(
-        partnerId:   c.partnerId,
-        partnerCode: c.partnerCode,
-      );
+    partnerId: c.partnerId,
+    partnerCode: c.partnerCode,
+  );
 
   final String partnerId;
   final String partnerCode;
+  final String status;
 }

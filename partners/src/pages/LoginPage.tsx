@@ -1,9 +1,11 @@
+import { usePortalPath } from "../lib/portal";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { Shield, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 export function LoginPage() {
+  const portalPath = usePortalPath();
   const { login } = useAuth();
   const navigate   = useNavigate();
 
@@ -19,7 +21,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/workboard", { replace: true });
+      navigate(portalPath("/workboard"), { replace: true });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

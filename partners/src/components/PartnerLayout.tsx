@@ -1,3 +1,4 @@
+import { usePortalPath } from "../lib/portal";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import {
   Shield,
@@ -16,13 +17,14 @@ const NAV = [
 ];
 
 export function PartnerLayout() {
+  const portalPath = usePortalPath();
   const { partner, logout } = useAuth();
   const location  = useLocation();
   const navigate  = useNavigate();
 
   async function handleLogout() {
     await logout();
-    navigate("/login", { replace: true });
+    navigate(portalPath("/login"), { replace: true });
   }
 
   return (
@@ -99,11 +101,11 @@ export function PartnerLayout() {
         {/* Nav */}
         <nav className="flex-1 px-3 py-2 grid grid-cols-1 sm:grid-cols-3 md:block md:space-y-0.5">
           {NAV.map(({ label, href, icon: Icon }) => {
-            const active = location.pathname === href;
+            const active = location.pathname === portalPath(href);
             return (
               <Link
                 key={href}
-                to={href}
+                to={portalPath(href)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
                 style={{
                   background: active ? "var(--prt-accent)" : "transparent",

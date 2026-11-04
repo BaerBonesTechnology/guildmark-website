@@ -173,10 +173,12 @@ export function GMNavbar() {
                 <TopNavLink item={{ label: "Marketplace", icon: ShoppingCart, to: `${PREVIEW_BASE}/marketplace` }} />
               </>
             )}
+            <TopNavLink item={{ label: "Workspaces", icon: Home, to: "/workspaces" }} />
           </nav>
 
           {/* Right controls (desktop) */}
           <div className="hidden lg:flex items-center gap-2 shrink-0 ml-auto">
+            <Link to="/workspaces" onClick={handleNav} className="flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground"><Home size={16} />Workspaces</Link>
             {isAuthenticated ? (
               <>
                 {ampsEnabled && <><GmProLink /><Sep /></>}

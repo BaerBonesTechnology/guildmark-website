@@ -67,7 +67,13 @@ Future<Response> onRequest(RequestContext context) async {
         return badRequest('password must be at least 10 characters');
       }
 
-      const validRoles = ['superadmin', 'engineer', 'support', 'marketing'];
+      const validRoles = [
+        'superadmin',
+        'compliance',
+        'engineer',
+        'support',
+        'marketing',
+      ];
       if (!validRoles.contains(role)) return badRequest('Invalid role');
 
       final sessions = firebaseSessions(context);

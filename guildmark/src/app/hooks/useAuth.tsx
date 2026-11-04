@@ -10,6 +10,7 @@ import { api, setAccessToken, clearAccessToken, ApiError } from "../lib/api";
 import type { LoginResponse, SignupRequest } from "../models/auth";
 
 export interface AuthUser {
+  business_verification_status?: string;
   id:                  string;
   email:               string;
   full_name:           string;

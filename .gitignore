@@ -66,3 +66,14 @@ storage-debug.log
 
 # Firebase CLI upload caches
 /.firebase/
+
+# Product roadmap requested by the project owner
+!/guildmark/ROADMAP.md
+
+# Project documentation and durable design guidance
+!/PRODUCT.md
+!/guildmark/DESIGN.md
+!/guildmark/docs/business-verification.md
+# Local design-tool session caches
+.impeccable/questions/
+**/.impeccable/hook.cache.json

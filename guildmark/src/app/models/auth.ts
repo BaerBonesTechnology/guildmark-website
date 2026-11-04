@@ -5,6 +5,7 @@
 export interface LoginResponse {
   access_token: string;
   user: {
+  business_verification_status?: string;
     id:         string;
     email:      string;
     full_name:  string;

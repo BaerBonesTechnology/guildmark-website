@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:guildmark_api/firebase/firestore.dart';
 
 import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/services/business_verification.dart';
 
 class UserRecord {
   UserRecord({
@@ -20,6 +21,7 @@ class UserRecord {
     required this.companyName,
     this.subscriptionPlan = 'free',
     this.subscriptionStatus = 'active',
+    this.businessVerificationStatus = 'unsubmitted',
   });
 
   final String id;
@@ -35,6 +37,7 @@ class UserRecord {
 
   /// 'active' | 'cancelled' | 'past_due'
   final String subscriptionStatus;
+  final String businessVerificationStatus;
 
   Map<String, dynamic> toAuthUser() => {
     'id': id,
@@ -45,6 +48,7 @@ class UserRecord {
     'company': companyName,
     'subscription_plan': subscriptionPlan,
     'subscription_status': subscriptionStatus,
+    'business_verification_status': businessVerificationStatus,
   };
 }
 
@@ -73,7 +77,11 @@ class UserRepo {
   Future<UserRecord> create({
     required String email,
     required String passwordHash,
-    required String fullName, required String companyName, required String companySize, required String industry, String? firebaseUid,
+    required String fullName,
+    required String companyName,
+    required String companySize,
+    required String industry,
+    String? firebaseUid,
   }) async {
     final normalized = email.toLowerCase().trim();
 
@@ -306,6 +314,9 @@ class UserRepo {
       companyName: company.data['name'] as String,
       subscriptionPlan: (sub?.data['plan'] as String?) ?? 'free',
       subscriptionStatus: (sub?.data['status'] as String?) ?? 'active',
+      businessVerificationStatus: BusinessVerification.status(
+        await BusinessVerification(_db).record(companyId),
+      ),
     );
   }
 
