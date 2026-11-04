@@ -43,7 +43,6 @@ class ValuationRequest {
 }
 
 class ValuationResponse {
-
   factory ValuationResponse.fromJson(Map<String, dynamic> json) {
     return ValuationResponse(
       fairMarketValue: (json['fair_market_value'] as num).toDouble(),
@@ -72,15 +71,19 @@ class MlClient {
     required this.baseUrl,
     this.serviceToken,
     this.cacheVersion = 'valuation-0.1.0',
+    this.identityToken,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
+  final Future<String> Function()? identityToken;
   final String baseUrl;
   final String? serviceToken;
   final String cacheVersion;
 
-  Map<String, String> get _headers => {
+  Future<Map<String, String>> get _headers async => {
     'Content-Type': 'application/json',
+    if (identityToken != null)
+      'X-Serverless-Authorization': 'Bearer ${await identityToken!()}',
     if (serviceToken != null) 'Authorization': 'Bearer $serviceToken',
   };
   final http.Client _client;
@@ -90,7 +93,7 @@ class MlClient {
   ) async {
     final resp = await _client.post(
       Uri.parse('$baseUrl/predict/valuation'),
-      headers: _headers,
+      headers: await _headers,
       body: jsonEncode(req.toJson()),
     );
     if (resp.statusCode != 200) {
@@ -107,7 +110,7 @@ class MlClient {
   }) async {
     final resp = await _client.post(
       Uri.parse('$baseUrl/predict/depreciation'),
-      headers: _headers,
+      headers: await _headers,
       body: jsonEncode({
         'company_id': companyId,
         'horizon_months': horizonMonths,
@@ -133,7 +136,7 @@ class MlClient {
     try {
       await _client.post(
         Uri.parse('$baseUrl/data/track'),
-        headers: _headers,
+        headers: await _headers,
         body: jsonEncode({'model_name': modelName, 'asset_type': assetType}),
       );
     } catch (_) {
@@ -145,7 +148,6 @@ class MlClient {
 }
 
 class DepreciationPoint {
-
   factory DepreciationPoint.fromJson(Map<String, dynamic> json) =>
       DepreciationPoint(
         month: json['month'] as String,

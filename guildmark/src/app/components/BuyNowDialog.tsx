@@ -2,6 +2,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Loader2, CheckCircle2, AlertCircle, CreditCard, LockKeyhole, ArrowRight } from "lucide-react";
 import type { MarketplaceListing } from "../models/marketplace";
+import { squareEnvironment } from "../config";
 import { money } from "../services/square.service";
 import { categoryIcon } from "../services/marketplace.service";
 import { useBuyNowViewModel } from "../viewmodels/useBuyNowViewModel";
@@ -55,6 +56,7 @@ export function BuyNowDialog({ listing, onOpenChange, onSuccess, open, quantity 
               </label>
               <div className="gm-card-field"><p>Card details</p><div id="gm-buynow-card" aria-label="Square card details" /></div>
             </section>
+            {squareEnvironment === "sandbox" && <p role="note" className="gm-purchase-note">Square sandbox - no real charges. Use Square test card details.</p>}
             <section aria-labelledby="billing-title">
               <h2 id="billing-title"><span>02</span> Billing address</h2>
               <div className="gm-customer-form">

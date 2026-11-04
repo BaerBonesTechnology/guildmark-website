@@ -13,6 +13,7 @@ import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/firebase/remote_config.dart';
 import 'package:guildmark_api/http_routing.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
+import 'package:guildmark_api/ml/cloud_run_identity.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 import 'package:guildmark_api/services/fedex_service.dart';
@@ -26,6 +27,9 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   final ml = cfg.mlServiceUrl != null
       ? MlClient(
           baseUrl: cfg.mlServiceUrl!,
+          identityToken: Platform.environment['ML_CLOUD_RUN_IAM'] == 'true'
+              ? CloudRunIdentity(cfg.mlServiceUrl!).token
+              : null,
           serviceToken: cfg.mlServiceToken,
           cacheVersion:
               Platform.environment['ML_CACHE_VERSION'] ?? 'valuation-0.1.0',

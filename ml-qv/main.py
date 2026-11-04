@@ -70,6 +70,10 @@ app = FastAPI(
 
 @app.middleware("http")
 async def require_service_token(request: Request, call_next):
+    if os.environ.get("ML_SERVING_ONLY") == "true" and (
+        request.url.path.startswith("/admin/") or request.url.path.startswith("/data/")
+    ):
+        return JSONResponse(status_code=405, content={"detail": "Immutable serving deployment"})
     if request.url.path == "/health":
         return await call_next(request)
     expected = os.environ.get("ML_SERVICE_TOKEN", "")

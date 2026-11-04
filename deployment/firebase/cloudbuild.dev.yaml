@@ -1,7 +1,7 @@
 steps:
   - name: gcr.io/cloud-builders/docker
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:firebase-20261104-ab31936', '.']
-images: ['us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:firebase-20261104-ab31936']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:payments-ml-20261104-51ead02', '.']
+images: ['us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:payments-ml-20261104-51ead02']
 serviceAccount: projects/guildmark-dev/serviceAccounts/guildmark-build@guildmark-dev.iam.gserviceaccount.com
 options:
   logging: CLOUD_LOGGING_ONLY

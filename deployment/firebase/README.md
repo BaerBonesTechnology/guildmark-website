@@ -256,6 +256,41 @@ Cloud verification exposed two missing descending indexes: company/snapshot_date
 
 Local evidence is under ignored `outputs/firebase-dev-https/` (JSON reports and screenshots). Test credentials and recovery tokens are not included in reports. Synthetic listings are withdrawn after verification, and test-only privileged identity records are deactivated after the final portal checks.
 
-### Remaining limitations
+### Initial rollout limitations (payments/ML superseded below)
 
-Square, escrow, carrier, email-provider and ML credentials/services are not configured in the dev runtime. No card capture, seller payout, funded shipping, paid AMPS entitlement or ML inference was claimed or performed. Real inbox delivery and physical phone/passkey hardware remain separate rehearsals. This deployment is dev staging, not approval for production or paid traffic. The Cloud SQL deferral remains in effect.
+At the initial dev rollout, Square, escrow, carrier, email-provider and ML credentials/services were not configured in the dev runtime. No card capture, seller payout, funded shipping, paid AMPS entitlement or ML inference was claimed or performed. Real inbox delivery and physical phone/passkey hardware remain separate rehearsals. This deployment is dev staging, not approval for production or paid traffic. The Cloud SQL deferral remains in effect.
+
+
+## Dev sandbox payments and private ML — November 4, 2026
+
+The deployment fixes were committed and pushed to dev as `51ead02` before this integration work. This follow-up configures **guildmark-dev only**, not production.
+
+### Payments
+
+Square credentials from the existing development configuration were validated against the Square Sandbox Locations API and an active USD location. The backend access token is stored in dev Secret Manager. Both API configuration and browser build explicitly use sandbox mode; the API URL is fixed to `https://connect.squareupsandbox.com`. Public application/location IDs and the dev-only Vite build settings are in `frontend.dev.env`. Never supply `VITE_SQUARE_ACCESS_TOKEN` to a build. The staged browser bundle was checked against backend secret values and contains neither the Square access token nor the ML application token.
+
+Marketplace checkout now tokenizes test cards through Square's actual hosted fields in sandbox, instead of substituting a static successful nonce. Real Square sandbox API checks verified declines release reservations, approvals reach COMPLETED, amounts and order references match, request replays return the same order, and stock is consumed once. Desktop and mobile test purchases each totaled USD 10.28. No real money was charged.
+
+The existing sandbox-only AMPS workflow grants one paid period after a verified sandbox payment. It does not create a recurring subscription. This path was verified with Starter at USD 39, including retry behavior and fresh paid entitlements. Production recurring billing remains gated pending verified invoice reconciliation; no live plan IDs, recurring charges, settlement, seller payouts or refunds were enabled.
+
+### ML
+
+Cloud Run service `guildmark-ml` is private. Only `guildmark-api@guildmark-dev.iam.gserviceaccount.com` has a service-level invoker grant; no allUsers binding is present. The API obtains short-lived audience-specific ID tokens from workload metadata, caches them until shortly before expiry and sends them in `X-Serverless-Authorization`. A separate application token stays in `Authorization`; both runtime identities have access only to the required dev secret.
+
+The serving image packages the existing local valuation/depreciation artifacts, records their SHA-256 values, verifies them before loading, and runs as a non-root user with read-only artifact files. `Dockerfile.serving` bypasses the old startup-training entrypoint. Scheduled training is off, and training/tracking endpoints return 405. Missing or corrupt artifacts fail startup instead of triggering training. Models are durable in the pinned container image; instance-local query tracking and model mutation are disabled. No eBay keys or training provider credentials were deployed.
+
+`ml-artifacts.dev.json` records provenance and checksums. These artifacts are suitable for this integration rehearsal; their original training provenance and market calibration were not independently validated. This deployment does not establish model accuracy, production readiness, or forecast reliability. Rotate `ML_CACHE_VERSION` whenever changing the artifact/model version.
+
+### Verification
+
+Local tests: 29 Python ML tests; five Dart ML credential tests; two browser checkout-state tests; production storefront build. Real dev HTTPS checks at desktop and mobile viewports verified:
+
+- Square hosted-card tokenization with official sandbox card data; completed provider payments; USD amount/reference checks; order and reservation persistence; safe request replay; stock reduction exactly once.
+- Sandbox decline without consumed inventory; no backend credentials in browser bundles.
+- Paid sandbox Starter period and idempotent retry; company entitlement and asset persistence; fresh valuation consumes one credit; identical repeat uses the cached valuation without another credit.
+- Private valuation calls through the API; direct anonymous ML access denied; authorized depreciation forecast returns the requested horizon; wrong application bearer rejected; retraining/tracking disabled.
+- Calculator estimates render from the live dev inference service, and inventory layouts are checked at desktop/mobile widths. A scoped relative scroll container prevents hidden inventory action labels from widening the mobile page.
+
+Reports/screenshots are in ignored `outputs/dev-payments-ml/`. Sandbox orders/invoices are retained for audit; leftover synthetic listings are withdrawn. API and ML image digests are pinned in the dev manifests. Production resources and the production-oriented deployment templates were not changed. Full provider settlement, physical shipping, live recurring billing, real inbox delivery, model calibration and production rollout are outside this verification.
+
+Build/deploy from an environment containing **only the public Vite keys** in `frontend.dev.env`; do not inject the full Doppler environment. Use the separate dev Hosting configuration and explicit `--project guildmark-dev` for all cloud commands. Existing local ML artifacts are ignored by Git; a future rebuild must supply the reviewed files matching `ml-artifacts.dev.json` or deliberately review a new artifact release. It must never train during serving startup.

@@ -7,7 +7,7 @@ import { squareApplicationId, squareLocationId } from "../config";
 import { useBuyListing, usePlatformFees } from "../lib/apiHooks";
 import type { MarketplaceListing } from "../models/marketplace";
 import {
-  computeOrderTotals, isSquareSandbox, loadSquareSdk, type SquareCardForm,
+  computeOrderTotals, loadSquareSdk, type SquareCardForm,
 } from "../services/square.service";
 
 type Step = "card" | "success";
@@ -95,9 +95,6 @@ export function useBuyNowViewModel(listing: MarketplaceListing, quantity: number
       if (!attempt.submitted) {
         attempt.quantity = qty;
         attempt.expectedTotalCents = Math.round(total * 100);
-        if (isSquareSandbox()) {
-          attempt.source = "cnon:card-nonce-ok";
-        } else {
           if (!cardRef.current) throw new Error("Payment form not ready — please wait.");
           if (!cardholderName.trim() || !addr1.trim() || !city.trim() || !stateAb.trim() || !zip.trim()) {
             throw new Error("Complete the required billing fields before paying.");
@@ -105,7 +102,6 @@ export function useBuyNowViewModel(listing: MarketplaceListing, quantity: number
           const result = await cardRef.current.tokenize();
           if (result.status !== "OK" || !result.token) throw new Error(result.errors?.[0]?.message ?? "Card tokenisation failed");
           attempt.source = result.token;
-        }
         // Persist the key before sending. Reloads resume instead of charging again.
         attempt.submitted = true;
       }
