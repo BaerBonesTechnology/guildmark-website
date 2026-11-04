@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dart_appwrite/dart_appwrite.dart' show Query;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 
@@ -20,7 +17,7 @@ Future<Response> onRequest(RequestContext context) async {
   if (auth == null) return unauthorized();
   if (!auth.isStaffAdministrator) return forbidden('Admin role required');
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -43,8 +40,8 @@ Future<Response> onRequest(RequestContext context) async {
   final expired = <Row>[];
   while (true) {
     final page = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.orders,
+      databaseId: Collections.databaseId,
+      tableId: Collections.orders,
       queries: [
         Query.equal('status', ['delivered', 'inspecting']),
         // Rows with a null inspection_ends_at never satisfy the comparison,
@@ -56,8 +53,8 @@ Future<Response> onRequest(RequestContext context) async {
     if (page.rows.isEmpty) break;
     for (final row in page.rows) {
       await db.updateRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.orders,
+        databaseId: Collections.databaseId,
+        tableId: Collections.orders,
         rowId: row.$id,
         data: {'status': 'complete', 'completed_at': nowIso},
       );

@@ -209,7 +209,6 @@ Future<void> _setupAssets() async {
     c,
     'storage_type',
     ['ssd', 'nvme', 'hdd', 'emmc', 'other'],
-    required: false,
   );
   await _str(c, 'gpu_model', required: false);
   // Display (laptop / monitor / phone / tablet)
@@ -313,8 +312,7 @@ Future<void> _setupMdmConnections() async {
   await _text(c, 'credentials_cipher_b64', required: true);
   await _str(c, 'credentials_nonce_b64', required: true, size: 64);
   await _datetime(c, 'last_sync_at', required: false);
-  await _enum(c, 'last_sync_status', ['success', 'partial', 'failed'],
-      required: false);
+  await _enum(c, 'last_sync_status', ['success', 'partial', 'failed']);
   await _text(c, 'last_sync_error', required: false);
   await _int(c, 'device_count', required: false);
   _index(c, 'company_mdm_unique', TablesDBIndexType.unique, [

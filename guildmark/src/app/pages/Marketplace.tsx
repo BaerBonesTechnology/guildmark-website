@@ -1,102 +1,24 @@
-/** Marketplace / GuildMarket (PLP) page — View. Logic lives in the ViewModel. */
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, ArrowRight, BadgeCheck, ShieldCheck, Scale } from "lucide-react";
+import { Link } from "react-router";
 import { ListingCard } from "../components/marketplace/ListingCard";
 import { ListingCardSkeleton } from "../components/marketplace/ListingCardSkeleton";
 import { MarketplaceFilterRow } from "../components/marketplace/MarketplaceFilterRow";
 import { MarketplaceFilterSection } from "../components/marketplace/MarketplaceFilterSection";
-import { MARKETPLACE_CATEGORIES, MARKETPLACE_GRADES, MARKETPLACE_SORTS } from "../constants/marketplace.constants";
-import { BODY, DISPLAY, MONO } from "../constants/typography";
+import { GRADE_BLURB, MARKETPLACE_CATEGORIES, MARKETPLACE_GRADES, MARKETPLACE_SORTS } from "../constants/marketplace.constants";
 import { useMarketplaceViewModel } from "../viewmodels/useMarketplaceViewModel";
 
 export function Marketplace() {
-  const {
-    anyFilter, categories, clearFilters, filteredListings, goToNextPage, goToPrevPage,
-    grades, isError, isLoading, page, pageItems, search, setSearch, setSortBy, sortBy,
-    stats, toggleCategory, toggleGrade, totalPages,
-  } = useMarketplaceViewModel();
-
-  return (
-    <div className="px-6 py-6  mx-auto" style={{ fontFamily: BODY }}>
-      {/* Header + stats */}
-      <div className="mb-6">
-        <p className="text-[10px] tracking-[0.2em] uppercase mb-1" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>GuildMarket</p>
-        <h1 className="tracking-tight mb-4" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.2rem, 4vw, 3.2rem)", letterSpacing: 1.5 }}>
-          Certified enterprise hardware,<br />from verified B2B sellers.
-        </h1>
-      </div>
-
-      <div className="grid lg:grid-cols-[220px_1fr] gap-6">
-        {/* Sidebar filters */}
-        <aside className="hidden lg:block">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Filters</p>
-            {anyFilter && (
-              <button onClick={clearFilters}
-                className="text-[10px] hover:text-foreground transition-colors" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Clear</button>
-            )}
-          </div>
-          <MarketplaceFilterSection title="Category">
-            {MARKETPLACE_CATEGORIES.map((category) => <MarketplaceFilterRow key={category.type} label={category.label} checked={categories.has(category.type)} onToggle={() => toggleCategory(category.type)} />)}
-          </MarketplaceFilterSection>
-          <MarketplaceFilterSection title="Condition">
-            {MARKETPLACE_GRADES.map((entry) => <MarketplaceFilterRow key={entry.grade} label={entry.label} checked={grades.has(entry.grade)} onToggle={() => toggleGrade(entry.grade)} />)}
-          </MarketplaceFilterSection>
-        </aside>
-
-        {/* Main */}
-        <div>
-          <div className="flex flex-col sm:flex-row gap-3 mb-5">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--muted-foreground)" }} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets…"
-                className="w-full pl-9 pr-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary transition-colors"
-                style={{ fontFamily: BODY, background: "var(--input-background)" }} />
-            </div>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-              className="px-3 py-2.5 text-sm border border-border text-foreground focus:outline-none focus:border-primary appearance-none"
-              style={{ fontFamily: BODY, background: "var(--input-background)" }}>
-              {MARKETPLACE_SORTS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </div>
-
-          {isLoading ? (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, ndx) => <ListingCardSkeleton key={ndx} />)}</div>
-          ) : isError ? (
-            <div className="border border-border py-16 text-center text-sm" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>Failed to load listings. Please try again.</div>
-          ) : pageItems.length === 0 ? (
-            <div className="border border-border py-16 text-center" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>
-              <p className="text-sm font-medium mb-1">No listings found</p>
-              <p className="text-xs">Try adjusting your filters or search term.</p>
-            </div>
-          ) : (
-            <>
-            <div className="flex flex-wrap gap-px w-fit mb-6">
-              <div>
-                <span className="text-[10px] tracking-widest uppercase mr-2" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Results</span>
-                <span className="text-sm" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{stats.totalListings.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-4">{pageItems.map((listing) => <ListingCard key={listing.id} listing={listing} />)}</div>
-          </>
-          )}
-
-          {!isLoading && !isError && totalPages > 1 && (
-            <div className="flex items-center justify-between pt-6">
-              <p className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Page {page} of {totalPages} · {filteredListings.length.toLocaleString()} listings</p>
-              <div className="flex items-center gap-2">
-                <button disabled={page <= 1} onClick={goToPrevPage}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border hover:border-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: BODY }}>
-                  <ChevronLeft size={14} /> Prev
-                </button>
-                <button disabled={page >= totalPages} onClick={goToNextPage}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border hover:border-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors" style={{ fontFamily: BODY }}>
-                  Next <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const { anyFilter, categories, clearFilters, filteredListings, goToNextPage, goToPrevPage, grades, isError, isLoading, page, pageItems, refetch, search, setSearch, setSortBy, sortBy, toggleCategory, toggleGrade, totalPages } = useMarketplaceViewModel();
+  return <div className="gm-market gm-container">
+    <header className="gm-market-heading"><div><h1>Your next upgrade{" "}<br className="gm-hero-br" />starts here.</h1><p className="gm-market-sub">Enterprise hardware from verified businesses — every unit graded, data-wiped, and priced against fair-market value.</p><ul className="gm-trust-strip"><li><BadgeCheck size={15} strokeWidth={2} aria-hidden="true" />Verified business sellers</li><li><ShieldCheck size={15} strokeWidth={2} aria-hidden="true" />Certified data erasure</li><li><Scale size={15} strokeWidth={2} aria-hidden="true" />Fair-market pricing</li></ul></div><Link to="/pre/offload" className="gm-text-link">Have equipment to sell? <ArrowRight size={16} /></Link></header>
+    <div className="gm-market-toolbar"><label className="gm-search"><Search size={18} /><input aria-label="Search hardware" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search by model or specification" /></label><button className="gm-filter-toggle" aria-expanded={filtersOpen} aria-controls="market-filters" onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={16} />Filters {anyFilter && <span>•</span>}</button><select aria-label="Sort listings" value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>{MARKETPLACE_SORTS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+    <div className="gm-market-grid"><aside id="market-filters" className={`gm-market-filters${filtersOpen ? " is-open" : ""}`}><div className="gm-filter-title"><h2>Refine your search</h2>{anyFilter && <button onClick={clearFilters}>Clear all</button>}</div><MarketplaceFilterSection title="Equipment">{MARKETPLACE_CATEGORIES.map(category => <MarketplaceFilterRow key={category.type} label={category.label} checked={categories.has(category.type)} onToggle={() => toggleCategory(category.type)} />)}</MarketplaceFilterSection><MarketplaceFilterSection title="Condition">{MARKETPLACE_GRADES.map(entry => <MarketplaceFilterRow key={entry.grade} label={entry.label} checked={grades.has(entry.grade)} onToggle={() => toggleGrade(entry.grade)} />)}<ul className="gm-grade-legend">{MARKETPLACE_GRADES.map(entry => <li key={entry.grade}><span className={`gm-grade-dot gm-grade-dot-${entry.grade.toLowerCase()}`} aria-hidden="true" />{GRADE_BLURB[entry.grade]}</li>)}</ul></MarketplaceFilterSection></aside>
+      <section aria-label="Available hardware" aria-busy={isLoading}><div className="gm-results-heading"><span role="status">{isLoading ? "Loading hardware…" : isError ? "Available hardware" : `${filteredListings.length} ${filteredListings.length === 1 ? "listing" : "listings"}`}</span><span>Prices per unit · USD</span></div>
+        {isLoading ? <div className="gm-listing-grid">{Array.from({length:6}).map((_, i) => <ListingCardSkeleton key={i} />)}</div> : isError ? <div className="gm-market-empty"><h2>We couldn’t load the marketplace.</h2><p>Please try again in a moment.</p><button className="gm-button gm-button-small" onClick={() => refetch()}>Try again</button></div> : pageItems.length === 0 ? <div className="gm-market-empty"><Search size={28} strokeWidth={1.2} /><h2>No matching hardware.</h2><p>Try another model or a broader set of filters.</p>{(anyFilter || search) && <button className="gm-button gm-button-small" onClick={() => { clearFilters(); setSearch(""); }}>Reset search</button>}</div> : <div className="gm-listing-grid">{pageItems.map(listing => <ListingCard key={listing.id} listing={listing} />)}</div>}
+        {!isLoading && !isError && totalPages > 1 && <div className="gm-pagination"><span>Page {page} of {totalPages}</span><div><button disabled={page <= 1} onClick={goToPrevPage}><ChevronLeft size={16} />Previous</button><button disabled={page >= totalPages} onClick={goToNextPage}>Next<ChevronRight size={16} /></button></div></div>}
+      </section>
     </div>
-  );
+  </div>;
 }

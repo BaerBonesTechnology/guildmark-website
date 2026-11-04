@@ -27,7 +27,7 @@ interface AuthContextType {
   error:           string | null;
   login:           (email: string, password: string) => Promise<void>;
   signup:          (data: SignupRequest) => Promise<void>;
-  logout:          () => Promise<void>;
+  logout:          (options?: { requireServer?: boolean }) => Promise<boolean>;
   clearError:      () => void;
   /** Re-fetch the access token and update the in-memory user (e.g. after plan change). */
   refreshUser:     () => Promise<void>;
@@ -86,13 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (options?: { requireServer?: boolean }) => {
+    let confirmed = false;
     try {
       await api.post("/auth/logout", {});
-    } catch { /* best-effort */ } finally {
-      clearAccessToken();
-      setUser(null);
+      confirmed = true;
+    } catch {
+      if (options?.requireServer) return false;
     }
+    clearAccessToken();
+    setUser(null);
+    return confirmed;
   }, []);
 
   const clearError = useCallback(() => setError(null), []);

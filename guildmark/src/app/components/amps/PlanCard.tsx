@@ -19,7 +19,7 @@ export function PlanCard({ fees, onSelect, plan }: PlanCardProps) {
     <div className="relative border p-6 space-y-5" style={{ background: "var(--card)", borderColor: highlight ? AMPS_ACCENT : "var(--border)" }}>
       {highlight && (
         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center px-3 py-0.5 text-[10px] font-semibold text-white tracking-wider uppercase" style={{ background: AMPS_ACCENT, fontFamily: MONO }}>Most popular</span>
+          <span className="inline-flex items-center px-3 py-0.5 text-[10px] font-semibold text-amps-accent-foreground tracking-wider uppercase" style={{ background: AMPS_ACCENT, fontFamily: MONO }}>More capacity</span>
         </div>
       )}
       <div className="space-y-1">
@@ -37,7 +37,7 @@ export function PlanCard({ fees, onSelect, plan }: PlanCardProps) {
           </li>
         ))}
       </ul>
-      <button onClick={() => onSelect(plan.key)} className="w-full py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity" style={{ background: AMPS_ACCENT }}>Get {plan.label}</button>
+      <button onClick={() => onSelect(plan.key)} className="w-full py-2.5 text-sm font-medium text-amps-accent-foreground hover:opacity-90 transition-opacity" style={{ background: AMPS_ACCENT }}>Get {plan.label}</button>
     </div>
   );
 }

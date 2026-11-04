@@ -1,11 +1,9 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException, ID;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/webauthn/webauthn.dart';
 
@@ -16,7 +14,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -29,13 +27,22 @@ Future<Response> onRequest(RequestContext context) async {
   // ── Verify setup token ───────────────────────────────────────────────────
   final authHeader = context.request.headers['Authorization'] ?? '';
   final raw = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
-  final claims = jwt.verifyAccessToken(raw);
+  final sessions = firebaseSessions(context);
+  final claims = sessions == null ? jwt.verifyAccessToken(raw) : null;
+  final firebasePrincipal = sessions == null
+      ? null
+      : await sessions.principal(raw);
 
-  if (claims == null || claims.companyId != 'devdash_setup' || claims.audience != 'staff_setup') {
+  if (sessions == null
+      ? (claims == null ||
+            claims.companyId != 'devdash_setup' ||
+            claims.audience != 'staff_setup')
+      : (firebasePrincipal == null ||
+            firebasePrincipal.audience != 'staff_setup')) {
     return unauthorized('Valid setup token required');
   }
 
-  final employeeId = claims.userId;
+  final employeeId = firebasePrincipal?.userId ?? claims!.userId;
 
   // ── Parse body ───────────────────────────────────────────────────────────
   final body = await context.request.json() as Map<String, dynamic>?;
@@ -61,11 +68,11 @@ Future<Response> onRequest(RequestContext context) async {
   Row chalRow;
   try {
     chalRow = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeyChallenges,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeyChallenges,
       rowId: challengeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) {
       return badRequest(
         'Challenge not found, expired, or already used',
@@ -93,7 +100,7 @@ Future<Response> onRequest(RequestContext context) async {
       clientDataJson: clientDataBytes,
       expectedChallenge: expectedChallenge,
       expectedType: 'webauthn.create',
-      expectedOrigin: _origin(cfg.webauthnRpId!),
+      expectedOrigin: cfg.adminCorsOrigin ?? _origin(cfg.webauthnRpId!),
     );
   } on FormatException catch (e) {
     return badRequest(
@@ -107,6 +114,7 @@ Future<Response> onRequest(RequestContext context) async {
   try {
     final attObjBytes = fromBase64Url(attestationB64);
     final authData = parseAttestationObject(attObjBytes);
+    verifyAuthenticatorData(authData, cfg.webauthnRpId!);
     cred = parseAuthData(authData);
   } on FormatException catch (e) {
     return badRequest(
@@ -126,11 +134,11 @@ Future<Response> onRequest(RequestContext context) async {
   // the tie-breaker — the loser gets a 404 and is rejected.
   try {
     await db.deleteRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeyChallenges,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeyChallenges,
       rowId: challengeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) {
       return badRequest(
         'Challenge not found, expired, or already used',
@@ -143,14 +151,21 @@ Future<Response> onRequest(RequestContext context) async {
   // ── Persist the new passkey ───────────────────────────────────────────────
   try {
     await db.createRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeys,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeys,
       rowId: ID.unique(),
       data: {
         'employee_id': employeeId,
         'credential_id': credentialId,
-        'public_key_x': toBase64Url(cred.publicKeyX),
-        'public_key_y': toBase64Url(cred.publicKeyY),
+        'algorithm': cred.algorithm,
+        if (cred.algorithm == -7) ...{
+          'public_key_x': toBase64Url(cred.publicKeyX),
+          'public_key_y': toBase64Url(cred.publicKeyY),
+        },
+        if (cred.algorithm == -257) ...{
+          'public_key_n': toBase64Url(cred.publicKeyN!),
+          'public_key_e': toBase64Url(cred.publicKeyE!),
+        },
         'sign_count': cred.signCount,
         'aaguid': cred.aaguid,
         'friendly_name': (friendlyName?.isNotEmpty ?? false)
@@ -158,7 +173,7 @@ Future<Response> onRequest(RequestContext context) async {
             : 'Passkey',
       },
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     // credential_id unique index violation means already registered
     if (e.code == 409) {
       return badRequest(
@@ -173,11 +188,11 @@ Future<Response> onRequest(RequestContext context) async {
   Row emp;
   try {
     emp = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.guildmarkEmployees,
+      databaseId: Collections.databaseId,
+      tableId: Collections.guildmarkEmployees,
       rowId: employeeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) return serverError('Employee vanished');
     rethrow;
   }
@@ -186,9 +201,21 @@ Future<Response> onRequest(RequestContext context) async {
   final fullName = emp.data['full_name']?.toString() ?? email;
   final role = emp.data['role']?.toString() ?? 'admin';
 
-  final token = jwt.issueAccessToken(
-    AccessClaims(userId: employeeId, companyId: 'devdash', role: role, audience: 'staff'),
-  );
+  if (emp.data['is_active'] != true) return unauthorized('Employee inactive');
+  final token = sessions != null
+      ? await sessions.completeStaff(
+          FirebaseSessions.digest(raw),
+          'staff_setup',
+          employeeId,
+        )
+      : jwt.issueAccessToken(
+          AccessClaims(
+            userId: employeeId,
+            companyId: 'devdash',
+            role: role,
+            audience: 'staff',
+          ),
+        );
 
   return Response.json(
     body: {

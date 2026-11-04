@@ -1,65 +1,48 @@
-/**
- * useOrders — fetches the current user's orders + aggregate stats.
- * useOrder  — fetches a single order by ID.
- * useConfirmOrder — PATCH /orders/:id/confirm
- * useDisputeOrder — POST /orders/:id/dispute
- *
- * Endpoint: GET /orders         → { orders: Order[], stats: OrderStats }
- * Endpoint: GET /orders/:id     → Order
- * Endpoint: PATCH /orders/:id/confirm
- * Endpoint: POST  /orders/:id/dispute
- */
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+/** Shared order queries use the same cache as seller offload and tracking. */
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { Order, OrdersResponse } from "../models/order";
+import {
+  useOrders as useOrdersQuery,
+  useOrder as useOrderQuery,
+} from "../lib/apiHooks";
+import { mergeOrderLifecycle } from "../services/order.service";
+import type { Order } from "../models/order";
 
 export function useOrders() {
-  const { data, isLoading, error } = useQuery<OrdersResponse>({
-    queryKey: ["orders"],
-    queryFn: () => api.get<OrdersResponse>("/orders"),
-  });
-
+  const query = useOrdersQuery();
   return {
-    orders:   data?.orders   ?? [],
-    stats:    data?.stats    ?? null,
-    isLoading,
-    error,
+    ...query,
+    orders: query.data?.orders ?? [],
+    stats: query.data?.stats ?? null,
   };
 }
-
 export function useOrder(id: string) {
-  const { data, isLoading, error } = useQuery<Order>({
-    queryKey: ["orders", id],
-    queryFn: () => api.get<Order>(`/orders/${id}`),
-    enabled: !!id,
-  });
-
-  return { order: data, isLoading, error };
+  const query = useOrderQuery(id);
+  return { ...query, order: query.data };
 }
-
+function useOrderAction(action: "confirm" | "dispute") {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      action === "confirm"
+        ? api.patch<Order>(`/orders/${encodeURIComponent(id)}/confirm`, {})
+        : api.post<Order>(`/orders/${encodeURIComponent(id)}/dispute`, {}),
+    retry: false,
+    onSuccess: async (result, id) => {
+      client.setQueryData<Order>(["order", id], (current) =>
+        current ? mergeOrderLifecycle(current, result) : current,
+      );
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["orders"] }),
+        client.invalidateQueries({ queryKey: ["order", id] }),
+        client.invalidateQueries({ queryKey: ["order-tracking", id] }),
+      ]);
+    },
+  });
+}
 export function useConfirmOrder() {
-  const qc = useQueryClient();
-  const { mutate, isPending } = useMutation({
-    mutationFn: (id: string) => api.patch(`/orders/${id}/confirm`, {}),
-    onSuccess: (_data, id) => {
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      qc.invalidateQueries({ queryKey: ["orders", id] });
-    },
-  });
-
-  return { confirm: mutate, isConfirming: isPending };
+  return useOrderAction("confirm");
 }
-
 export function useDisputeOrder() {
-  const qc = useQueryClient();
-  const { mutate, isPending } = useMutation({
-    mutationFn: (id: string) => api.post(`/orders/${id}/dispute`, {}),
-    onSuccess: (_data, id) => {
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      qc.invalidateQueries({ queryKey: ["orders", id] });
-    },
-  });
-
-  return { dispute: mutate, isDisputing: isPending };
+  return useOrderAction("dispute");
 }

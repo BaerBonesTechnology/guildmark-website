@@ -70,8 +70,8 @@ export function PortfolioOverview() {
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--amps-accent)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--amps-accent)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="bookGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.3} />
@@ -79,11 +79,11 @@ export function PortfolioOverview() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "monospace" }} stroke="var(--muted-foreground)" />
-                <YAxis tick={{ fontSize: 11, fontFamily: "monospace" }} stroke="var(--muted-foreground)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: "'DM Sans', sans-serif" }} stroke="var(--muted-foreground)" />
+                <YAxis tick={{ fontSize: 11, fontFamily: "'DM Sans', sans-serif" }} stroke="var(--muted-foreground)" />
                 <Tooltip contentStyle={AMPS_TOOLTIP_STYLE} formatter={(value: number) => `$${value.toLocaleString()}`} />
                 <Legend />
-                <Area type="monotone" dataKey="portfolio" stroke="#8B5CF6" strokeWidth={2} fill="url(#portfolioGradient)" name="Market Value" />
+                <Area type="monotone" dataKey="portfolio" stroke="var(--amps-accent)" strokeWidth={2} fill="url(#portfolioGradient)" name="Market Value" />
                 <Area type="monotone" dataKey="book" stroke="#94A3B8" strokeWidth={2} fill="url(#bookGradient)" name="Book Value" />
               </AreaChart>
             </ResponsiveContainer>

@@ -1,14 +1,12 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException, ID;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/webauthn/webauthn.dart';
 
@@ -19,7 +17,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -32,23 +30,32 @@ Future<Response> onRequest(RequestContext context) async {
   // ── Verify setup token ───────────────────────────────────────────────────
   final authHeader = context.request.headers['Authorization'] ?? '';
   final raw = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
-  final claims = jwt.verifyAccessToken(raw);
+  final sessions = firebaseSessions(context);
+  final claims = sessions == null ? jwt.verifyAccessToken(raw) : null;
+  final firebasePrincipal = sessions == null
+      ? null
+      : await sessions.principal(raw);
 
-  if (claims == null || claims.companyId != 'devdash_setup' || claims.audience != 'staff_setup') {
+  if (sessions == null
+      ? (claims == null ||
+            claims.companyId != 'devdash_setup' ||
+            claims.audience != 'staff_setup')
+      : (firebasePrincipal == null ||
+            firebasePrincipal.audience != 'staff_setup')) {
     return unauthorized('Valid setup token required');
   }
 
-  final employeeId = claims.userId;
+  final employeeId = firebasePrincipal?.userId ?? claims!.userId;
 
   // ── Look up the employee for user info ───────────────────────────────────
   Row emp;
   try {
     emp = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.guildmarkEmployees,
+      databaseId: Collections.databaseId,
+      tableId: Collections.guildmarkEmployees,
       rowId: employeeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) return unauthorized('Employee not found');
     rethrow;
   }
@@ -63,8 +70,8 @@ Future<Response> onRequest(RequestContext context) async {
   // PG set expires_at via a column default (now() + 5 minutes); Appwrite has
   // no expression defaults, so compute it here.
   final chalRow = await db.createRow(
-    databaseId: Aw.databaseId,
-    tableId: Aw.employeePasskeyChallenges,
+    databaseId: Collections.databaseId,
+    tableId: Collections.employeePasskeyChallenges,
     rowId: ID.unique(),
     data: {
       'employee_id': employeeId,
@@ -93,10 +100,11 @@ Future<Response> onRequest(RequestContext context) async {
       },
       'pub_key_cred_params': [
         {'type': 'public-key', 'alg': -7}, // ES256
+        {'type': 'public-key', 'alg': -257}, // RS256 (Windows Hello)
       ],
       'authenticator_selection': {
         'resident_key': 'preferred',
-        'user_verification': 'preferred',
+        'user_verification': 'required',
         'authenticator_attachment': 'platform',
       },
       'timeout': 60000,

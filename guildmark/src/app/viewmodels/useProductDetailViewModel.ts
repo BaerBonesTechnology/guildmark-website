@@ -1,11 +1,18 @@
 /** ViewModel for the Product Detail page: listing load, offer form, buy dialog. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { useCompare } from "../components/CompareContext";
 import { useListing, useMakeOffer } from "../lib/apiHooks";
 
+import { useAuth } from "../hooks/useAuth";
+import { validateOfferTerms, offerSubtotal } from "../services/offer.service";
+
 export function useProductDetailViewModel() {
+  const { user } = useAuth();
+  const offerLock = useRef(false);
   const { id = "" } = useParams<{ id: string }>();
+  const currentListingId = useRef(id);
+  currentListingId.current = id;
   const { data: listing, error, isError, isPending } = useListing(id);
   const makeOffer = useMakeOffer();
   const { atMax, isCompared, toggle } = useCompare();
@@ -27,17 +34,51 @@ export function useProductDetailViewModel() {
       setPurchased(false);
       setImageIndex(0);
     }
-  }, [listing]);
+  }, [listing?.id]);
 
   function submitOffer() {
-    const parsedPrice = parseFloat(offerPrice);
-    const parsedQuantity = parseInt(quantity, 10);
-    if (Number.isNaN(parsedPrice) || parsedPrice <= 0) { setFormError("Enter a valid offer price"); return; }
-    if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) { setFormError("Enter a valid quantity"); return; }
+    if (!listing || makeOffer.isPending || offerLock.current) return;
+    if (!user) {
+      setFormError("Sign in to send an offer.");
+      return;
+    }
+    if (listing.status !== "active") {
+      setFormError("This listing is no longer accepting offers.");
+      return;
+    }
+    const error = validateOfferTerms(
+      offerPrice,
+      quantity,
+      listing.quantity ?? 1,
+    );
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    const submittedListingId = listing.id;
     setFormError(null);
+    offerLock.current = true;
     makeOffer.mutate(
-      { listing_id: listing!.id, offer_price: parsedPrice, quantity: parsedQuantity },
-      { onSuccess: () => setSubmitted(true) },
+      {
+        listing_id: listing.id,
+        offer_price: Number(offerPrice),
+        quantity: Number(quantity),
+      },
+      {
+        onSuccess: () => {
+          if (currentListingId.current === submittedListingId)
+            setSubmitted(true);
+        },
+        onError: () => {
+          if (currentListingId.current === submittedListingId)
+            setFormError(
+              "We couldn’t send your offer. Your entries are preserved. Check My Offers before sending it again.",
+            );
+        },
+        onSettled: () => {
+          offerLock.current = false;
+        },
+      },
     );
   }
 
@@ -53,6 +94,10 @@ export function useProductDetailViewModel() {
     isSubmitting: makeOffer.isPending,
     listing,
     offerPrice,
+    offerTotal:
+      validateOfferTerms(offerPrice, quantity, listing?.quantity ?? 1) == null
+        ? offerSubtotal(Number(offerPrice), Number(quantity))
+        : null,
     purchased,
     quantity,
     setBuyOpen,

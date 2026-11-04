@@ -1,13 +1,18 @@
+import 'package:guildmark_api/auth/firebase_sessions.dart';
+import 'package:guildmark_api/auth/firebase_routes.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/user_repo.dart';
+import 'package:guildmark_api/repos/firestore/user_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
+  if (firebaseSessions(context) != null) {
+    return firebaseAuthRoute(context, 'login');
+  }
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
@@ -19,7 +24,7 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('email and password required');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -54,14 +59,18 @@ Future<Response> onRequest(RequestContext context) async {
       'user': user.toAuthUser(),
     },
     headers: {
-      'Set-Cookie': _refreshCookie(refreshPlain, cfg.refreshTokenTtl),
+      'Set-Cookie': _refreshCookie(
+        refreshPlain,
+        cfg.refreshTokenTtl,
+        cfg.publicApiPrefix,
+      ),
     },
   );
 }
 
-String _refreshCookie(String value, Duration ttl) {
+String _refreshCookie(String value, Duration ttl, String prefix) {
   return 'astech_refresh=$value; '
-      'Path=/auth; '
+      'Path=$prefix/auth; '
       'Max-Age=${ttl.inSeconds}; '
       'HttpOnly; '
       'SameSite=Strict; '

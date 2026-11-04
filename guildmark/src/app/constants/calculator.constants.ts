@@ -25,7 +25,7 @@ export const MODEL_LABELS: Record<string, string> = {
 export const RAM_GB: Record<string, number> = { "8gb": 8, "16gb": 16, "32gb": 32, "64gb": 64 };
 
 // Add-on service pricing — platform rules, not market data. The platform fee
-// itself comes from the API (usePlatformFees), never hardcoded.
+// comes from the API (usePlatformFees), with a labeled default estimate while unavailable.
 export const DATA_WIPE_PER_UNIT = 8;
 export const SHIPPING_PER_UNIT = 15;
 

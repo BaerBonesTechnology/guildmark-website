@@ -2,19 +2,18 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/lookups.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/firebase/lookups.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/offer_repo.dart';
+import 'package:guildmark_api/repos/firestore/offer_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -45,7 +44,7 @@ Future<Response> onRequest(RequestContext context) async {
         );
 
         // Notify seller (fire and forget). Was a 4-table JOIN — now stitched
-        // lookups via lib/appwrite/lookups.dart.
+        // lookups via lib/firebase/lookups.dart.
         final emailService = context.read<EmailService>();
         unawaited(() async {
           try {

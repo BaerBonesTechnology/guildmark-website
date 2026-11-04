@@ -7,14 +7,13 @@ library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'listing.freezed.dart';
 part 'listing.g.dart';
 
 @Freezed()
 abstract class Listing with _$Listing {
-  const Listing._();
 
   const factory Listing({
     required String id,
@@ -74,6 +73,7 @@ abstract class Listing with _$Listing {
     bool?    managed,
     bool?    carrierLocked,
   }) = _Listing;
+  const Listing._();
 
   factory Listing.fromJson(Map<String, dynamic> json) =>
       _$ListingFromJson(json);
@@ -108,7 +108,6 @@ abstract class Listing with _$Listing {
 
 @Freezed()
 abstract class MarketplaceListing with _$MarketplaceListing {
-  const MarketplaceListing._();
 
   const factory MarketplaceListing({
     required String id,
@@ -170,6 +169,7 @@ abstract class MarketplaceListing with _$MarketplaceListing {
     String?  sellerIndustry,
     String?  sellerSizeBand,
   }) = _MarketplaceListing;
+  const MarketplaceListing._();
 
   factory MarketplaceListing.fromJson(Map<String, dynamic> json) =>
       _$MarketplaceListingFromJson(json);

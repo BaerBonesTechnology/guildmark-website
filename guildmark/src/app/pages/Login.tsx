@@ -1,74 +1,38 @@
-import { Link } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Button } from "../components/ui/button";
+import { Link, useLocation } from "react-router";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { useLoginViewModel } from "../viewmodels/useLoginViewModel";
 
 export function Login() {
   const { email, error, handleSubmit, password, setEmail, setPassword, submitting } = useLoginViewModel();
-
+  const prefix = useLocation().pathname.startsWith("/pre/") ? "/pre" : "";
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-      <Card className="w-full max-w-md ">
-        <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl">Welcome to GuildMark</CardTitle>
-          <CardDescription>Sign in to access your IT asset dashboard</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-danger/10 border border-danger/20 px-4 py-3 text-sm text-danger ">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className=""
-                required
-                disabled={submitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Password</Label>
-                <Link to="/forgot-password" className="text-xs text-primary hover:underline ">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className=""
-                required
-                disabled={submitting}
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-white "
-              disabled={submitting}
-            >
-              {submitting ? "Signing in..." : "Sign In"}
-            </Button>
-            <div className="text-center text-sm text-muted-foreground space-y-2">
-              <p className="">
-                Don't have an account?{" "}
-                <Link to="/pre/signup" className="text-primary hover:underline">
-                  Sign up free
-                </Link>
-              </p>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="gm-container gm-auth">
+      <section className="gm-auth-story" aria-labelledby="auth-intro">
+        <p className="gm-eyebrow">Your next chapter starts here</p>
+        <h2 id="auth-intro">Good hardware.<br /><span>Great possibilities.</span></h2>
+        <p>Find your next upgrade, give surplus equipment a new home, and keep every order in view.</p>
+        <img src="/img/hardware-studio.png" alt="Illustrative arrangement of business laptops and a monitor" width="1536" height="1024" />
+        <Link to={prefix + "/marketplace"} className="gm-text-link"><ArrowLeft size={16} /> Explore the marketplace</Link>
+      </section>
+      <section className="gm-auth-panel" aria-labelledby="login-title">
+        <p className="gm-eyebrow">Your GuildMark account</p>
+        <h1 id="login-title">Welcome back.</h1>
+        <p>Sign in to manage your equipment, offers, and orders.</p>
+        <form onSubmit={handleSubmit} className="gm-customer-form" aria-busy={submitting}>
+          {error && <div className="gm-feedback gm-feedback-error" role="alert">{error}</div>}
+          <label className="gm-field" htmlFor="login-email">Work email
+            <input id="login-email" type="email" autoComplete="username" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)} required disabled={submitting} />
+          </label>
+          <div>
+            <div className="gm-label-row"><label htmlFor="login-password">Password</label><Link to={prefix + "/forgot-password"}>Forgot password?</Link></div>
+            <input className="gm-input" id="login-password" type="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} required disabled={submitting} />
+          </div>
+          <button className="gm-button gm-button-primary" type="submit" disabled={submitting}>
+            {submitting ? <><Loader2 size={17} className="animate-spin" /> Signing in…</> : <>Sign in <ArrowRight size={17} /></>}
+          </button>
+        </form>
+        <p className="gm-auth-signup">New to GuildMark? <Link to={prefix + "/signup"}>Create an account <ArrowRight size={14} /></Link></p>
+      </section>
     </div>
   );
 }

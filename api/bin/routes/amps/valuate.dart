@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:dart_appwrite/dart_appwrite.dart' show Query;
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
-import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
+import 'package:guildmark_api/services/metered_valuation.dart';
+import 'package:guildmark_api/repos/firestore/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
@@ -22,7 +22,7 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(503, 'ML_UNAVAILABLE', 'ML service not configured');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -37,8 +37,8 @@ Future<Response> onRequest(RequestContext context) async {
   String? cursor;
   while (true) {
     final page = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.listings,
+      databaseId: Collections.databaseId,
+      tableId: Collections.listings,
       queries: [
         Query.equal('company_id', auth.companyId),
         Query.notEqual('status', 'sold'),
@@ -52,8 +52,10 @@ Future<Response> onRequest(RequestContext context) async {
       final assetId = row.data['asset_id'] as String;
       final prev = latestListingByAsset[assetId];
       if (prev == null || row.$updatedAt.compareTo(prev.updated) > 0) {
-        latestListingByAsset[assetId] =
-            (listingId: row.$id, updated: row.$updatedAt);
+        latestListingByAsset[assetId] = (
+          listingId: row.$id,
+          updated: row.$updatedAt,
+        );
       }
     }
     if (page.rows.length < 100) break;
@@ -73,13 +75,17 @@ Future<Response> onRequest(RequestContext context) async {
       i + 100 > assetIds.length ? assetIds.length : i + 100,
     );
     final assets = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.assets,
+      databaseId: Collections.databaseId,
+      tableId: Collections.assets,
       queries: [Query.equal(r'$id', chunk), Query.limit(chunk.length)],
     );
     for (final a in assets.rows) {
       // Guard: only this company's assets (mirrors WHERE a.company_id = @cid).
-      if (a.data['company_id'] != auth.companyId) continue;
+      if (a.data['company_id'] != auth.companyId ||
+          a.data['archived'] == true ||
+          a.data['purchase_date'] == null) {
+        continue;
+      }
       final d = a.data;
       final purchaseDate = d['purchase_date'] as String?;
       items.add(
@@ -89,8 +95,9 @@ Future<Response> onRequest(RequestContext context) async {
           modelName: d['model_name'] as String,
           assetType: d['asset_type'] as String,
           conditionGrade: d['condition_grade'] as String? ?? 'B',
-          purchaseDate:
-              purchaseDate == null ? null : DateTime.parse(purchaseDate),
+          purchaseDate: purchaseDate == null
+              ? null
+              : DateTime.parse(purchaseDate),
           cpuScore: (d['cpu_score'] as num?)?.toDouble(),
           ramGb: (d['ram_gb'] as num?)?.toInt(),
           storageGb: (d['storage_gb'] as num?)?.toInt(),
@@ -107,8 +114,8 @@ Future<Response> onRequest(RequestContext context) async {
   // Mark the job as running *before* returning so the status endpoint never
   // shows a stale 'idle' after the client has already called this route.
   await db.updateRow(
-    databaseId: Aw.databaseId,
-    tableId: Aw.companies,
+    databaseId: Collections.databaseId,
+    tableId: Collections.companies,
     rowId: auth.companyId,
     data: {
       'valuation_status': 'running',
@@ -119,7 +126,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   // Snapshot all work items before spawning the background Future.
   // The RequestContext is request-scoped and must NOT be captured by the
-  // closure — only plain values and the shared AppwriteService/MlClient
+  // closure — only plain values and the shared FirebaseService/MlClient
   // singletons.
   final companyId = auth.companyId;
 
@@ -141,7 +148,7 @@ Future<Response> onRequest(RequestContext context) async {
 // ---------------------------------------------------------------------------
 
 Future<void> _runValuationJob({
-  required AppwriteService aw,
+  required FirebaseService aw,
   required MlClient ml,
   required String companyId,
   required List<_WorkItem> items,
@@ -149,16 +156,17 @@ Future<void> _runValuationJob({
   final repo = ListingRepo(aw);
 
   Future<void> setStatus(String status) => aw.tablesDB.updateRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.companies,
-        rowId: companyId,
-        data: {'valuation_status': status},
-      );
+    databaseId: Collections.databaseId,
+    tableId: Collections.companies,
+    rowId: companyId,
+    data: {'valuation_status': status},
+  );
 
   try {
     for (final item in items) {
       try {
-        final valuation = await ml.estimateFairMarketValue(
+        final valuation = await MeteredValuation(aw, ml).estimate(
+          companyId,
           ValuationRequest(
             assetType: item.assetType,
             modelName: item.modelName,
@@ -169,6 +177,7 @@ Future<void> _runValuationJob({
             storageGb: item.storageGb,
             originalPrice: item.originalPrice,
           ),
+          assetId: item.assetId,
         );
         await repo.updateFmvByListingId(
           listingId: item.listingId,

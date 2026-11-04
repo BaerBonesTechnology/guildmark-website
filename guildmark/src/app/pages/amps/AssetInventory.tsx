@@ -1,132 +1,78 @@
-/**
- * AMPS Asset Inventory — full device catalog with valuations (View).
- * List/filter/selection state lives in useAssetInventoryViewModel; CSV export
- * and filtering are in assetInventory.service. Presentation only.
- */
-import { Download, ExternalLink, Plus, Search, Upload } from "lucide-react";
-import { Link } from "react-router";
-import { AddAssetDialog } from "../../components/AddAssetDialog";
-import { ImportCSVDialog } from "../../components/ImportCSVDialog";
-import { SourceBadge } from "../../components/amps/SourceBadge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { AMPS_ACCENT } from "../../constants/amps.constants";
-import { ASSET_GRADE_COLOR, ASSET_TABLE_HEADERS, ASSET_TYPE_OPTIONS } from "../../constants/assetInventory.constants";
-import { BODY, DISPLAY, MONO } from "../../constants/typography";
-import { exportCSV } from "../../services/assetInventory.service";
-import { useAssetInventoryViewModel } from "../../viewmodels/useAssetInventoryViewModel";
+import { useState } from "react";
+import { Download, Plus, RefreshCw, Upload } from "lucide-react";
+import { Link, useLocation } from "react-router";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { InventoryEditor, InventoryImport } from "../../components/amps/InventoryEditor";
+import { PlanUsage } from "../../components/amps/PlanUsage";
+import { AssetHistoryDialog } from "../../components/amps/AssetHistoryDialog";
+import { useAuth } from "../../hooks/useAuth";
+import { useSubscription } from "../../lib/apiHooks";
+import { downloadInventoryCSV, inventoryCSV, inventoryError, type InventoryAsset } from "../../services/persistentInventory.service";
+import { usePersistentInventory } from "../../viewmodels/usePersistentInventory";
 
+const action = "inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 export function AssetInventory() {
-  const {
-    addAsset, addOpen, assets, conditionFilter, filteredAssets, importAssets, importOpen,
-    searchTerm, selectedAssets, setAddOpen, setConditionFilter, setImportOpen, setSearchTerm,
-    setTypeFilter, toggleAll, toggleAsset, typeFilter,
-  } = useAssetInventoryViewModel();
-
-  return (
-    <div className="px-6 py-6 max-w-[1600px] mx-auto pb-20" style={{ fontFamily: BODY }}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <h1 className="tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(1.8rem, 3vw, 2.3rem)", lineHeight: 1 }}>Asset Inventory</h1>
-          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Full catalog of devices with real-time valuations · {assets.length} total</p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button onClick={() => exportCSV(filteredAssets)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors">
-            <Download size={13} /> Export CSV
-          </button>
-          <button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors">
-            <Upload size={13} /> Import CSV
-          </button>
-          <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity" style={{ background: AMPS_ACCENT, color: "#fff" }}>
-            <Plus size={13} /> Add asset
-          </button>
-        </div>
+  const { user } = useAuth();
+  return <InventoryWorkspace key={user?.company_id ?? "signed-out"} />;
+}
+function InventoryWorkspace() {
+  const { query, save, archive, importRecords, includeArchived, setIncludeArchived } = usePersistentInventory();
+  const { data: subscription } = useSubscription();
+  const location = useLocation();
+  const prefix = location.pathname.startsWith("/pre/") ? "/pre" : "";
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("all");
+  const [editor, setEditor] = useState<InventoryAsset | "new" | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<InventoryAsset | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<InventoryAsset | null>(null);
+  const [notice, setNotice] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const records = query.data ?? [];
+  const filtered = records.filter(a => (type === "all" || a.asset_type === type) && `${a.model_name} ${a.serial_number ?? ""} ${a.department ?? ""}`.toLowerCase().includes(search.toLowerCase()));
+  const busy = save.isPending || archive.isPending || importRecords.isPending;
+  // Capacity does not gate access to the form: software/license records consume no physical units.
+  const canAdd = subscription?.eligibility?.paid === true;
+  const capacity = subscription?.limits && subscription.usage ? {used: subscription.usage.asset_units, limit: subscription.limits.asset_limit} : undefined;
+  const activePhysical = records.filter(a => !a.archived && !a.archived_at && a.asset_type !== "software" && a.asset_type !== "license").reduce((sum, a) => sum + a.quantity, 0);
+  const allSelected = filtered.length > 0 && filtered.every(a => selected.includes(a.id));
+  return <div className="mx-auto max-w-[1600px] space-y-5 pb-16">
+    <header className="flex flex-wrap items-start justify-between gap-4">
+      <div><h1 className="text-3xl font-semibold tracking-tight">Asset inventory</h1><p className="mt-2 text-sm text-muted-foreground">Saved company records · {records.length} records · {activePhysical.toLocaleString()} active physical devices</p></div>
+      <div className="flex flex-wrap gap-2">
+        <button className={action} disabled={query.isFetching || busy} onClick={() => query.refetch()}><RefreshCw size={15} />Refresh</button>
+        <button className={action} disabled={!query.data || query.isError || query.isFetching} onClick={() => downloadInventoryCSV(inventoryCSV(filtered))}><Download size={15} />Export CSV</button>
+        <button className={action} disabled={!canAdd || busy} onClick={() => {setNotice("");setImportOpen(true);}}><Upload size={15} />Import CSV</button>
+        <button className={`${action} bg-amps-accent text-amps-accent-foreground`} disabled={!canAdd || busy} onClick={() => {setNotice("");setEditor("new");}}><Plus size={15} />Add asset</button>
       </div>
-
-      {/* Filters */}
-      <div className="border border-border p-4 mb-4 flex gap-3" style={{ background: "var(--card)" }}>
-        <div className="flex-1 relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
-          <input placeholder="Search by model…" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-border focus:outline-none focus:border-primary"
-            style={{ background: "var(--input-background)", fontFamily: BODY }} />
-        </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Asset type" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {ASSET_TYPE_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={conditionFilter} onValueChange={setConditionFilter}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="Condition" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All conditions</SelectItem>
-            <SelectItem value="A">Grade A — Excellent</SelectItem>
-            <SelectItem value="B">Grade B — Good</SelectItem>
-            <SelectItem value="C">Grade C — Fair</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Bulk actions */}
-      {selectedAssets.length > 0 && (
-        <div className="border p-4 mb-4 flex items-center justify-between" style={{ background: `color-mix(in srgb, ${AMPS_ACCENT} 6%, var(--card))`, borderColor: `color-mix(in srgb, ${AMPS_ACCENT} 30%, transparent)` }}>
-          <p className="text-sm"><span className="font-semibold">{selectedAssets.length}</span> asset{selectedAssets.length !== 1 ? "s" : ""} selected</p>
-          <div className="flex gap-2">
-            <button className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Create listings</button>
-            <button className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Generate invoices</button>
-            <button onClick={() => exportCSV(assets.filter((a) => selectedAssets.includes(a.id)))} className="px-3 py-1.5 text-xs border border-border hover:border-foreground transition-colors">Export selected</button>
-          </div>
-        </div>
-      )}
-
-      {/* Table */}
-      <div className="border border-border overflow-x-auto" style={{ background: "var(--card)" }}>
-        <table className="w-full text-sm" style={{ minWidth: 900 }}>
-          <thead>
-            <tr className="border-b border-border">
-              <th className="w-10 py-2.5 px-4">
-                <input type="checkbox" checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0} onChange={toggleAll} className="align-middle" />
-              </th>
-              {ASSET_TABLE_HEADERS.map((h, i) => (
-                <th key={i} className={`py-2.5 px-4 text-[10px] tracking-wider uppercase font-normal ${["Grade"].includes(h) ? "text-center" : ["Age (mo)", "Fair Market Value", "Book Value", "Depreciation"].includes(h) ? "text-right" : "text-left"}`}
-                  style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAssets.length === 0 ? (
-              <tr><td colSpan={11} className="text-center py-16 text-sm" style={{ color: "var(--muted-foreground)" }}>No assets match your filters — connect your MDM or add assets manually.</td></tr>
-            ) : filteredAssets.map((asset, i) => (
-              <tr key={asset.id} className="border-b border-border last:border-0" style={{ background: i % 2 ? "var(--secondary)" : "transparent" }}>
-                <td className="py-2.5 px-4"><input type="checkbox" checked={selectedAssets.includes(asset.id)} onChange={() => toggleAsset(asset.id)} className="align-middle" /></td>
-                <td className="py-2.5 px-4 font-medium">{asset.model}<SourceBadge source={asset.source} /></td>
-                <td className="py-2.5 px-4 capitalize" style={{ color: "var(--muted-foreground)" }}>{asset.type}</td>
-                <td className="py-2.5 px-4 text-center">
-                  <span className="inline-flex items-center justify-center w-7 h-6 text-xs font-semibold" style={{ fontFamily: MONO, color: ASSET_GRADE_COLOR[asset.condition], border: `1px solid color-mix(in srgb, ${ASSET_GRADE_COLOR[asset.condition]} 30%, transparent)` }}>{asset.condition}</span>
-                </td>
-                <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO }}>{asset.age}</td>
-                <td className="py-2.5 px-4 text-right font-medium" style={{ fontFamily: MONO }}>${asset.fairMarketValue.toLocaleString()}</td>
-                <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO, color: "var(--muted-foreground)" }}>${asset.bookValue.toLocaleString()}</td>
-                <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO, color: asset.depreciation < 20 ? "var(--grade-a)" : asset.depreciation < 30 ? "var(--grade-b)" : "var(--chart-4)" }}>{asset.depreciation.toFixed(1)}%</td>
-                <td className="py-2.5 px-4">
-                  <span className="inline-flex items-center px-2 py-0.5 text-[10px] tracking-wider uppercase" style={{ fontFamily: MONO, color: asset.status === "Active" ? "var(--grade-a)" : "var(--grade-b)", border: `1px solid color-mix(in srgb, ${asset.status === "Active" ? "var(--grade-a)" : "var(--grade-b)"} 30%, transparent)` }}>{asset.status}</span>
-                </td>
-                <td className="py-2.5 px-4 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{asset.lastSync}</td>
-                <td className="py-2.5 px-4">
-                  <Link to={`/pre/amps/assets/${asset.id}`} className="w-7 h-7 flex items-center justify-center hover:bg-secondary transition-colors" style={{ color: "var(--muted-foreground)" }}><ExternalLink size={13} /></Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="text-center text-xs mt-4" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Showing {filteredAssets.length} of {assets.length} assets</p>
-
-      <AddAssetDialog open={addOpen} onOpenChange={setAddOpen} onAdd={addAsset} />
-      <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} onImport={importAssets} />
+    </header>
+    <PlanUsage />
+    {canAdd && capacity && capacity.used >= capacity.limit && <p role="status" className="rounded-md border border-border p-3 text-sm">Your physical-device allowance is full. You can still add software and license records, reduce hardware quantities, or archive retired assets. Additional physical devices require capacity or a larger plan.</p>}
+    {historyTarget && <AssetHistoryDialog asset={historyTarget} onClose={() => setHistoryTarget(null)} />}
+    {!!notice && <p role="status" className="rounded-md border border-border bg-card p-4 text-sm">{notice}</p>}
+    <div className="flex flex-wrap items-end gap-3 rounded-md border border-border bg-card p-4">
+      <label className="min-w-48 flex-1 text-xs">Search model, serial or department<input className="mt-1 w-full rounded-md border border-border bg-background p-2 text-sm" value={search} onChange={e => setSearch(e.target.value)} /></label>
+      <label className="text-xs">Type<select className="mt-1 block rounded-md border border-border bg-background p-2 text-sm" value={type} onChange={e => setType(e.target.value)}><option value="all">All types</option>{[...new Set(records.map(a => a.asset_type))].map(t => <option key={t} value={t}>{t}</option>)}</select></label>
+      <label className="flex items-center gap-2 py-2 text-sm"><input type="checkbox" checked={includeArchived} disabled={busy} onChange={e => {setSelected([]);setIncludeArchived(e.target.checked);}} />Include archived records</label>
     </div>
-  );
+    <p className="text-xs text-muted-foreground">CSV exports include quantities and saved metadata for the complete loaded selection, without using valuation credits. Archived records are retained. Request valuations separately through the <Link className="underline" to={`${prefix}/amps/assistant`}>guided assistant</Link>; up to 5 records per request.</p>
+    {selected.length > 0 && <button className={action} disabled={query.isFetching || query.isError} onClick={() => downloadInventoryCSV(inventoryCSV(records.filter(a => selected.includes(a.id))))}>Export {records.filter(a => selected.includes(a.id)).length} selected records</button>}
+    {query.isPending ? <p role="status" className="py-12 text-center">Loading all inventory pages…</p> : query.isError ? <div role="alert" className="rounded-md border border-border p-6"><p>{inventoryError(query.error)}</p><button className={`${action} mt-3`} onClick={() => query.refetch()}>Retry loading inventory</button></div> : <div className="overflow-x-auto rounded-md border border-border bg-card">
+      <table className="w-full min-w-[850px] text-left text-sm"><caption className="sr-only">Saved company inventory. Quantities represent devices, not row counts.</caption><thead className="border-b border-border text-xs text-muted-foreground"><tr>
+        <th className="p-3"><input aria-label="Select all displayed records" type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : filtered.map(a => a.id))} /></th>{["Model / serial", "Type", "Grade", "Quantity", "Recorded specifications", "Purchase date", "Status", "Actions"].map(h => <th className="p-3" key={h} scope="col">{h}</th>)}
+      </tr></thead><tbody>
+        {!filtered.length ? <tr><td colSpan={9} className="p-12 text-center text-muted-foreground">{records.length ? "No records match these filters." : "No saved assets yet. Add an asset or import a CSV to get started."}</td></tr> : filtered.map(asset => <tr key={asset.id} className="border-b border-border last:border-0">
+          <td className="p-3"><input aria-label={`Select ${asset.model_name}, record ${asset.id}`} type="checkbox" checked={selected.includes(asset.id)} onChange={() => setSelected(s => s.includes(asset.id) ? s.filter(id => id !== asset.id) : [...s, asset.id])} /></td>
+          <th scope="row" className="max-w-64 break-words p-3 font-medium">{asset.model_name}<span className="mt-1 block text-xs font-normal text-muted-foreground">{asset.serial_number || "No serial recorded"}</span></th>
+          <td className="p-3 capitalize">{asset.asset_type}</td><td className="p-3">{asset.condition_grade}</td><td className="p-3 font-mono">{asset.quantity.toLocaleString()}</td>
+          <td className="p-3 text-xs">CPU score: {asset.cpu_score ?? "—"}<br />RAM: {asset.ram_gb ?? "—"} GB · Storage: {asset.storage_gb ?? "—"} GB</td><td className="p-3">{asset.purchase_date?.slice(0, 10) || "Not recorded"}</td><td className="p-3">{asset.archived || asset.archived_at ? "Archived" : "Active"}</td>
+          <td className="p-3"><div className="flex gap-2"><button className={action} onClick={() => setHistoryTarget(asset)}>History<span className="sr-only"> {asset.model_name}</span></button><button className={action} disabled={busy || !!asset.archived || !!asset.archived_at} onClick={() => setEditor(asset)}>Edit<span className="sr-only"> {asset.model_name}</span></button><button className={action} disabled={busy || !!asset.archived || !!asset.archived_at} onClick={() => {archive.reset();setArchiveTarget(asset);}}>Archive<span className="sr-only"> {asset.model_name}</span></button></div></td>
+        </tr>)}
+      </tbody></table>
+    </div>}
+    <p className="text-xs text-muted-foreground">{filtered.length} displayed of {records.length} saved records. Software and licenses do not count toward the active physical-device limit.</p>
+    {editor && <InventoryEditor asset={editor === "new" ? undefined : editor} capacity={capacity} onClose={() => setEditor(null)} onSave={async (data, key) => {await save.mutateAsync({ id: editor === "new" ? undefined : editor.id, data, key });setEditor(null);setNotice("Asset saved to your company inventory.");}} />}
+    {importOpen && <InventoryImport capacity={capacity} onClose={() => setImportOpen(false)} onImport={async (assets, key) => {const result = await importRecords.mutateAsync({assets, key});setImportOpen(false);setNotice(`Saved ${result.imported_records} records (${result.imported_units} units) to your company inventory.`);}} />}
+    <Dialog open={!!archiveTarget} onOpenChange={open => {if (!open && !archive.isPending) setArchiveTarget(null);}}><DialogContent><DialogHeader><DialogTitle>Archive this asset record?</DialogTitle><DialogDescription>{archiveTarget?.model_name} · {archiveTarget?.quantity} units. This removes the record from active inventory and retains its history. Reserved or listed assets may need their listing resolved first.</DialogDescription></DialogHeader>{archive.isError && <p role="alert" className="text-sm">{inventoryError(archive.error)}</p>}<div className="flex justify-end gap-2"><button className={action} disabled={archive.isPending} onClick={() => setArchiveTarget(null)}>Cancel</button><button className={action} disabled={archive.isPending} onClick={async () => {if (!archiveTarget) return;try {await archive.mutateAsync(archiveTarget.id);setArchiveTarget(null);setNotice("Asset archived. Use Include archived records to view or export it.");} catch {/* Keep review open and display the mutation error. */}}}>{archive.isPending ? "Archiving…" : "Archive record"}</button></div></DialogContent></Dialog>
+  </div>;
 }

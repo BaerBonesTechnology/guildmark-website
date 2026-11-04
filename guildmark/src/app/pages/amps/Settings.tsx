@@ -3,7 +3,9 @@
  * All state lives in useAmpsSettingsViewModel; each section is a SettingsPanel
  * and the plan tiles / invoice rows / dialogs are their own components.
  */
-import { AlertCircle, Bell, Building2, CreditCard, Loader2, Receipt, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, Bell, Building2, CreditCard, Loader2, Receipt } from "lucide-react";
+import { SeatPricingDialog } from "../../components/amps/SeatPricingDialog";
 import { CancelSubscriptionDialog } from "../../components/amps/CancelSubscriptionDialog";
 import { InvoiceRow } from "../../components/amps/InvoiceRow";
 import { PlanTierCard } from "../../components/amps/PlanTierCard";
@@ -16,8 +18,10 @@ import { BILLING_HEADERS, PLANS, SETTINGS_NOTIFICATION_ROWS } from "../../consta
 import { BODY, DISPLAY, MONO } from "../../constants/typography";
 import { fmtDate } from "../../services/ampsSettings.service";
 import { useAmpsSettingsViewModel } from "../../viewmodels/useAmpsSettingsViewModel";
+import { PlanUsage } from "../../components/amps/PlanUsage";
 
 export function Settings() {
+  const [seatPricingOpen, setSeatPricingOpen] = useState(false);
   const {
     cancelConfirm, cancelSub, checkoutPlan, companyData, currentPlan, fees, handleCancel,
     notifications, setCancelConfirm, setCheckoutPlan, setCompanyData, setNotifications,
@@ -32,6 +36,8 @@ export function Settings() {
         <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Manage your GuildMark account, subscription, and preferences</p>
       </div>
 
+      <PlanUsage />
+      <p className="text-xs text-muted-foreground">Company-profile and notification editing below are local prototypes. Saving these preferences is not available yet. Subscription and billing records use your company account.</p>
       {/* Company Profile */}
       <SettingsPanel icon={Building2} title="Company Profile" subtitle="Your organization details and account information">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -49,12 +55,12 @@ export function Settings() {
           <Input value={companyData.size} onChange={(e) => setCompanyData({ ...companyData, size: e.target.value })} placeholder="50-200" className="max-w-xs" />
         </div>
         <div className="pt-4">
-          <button className="px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity" style={{ background: AMPS_ACCENT }}>Save Changes</button>
+          <button disabled className="px-4 py-2 text-sm font-medium text-amps-accent-foreground opacity-50" style={{ background: AMPS_ACCENT }}>Profile saving unavailable</button>
         </div>
       </SettingsPanel>
 
       {/* Subscription */}
-      <SettingsPanel icon={Sparkles} title="Subscription" subtitle="Your current plan and billing details"
+      <SettingsPanel collapsible icon={CreditCard} title="Subscription" subtitle="Your current plan and billing details"
         action={subLoading ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--muted-foreground)" }} /> : (
           <div className="text-right">
             <p className="text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Current plan</p>
@@ -71,6 +77,7 @@ export function Settings() {
               fees={fees}
               onCancel={() => setCancelConfirm(true)}
               onSelect={setCheckoutPlan}
+              onAddSeats={() => setSeatPricingOpen(true)}
               plan={p}
               subActive={subData?.status === "active"}
             />
@@ -83,6 +90,8 @@ export function Settings() {
           </div>
         )}
       </SettingsPanel>
+
+      {currentPlan !== "free" && <SeatPricingDialog plan={currentPlan} open={seatPricingOpen} onOpenChange={setSeatPricingOpen} />}
 
       {/* Billing History */}
       <SettingsPanel icon={Receipt} title="Billing History" subtitle="Your last 24 subscription payments" pad={false}>
@@ -123,7 +132,7 @@ export function Settings() {
           ))}
         </div>
         <div className="pt-4">
-          <button className="px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity" style={{ background: AMPS_ACCENT }}>Save Preferences</button>
+          <button disabled className="px-4 py-2 text-sm font-medium text-amps-accent-foreground opacity-50" style={{ background: AMPS_ACCENT }}>Preference saving unavailable</button>
         </div>
       </SettingsPanel>
 

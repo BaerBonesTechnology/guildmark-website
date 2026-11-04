@@ -20,7 +20,7 @@ const fieldStyle = { fontFamily: BODY, background: "var(--input-background)" } a
 export function MarketCalculator() {
   const {
     ageMonths, brand, condition, confidence, cpu, fees, fmvPerUnit, includeDataWipe,
-    model, quantity, ram, recovery, setAgeMonths, setBrand, setCondition, setCpu,
+    model, platformFeePct, quantity, ram, recovery, setAgeMonths, setBrand, setCondition, setCpu,
     setIncludeDataWipe, setModel, setQuantity, setRam, showResults, valuation,
   } = useMarketCalculatorViewModel();
 
@@ -170,7 +170,7 @@ export function MarketCalculator() {
                       <span className="text-sm tabular-nums" style={{ fontFamily: MONO }}>{includeDataWipe ? `−$${dataWipe.toLocaleString()}` : "$0"}</span>
                     </div>
                   </div>
-                  <DeductionRow icon={Percent} label="Platform Fee" sub={`${formatFeeRate(fees?.seller_fee_free)} of gross value`}
+                  <DeductionRow icon={Percent} label="Platform Fee" sub={`${formatFeeRate(platformFeePct)} of gross value${fees ? '' : ' · default estimate'}`}
                     value={`−$${platformFee.toFixed(2)}`} />
                   <div className="flex items-center justify-between pt-1">
                     <p className="font-medium">Net Payment</p>

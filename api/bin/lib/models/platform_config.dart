@@ -1,14 +1,16 @@
 /// Platform-wide fee configuration model.
-library platform_config;
+library;
 import 'package:json_annotation/json_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'platform_config.g.dart';
 
 
 @JsonSerializable()
 class PlatformConfig {
+
+  factory PlatformConfig.fromJson(Map<String, dynamic> json) => _$PlatformConfigFromJson(json);
   PlatformConfig({
     required this.sellerFeeFree,
     required this.sellerFeeStarter,
@@ -49,8 +51,6 @@ class PlatformConfig {
 
   final String updatedAt;
   final String? updatedBy;
-
-  factory PlatformConfig.fromJson(Map<String, dynamic> json) => _$PlatformConfigFromJson(json);
 
   Map<String, dynamic> toJson() => _$PlatformConfigToJson(this);
 

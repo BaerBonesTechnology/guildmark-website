@@ -3,14 +3,13 @@ library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'invoice.freezed.dart';
 part 'invoice.g.dart';
 
 @Freezed()
 abstract class TaxInvoice with _$TaxInvoice {
-  const TaxInvoice._();
 
   const factory TaxInvoice({
     required String id,
@@ -29,6 +28,7 @@ abstract class TaxInvoice with _$TaxInvoice {
     // Joined from asset row
     String?  modelName,
   }) = _TaxInvoice;
+  const TaxInvoice._();
 
   factory TaxInvoice.fromJson(Map<String, dynamic> json) =>
       _$TaxInvoiceFromJson(json);

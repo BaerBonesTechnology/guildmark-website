@@ -3,18 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import { squareApplicationId, squareLocationId, squareEnvironment } from "../config";
 import { PLAN_META, type PaidPlan } from "../constants/subscriptionCheckout.constants";
 import { useAuth } from "../hooks/useAuth";
-import { useSubscriptionCheckout, useTriggerValuation } from "../lib/apiHooks";
+import { useSubscriptionCheckout } from "../lib/apiHooks";
 import { isSquareSandbox, loadSquareSdk, type SquareCardForm } from "../services/square.service";
+import { loadSubscriptionPayment, subscriptionPaymentOutcome, subscriptionCanRestart } from "../services/subscriptionPayment.service";
 
-type Step = "card" | "confirm" | "success";
+type Step = "card" | "confirm" | "success" | "pending";
 
 export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: string, open: boolean) {
   const meta = PLAN_META[plan];
   const checkout = useSubscriptionCheckout();
-  const triggerValuation = useTriggerValuation();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
+  const scope = `guildmark-subscription:${user?.company_id}:${plan}`;
+  const [attempt] = useState(() => {
+    try { return loadSubscriptionPayment(sessionStorage, scope); }
+    catch { return { key: "", submitted: true }; }
+  });
 
-  const [step, setStep] = useState<Step>("confirm");
+  const [step, setStep] = useState<Step>(attempt.submitted ? "pending" : "confirm");
   const [cardError, setCardError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [saveCard, setSaveCard] = useState(true);
@@ -28,6 +33,14 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
 
   const cardRef = useRef<SquareCardForm | null>(null);
   const [cardInitKey, setCardInitKey] = useState(0);
+  function handlePaymentFailure(error: unknown) {
+    setCardError(error instanceof Error ? error.message : "Payment status could not be confirmed. Check the existing payment before trying again.");
+    if (subscriptionCanRestart(error)) {
+      sessionStorage.removeItem(scope);
+      attempt.key = crypto.randomUUID();attempt.submitted = false;
+      setStep("card");setCardInitKey(k => k + 1);
+    } else if (attempt.submitted) setStep("pending");
+  }
 
   // Mount Square card form when we reach the card step (or when cardInitKey bumps).
   useEffect(() => {
@@ -35,7 +48,6 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
     let cancelled = false;
 
     async function initSquare() {
-      setCardError("");
       try {
         await loadSquareSdk();
         if (!window.Square) throw new Error("Square SDK not available");
@@ -82,14 +94,19 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handlePay() {
+    if (attempt.submitted || !attempt.key) { setStep("pending"); return; }
+    const markSubmitted = () => { sessionStorage.setItem(scope, JSON.stringify({key: attempt.key, submitted: true})); attempt.submitted = true; };
     // Sandbox shortcut — bypass the SDK card form and use Square's static test
     // nonce so backend config can be verified without a matching frontend appId.
     if (isSquareSandbox()) {
       setIsLoading(true);
       setCardError("");
       try {
-        await checkout.mutateAsync({
+        markSubmitted();
+        const payment = await checkout.mutateAsync({
           plan,
+          idempotency_key: attempt.key,
+          expected_price_cents: meta.price * 100,
           source_id: "cnon:card-nonce-ok",
           save_card: saveCard,
           cardholder_name: cardholderName.trim() || "Sandbox Test",
@@ -100,9 +117,11 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
             postal_code: zip.trim() || "10001",
           },
         });
-        setStep("success");
+        const outcome = subscriptionPaymentOutcome(payment, plan, meta.price * 100);
+        if (outcome === "success") sessionStorage.removeItem(scope);
+        setStep(outcome);
       } catch (err) {
-        setCardError(err instanceof Error ? err.message : "Payment failed.");
+        handlePaymentFailure(err);
       } finally {
         setIsLoading(false);
       }
@@ -135,8 +154,11 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
         return;
       }
 
-      await checkout.mutateAsync({
+      markSubmitted();
+      const payment = await checkout.mutateAsync({
         plan,
+        idempotency_key: attempt.key,
+        expected_price_cents: meta.price * 100,
         source_id: result.token,
         save_card: saveCard,
         cardholder_name: cardholderName.trim(),
@@ -150,25 +172,34 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
         },
       });
 
-      setStep("success");
+      const outcome = subscriptionPaymentOutcome(payment, plan, meta.price * 100);
+      if (outcome === "success") sessionStorage.removeItem(scope);
+      setStep(outcome);
     } catch (err) {
-      setCardError(err instanceof Error ? err.message : "Payment failed. Please try again.");
-      // The nonce is single-use — force a fresh card form for the next attempt.
-      setCardInitKey((k) => k + 1);
+      handlePaymentFailure(err);
     } finally {
       setIsLoading(false);
     }
   }
 
   async function handleDone(onOpenChange: (open: boolean) => void, onSuccess?: () => void) {
+    if (step !== "success") return;
     // Refresh the access token so the in-memory user picks up the new
     // subscription_plan before TierGate checks it.
     await refreshUser();
-    // Fire-and-forget background ML re-valuation so existing listings show
-    // current values immediately (backend no-ops if there are no listings).
-    triggerValuation.mutate();
     onOpenChange(false);
     onSuccess?.();
+  }
+  async function checkPayment() {
+    if (!attempt.key) {setCardError("Payment recovery details are unavailable. Contact support and check billing before making another payment.");return;}
+    setIsLoading(true);setCardError("");
+    try {
+      const result = await checkout.mutateAsync({plan, idempotency_key: attempt.key, expected_price_cents: meta.price * 100});
+      const outcome = subscriptionPaymentOutcome(result, plan, meta.price * 100);
+      if (outcome === "success") sessionStorage.removeItem(scope);
+      setStep(outcome);
+    } catch (error) {handlePaymentFailure(error);}
+    finally {setIsLoading(false);}
   }
 
   const isUpgrade =
@@ -178,7 +209,7 @@ export function useSubscriptionCheckoutViewModel(plan: PaidPlan, currentPlan: st
 
   return {
     addr1, addr2, bizName, cardError, cardholderName, city, handleDone, handlePay, isLoading,
-    isUpgrade, meta, saveCard, setAddr1, setAddr2, setBizName, setCardholderName, setCity,
+    isUpgrade, meta, saveCard, checkPayment, setAddr1, setAddr2, setBizName, setCardholderName, setCity,
     setSaveCard, setStateAb, setStep, setZip, stateAb, step, zip,
   };
 }

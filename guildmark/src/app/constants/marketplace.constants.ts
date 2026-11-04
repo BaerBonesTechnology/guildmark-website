@@ -5,16 +5,17 @@ export type MarketplaceSort = "newest" | "price-low" | "price-high" | "demand";
 
 export const PAGE_SIZE = 12;
 
-export const GRADE_COLOR: Record<string, string> = {
-  A: "var(--grade-a)",
-  B: "var(--grade-b)",
-  C: "var(--grade-c)",
-};
-
 export const CONDITION_LABEL: Record<string, string> = {
   A: "Grade A",
   B: "Grade B",
   C: "Grade C",
+};
+
+/** Plain-language gloss per grade, shown in the marketplace condition legend. */
+export const GRADE_BLURB: Record<string, string> = {
+  A: "Excellent — minimal wear, fully tested.",
+  B: "Good — light wear, fully functional.",
+  C: "Fair — visible wear or minor faults.",
 };
 
 export const CATEGORY_ICON: Record<string, React.ElementType> = {
@@ -26,6 +27,7 @@ export const CATEGORY_ICON: Record<string, React.ElementType> = {
 export const MARKETPLACE_CATEGORIES: { label: string; type: string }[] = [
   { label: "Laptops", type: "laptop" },
   { label: "Desktops", type: "desktop" },
+  { label: "Monitors", type: "monitor" },
   { label: "Servers", type: "server" },
   { label: "Phones", type: "phone" },
   { label: "Tablets", type: "tablet" },

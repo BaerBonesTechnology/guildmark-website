@@ -1,48 +1,53 @@
-/** ViewModel for the Marketplace (PLP): search, filters, sort, paging, stats. */
+/** ViewModel for the Marketplace (PLP): URL-synced search, filters, sort, paging. */
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { useMarketplaceListings } from "../lib/apiHooks";
-import { api } from "../lib/api";
-import { PAGE_SIZE } from "../constants/marketplace.constants";
+import { MARKETPLACE_CATEGORIES, MARKETPLACE_GRADES, MARKETPLACE_SORTS, PAGE_SIZE } from "../constants/marketplace.constants";
 import { filterAndSortListings, toggleSetValue } from "../services/marketplace.service";
 import type { MarketplaceSort } from "../constants/marketplace.constants";
 
-interface MarketplaceStats {
-  avgPricePerUnit: string;
-  totalListings: number;
-  totalMarketValue: string;
-  totalUnits: number;
-}
+const SORT_VALUES = new Set(MARKETPLACE_SORTS.map((option) => option.value));
 
 export function useMarketplaceViewModel() {
-  const [categories, setCategories] = useState<Set<string>>(new Set());
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [grades, setGrades] = useState<Set<string>>(new Set());
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<MarketplaceSort>("newest");
-  const [stats, setStats] = useState<MarketplaceStats>({ avgPricePerUnit: "0", totalListings: 0, totalMarketValue: "0", totalUnits: 0 });
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  // The URL query string is the source of truth for filters, sort and page, so
+  // a filtered view is shareable, restorable and survives Back/Forward.
+  const categories = useMemo(
+    () => new Set(searchParams.getAll("category").filter((value) => MARKETPLACE_CATEGORIES.some((category) => category.type === value))),
+    [searchParams],
+  );
+  const grades = useMemo(
+    () => new Set(searchParams.getAll("grade").filter((value) => MARKETPLACE_GRADES.some((entry) => entry.grade === value))),
+    [searchParams],
+  );
+  const urlSearch = searchParams.get("q") ?? "";
+  const sortParam = searchParams.get("sort") as MarketplaceSort | null;
+  const sortBy: MarketplaceSort = sortParam && SORT_VALUES.has(sortParam) ? sortParam : "newest";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
+  // The search box keeps a local mirror for responsive typing; it is debounced
+  // into the URL (which drives the query) and kept in sync with external nav.
+  const [search, setSearch] = useState(urlSearch);
+  useEffect(() => { setSearch(urlSearch); }, [urlSearch]);
   useEffect(() => {
-    const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 350);
+    if (search === urlSearch) return;
+    const timer = setTimeout(() => {
+      setSearchParams((previous) => {
+        const params = new URLSearchParams(previous);
+        if (search) params.set("q", search); else params.delete("q");
+        params.delete("page");
+        return params;
+      }, { replace: true, preventScrollReset: true });
+    }, 350);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, urlSearch, setSearchParams]);
 
-  useEffect(() => { setPage(1); }, [categories, grades, sortBy]);
-
-  useEffect(() => {
-    api.get<{ avgPricePerUnit: number; totalListings: number; totalMarketValue: number; totalUnits: number }>("/marketplace/stats")
-      .then((result) => setStats({
-        avgPricePerUnit: result.avgPricePerUnit.toLocaleString("en-US", { maximumFractionDigits: 0 }),
-        totalListings: result.totalListings,
-        totalMarketValue: result.totalMarketValue.toLocaleString("en-US", { maximumFractionDigits: 0 }),
-        totalUnits: result.totalUnits,
-      }))
-      .catch(() => {});
-  }, []);
-
-  // Search is server-side; category/condition are multi-select and filtered
-  // client-side, so we pull a generous page (fine pre-launch).
-  const { data, isError, isLoading } = useMarketplaceListings({ search: debouncedSearch || undefined, page: 1, page_size: 100 });
+  // Search is applied server-side; category/condition/sort are multi-select and
+  // applied client-side over a generous page. True server-side filtering is
+  // blocked until the API accepts multi-value category/grade + a sort param
+  // (see the optimize note); backend is mid-migration to Firebase.
+  const { data, isError, isLoading, refetch } = useMarketplaceListings({ search: urlSearch || undefined, page: 1, page_size: 100 });
   const allListings = data?.data ?? [];
 
   const filteredListings = useMemo(
@@ -52,48 +57,42 @@ export function useMarketplaceViewModel() {
 
   const anyFilter = categories.size > 0 || grades.size > 0;
   const totalPages = Math.max(1, Math.ceil(filteredListings.length / PAGE_SIZE));
-  const pageItems = filteredListings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, totalPages);
+  const pageItems = filteredListings.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  function clearFilters() {
-    setCategories(new Set());
-    setGrades(new Set());
+  function patchParams(mutate: (params: URLSearchParams) => void, resetPage = true) {
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      mutate(params);
+      if (resetPage) params.delete("page");
+      return params;
+    }, { replace: true, preventScrollReset: true });
   }
 
-  function goToNextPage() {
-    setPage((prev) => prev + 1);
+  function setSortBy(next: MarketplaceSort) {
+    patchParams((params) => { if (next === "newest") params.delete("sort"); else params.set("sort", next); });
   }
-
-  function goToPrevPage() {
-    setPage((prev) => prev - 1);
-  }
-
   function toggleCategory(type: string) {
-    setCategories((prev) => toggleSetValue(prev, type));
+    const next = toggleSetValue(categories, type);
+    patchParams((params) => { params.delete("category"); next.forEach((value) => params.append("category", value)); });
   }
-
   function toggleGrade(grade: string) {
-    setGrades((prev) => toggleSetValue(prev, grade));
+    const next = toggleSetValue(grades, grade);
+    patchParams((params) => { params.delete("grade"); next.forEach((value) => params.append("grade", value)); });
+  }
+  function clearFilters() {
+    patchParams((params) => { params.delete("category"); params.delete("grade"); });
+  }
+  function goToNextPage() {
+    patchParams((params) => params.set("page", String(safePage + 1)), false);
+  }
+  function goToPrevPage() {
+    patchParams((params) => { const previousPage = safePage - 1; if (previousPage <= 1) params.delete("page"); else params.set("page", String(previousPage)); }, false);
   }
 
   return {
-    anyFilter,
-    categories,
-    clearFilters,
-    filteredListings,
-    goToNextPage,
-    goToPrevPage,
-    grades,
-    isError,
-    isLoading,
-    page,
-    pageItems,
-    search,
-    setSearch,
-    setSortBy,
-    sortBy,
-    stats,
-    toggleCategory,
-    toggleGrade,
-    totalPages,
+    anyFilter, categories, clearFilters, filteredListings, goToNextPage, goToPrevPage,
+    grades, isError, isLoading, page: safePage, pageItems, refetch, search, setSearch,
+    setSortBy, sortBy, toggleCategory, toggleGrade, totalPages,
   };
 }

@@ -1,12 +1,12 @@
 /// WebAuthn / Passkey helpers for DevDash employee 2FA.
 ///
 /// Implements the subset of the WebAuthn Level 2 spec needed for:
-///   - ES256 (ECDSA P-256 with SHA-256) credential registration
-///   - ES256 assertion verification
+///   - ES256 (ECDSA P-256) and RS256 (RSA PKCS#1 v1.5) registration
+///   - SHA-256 assertion verification for both algorithms
 ///
 /// External dependencies used:
 ///   - package:crypto      (SHA-256 hashing)
-///   - package:cryptography (ECDSA P-256 signature verification)
+///   - package:pointycastle (ECDSA P-256 signature verification)
 ///
 /// References:
 ///   https://www.w3.org/TR/webauthn-2/
@@ -17,7 +17,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' as crypto;
-import 'package:cryptography/cryptography.dart' as c;
+import 'package:pointycastle/export.dart' as pc;
 
 // ---------------------------------------------------------------------------
 // Base64url helpers (WebAuthn always uses unpadded base64url)
@@ -25,6 +25,21 @@ import 'package:cryptography/cryptography.dart' as c;
 
 String toBase64Url(List<int> bytes) =>
     base64Url.encode(bytes).replaceAll('=', '');
+
+/// Bind the authenticator operation to this RP and require a present, verified
+/// user. Both registration and assertion must check this before granting staff.
+void verifyAuthenticatorData(Uint8List data, String rpId) {
+  if (data.length < 37) {
+    throw const FormatException('Truncated authenticator data');
+  }
+  final expected = crypto.sha256.convert(utf8.encode(rpId)).bytes;
+  for (var i = 0; i < 32; i++) {
+    if (data[i] != expected[i]) throw const FormatException('RP ID mismatch');
+  }
+  if ((data[32] & 0x05) != 0x05) {
+    throw const FormatException('User presence and verification required');
+  }
+}
 
 Uint8List fromBase64Url(String s) {
   final padded = s.padRight(s.length + (4 - s.length % 4) % 4, '=');
@@ -50,7 +65,7 @@ class _CborReader {
   dynamic decode() {
     final byte = _data[_pos++];
     final major = byte >> 5;
-    final info  = byte & 0x1f;
+    final info = byte & 0x1f;
 
     switch (major) {
       case 0: // unsigned int
@@ -60,13 +75,13 @@ class _CborReader {
         return -1 - _readCount(info);
 
       case 2: // byte string
-        final len   = _readCount(info);
+        final len = _readCount(info);
         final bytes = Uint8List.fromList(_data.sublist(_pos, _pos + len));
         _pos += len;
         return bytes;
 
       case 3: // text string
-        final len   = _readCount(info);
+        final len = _readCount(info);
         final bytes = _data.sublist(_pos, _pos + len);
         _pos += len;
         return utf8.decode(bytes);
@@ -85,7 +100,9 @@ class _CborReader {
         return map;
 
       default:
-        throw FormatException('Unsupported CBOR major type $major at pos ${_pos - 1}');
+        throw FormatException(
+          'Unsupported CBOR major type $major at pos ${_pos - 1}',
+        );
     }
   }
 
@@ -98,8 +115,11 @@ class _CborReader {
       return v;
     }
     if (info == 26) {
-      final v = (_data[_pos] << 24) | (_data[_pos + 1] << 16) |
-                (_data[_pos + 2] << 8)  |  _data[_pos + 3];
+      final v =
+          (_data[_pos] << 24) |
+          (_data[_pos + 1] << 16) |
+          (_data[_pos + 2] << 8) |
+          _data[_pos + 3];
       _pos += 4;
       return v;
     }
@@ -122,7 +142,7 @@ Uint8List parseAttestationObject(Uint8List attObj) {
   final map = decodeCbor(attObj) as Map<dynamic, dynamic>;
   final authData = map['authData'];
   if (authData == null) {
-    throw FormatException('attestationObject missing authData');
+    throw const FormatException('attestationObject missing authData');
   }
   return authData as Uint8List;
 }
@@ -148,32 +168,55 @@ class ParsedCredential {
     required this.publicKeyY,
     required this.signCount,
     required this.aaguid,
+    this.algorithm = -7,
+    this.publicKeyN,
+    this.publicKeyE,
   });
 
   final Uint8List credentialId;
-  final Uint8List publicKeyX;  // 32 bytes, P-256 x coordinate
-  final Uint8List publicKeyY;  // 32 bytes, P-256 y coordinate
-  final int       signCount;
-  final String    aaguid;      // hex string
+  final Uint8List publicKeyX; // 32 bytes, P-256 x coordinate
+  final Uint8List publicKeyY; // 32 bytes, P-256 y coordinate
+  final int signCount;
+  final String aaguid; // hex string
+  final int algorithm;
+  final Uint8List? publicKeyN;
+  final Uint8List? publicKeyE;
 }
 
 ParsedCredential parseAuthData(Uint8List authData) {
+  try {
+    return _parseAuthData(authData);
+  } on RangeError {
+    throw const FormatException('Truncated credential data');
+  } on TypeError {
+    throw const FormatException('Invalid COSE key fields');
+  }
+}
+
+ParsedCredential _parseAuthData(Uint8List authData) {
   if (authData.length < 37) {
     throw FormatException('authData too short: ${authData.length}');
   }
 
-  final flags     = authData[32];
-  final signCount = (authData[33] << 24) | (authData[34] << 16) |
-                    (authData[35] << 8)  |  authData[36];
+  final flags = authData[32];
+  final signCount =
+      (authData[33] << 24) |
+      (authData[34] << 16) |
+      (authData[35] << 8) |
+      authData[36];
 
   final hasAttestedCredData = (flags & 0x40) != 0;
   if (!hasAttestedCredData) {
-    throw FormatException('authData has no attestedCredentialData (AT flag not set)');
+    throw const FormatException(
+      'authData has no attestedCredentialData (AT flag not set)',
+    );
   }
 
   // aaguid: bytes 37–52
   final aaguidBytes = authData.sublist(37, 53);
-  final aaguid = aaguidBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  final aaguid = aaguidBytes
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join();
 
   // credentialIdLength: bytes 53–54 (big-endian uint16)
   final credIdLen = (authData[53] << 8) | authData[54];
@@ -182,8 +225,8 @@ ParsedCredential parseAuthData(Uint8List authData) {
   final credentialId = authData.sublist(55, 55 + credIdLen);
 
   // credentialPublicKey: remaining bytes (CBOR COSE key)
-  final coseBytes    = authData.sublist(55 + credIdLen);
-  final coseKey      = decodeCbor(coseBytes) as Map<dynamic, dynamic>;
+  final coseBytes = authData.sublist(55 + credIdLen);
+  final coseKey = decodeCbor(coseBytes) as Map<dynamic, dynamic>;
 
   // COSE key parameters for EC2 / ES256:
   //   1: kty  = 2 (EC2)
@@ -193,19 +236,70 @@ ParsedCredential parseAuthData(Uint8List authData) {
   //  -3: y    = <32 bytes>
   final kty = coseKey[1] as int?;
   final alg = coseKey[3] as int?;
-  if (kty != 2)  throw FormatException('Unsupported COSE kty: $kty (expected 2 = EC2)');
-  if (alg != -7) throw FormatException('Unsupported COSE alg: $alg (expected -7 = ES256)');
+  if (kty == 3 && alg == -257) {
+    final n = coseKey[-1] as Uint8List;
+    final e = coseKey[-2] as Uint8List;
+    _rsaPublicKey(n, e); // Reject weak, oversized or malformed public keys.
+    return ParsedCredential(
+      credentialId: credentialId,
+      publicKeyX: Uint8List(0),
+      publicKeyY: Uint8List(0),
+      publicKeyN: n,
+      publicKeyE: e,
+      algorithm: -257,
+      signCount: signCount,
+      aaguid: aaguid,
+    );
+  }
+  if (kty != 2 || alg != -7 || coseKey[-1] != 1) {
+    throw const FormatException(
+      'Unsupported COSE key type, algorithm or curve',
+    );
+  }
 
   final x = coseKey[-2] as Uint8List;
   final y = coseKey[-3] as Uint8List;
+  if (x.length != 32 || y.length != 32) {
+    throw const FormatException('Invalid P-256 coordinates');
+  }
+  final curve = pc.ECCurve_secp256r1();
+  final point = curve.curve.createPoint(_integer(x), _integer(y));
+  final px = point.x!;
+  final py = point.y!;
+  if (point.isInfinity ||
+      py.square() != px.square() * px + curve.curve.a! * px + curve.curve.b!) {
+    throw const FormatException('Invalid P-256 public key');
+  }
 
   return ParsedCredential(
     credentialId: credentialId,
-    publicKeyX:   _pad32(x),
-    publicKeyY:   _pad32(y),
-    signCount:    signCount,
-    aaguid:       aaguid,
+    publicKeyX: _pad32(x),
+    publicKeyY: _pad32(y),
+    signCount: signCount,
+    aaguid: aaguid,
   );
+}
+
+BigInt _integer(List<int> bytes) => BigInt.parse(
+  bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(),
+  radix: 16,
+);
+
+pc.RSAPublicKey _rsaPublicKey(Uint8List modulus, Uint8List exponent) {
+  if (modulus.length < 256 ||
+      modulus.length > 512 ||
+      exponent.isEmpty ||
+      exponent.length > 4 ||
+      modulus.first == 0 ||
+      exponent.first == 0) {
+    throw const FormatException('Invalid RSA key size');
+  }
+  final n = _integer(modulus);
+  final e = _integer(exponent);
+  if (n.bitLength < 2048 || n.isEven || e < BigInt.from(3) || e.isEven) {
+    throw const FormatException('Invalid RSA modulus or exponent');
+  }
+  return pc.RSAPublicKey(n, e);
 }
 
 /// Trims leading 0x00 bytes (DER sign padding) then pads back to exactly 32 bytes.
@@ -227,21 +321,39 @@ Uint8List _pad32(Uint8List bytes) {
 // WebAuthn assertions carry DER-encoded ECDSA signatures:
 //   0x30 [seqLen] 0x02 [rLen] [r…] 0x02 [sLen] [s…]
 //
-// The cryptography package expects raw P1363 format: r || s (64 bytes for P-256).
+// Normalise to raw P1363 format: r || s (64 bytes for P-256).
 // ---------------------------------------------------------------------------
 
 Uint8List derToP1363(Uint8List der) {
-  if (der[0] != 0x30) throw FormatException('Not a DER SEQUENCE (got ${der[0]})');
+  if (der.length < 8 || der.length > 72 || der[1] != der.length - 2) {
+    throw const FormatException('Invalid DER signature length');
+  }
+  if (der[0] != 0x30) {
+    throw FormatException('Not a DER SEQUENCE (got ${der[0]})');
+  }
   var i = 2; // skip 0x30 and length byte
-  if (der[i] != 0x02) throw FormatException('Expected INTEGER tag (got ${der[i]})');
+  if (der[i] != 0x02) {
+    throw FormatException('Expected INTEGER tag (got ${der[i]})');
+  }
   i++;
   final rLen = der[i++];
   final r = der.sublist(i, i + rLen);
   i += rLen;
-  if (der[i] != 0x02) throw FormatException('Expected INTEGER tag for s (got ${der[i]})');
+  if (der[i] != 0x02) {
+    throw FormatException('Expected INTEGER tag for s (got ${der[i]})');
+  }
   i++;
   final sLen = der[i++];
   final s = der.sublist(i, i + sLen);
+  if (i + sLen != der.length ||
+      rLen == 0 ||
+      sLen == 0 ||
+      rLen > 33 ||
+      sLen > 33 ||
+      r[0] >= 128 ||
+      s[0] >= 128) {
+    throw const FormatException('Invalid DER integers');
+  }
 
   return Uint8List.fromList([..._pad32(r), ..._pad32(s)]);
 }
@@ -254,7 +366,7 @@ Uint8List derToP1363(Uint8List der) {
 // The signed content (per spec) is:
 //   sigBase = authenticatorData || SHA-256(clientDataJSON)
 //
-// The cryptography package's Ecdsa.p256(Sha256()) hashes sigBase internally,
+// PointyCastle ECDSASigner(SHA256Digest()) hashes sigBase internally,
 // so we pass the raw sigBase bytes (not pre-hashed).
 // ---------------------------------------------------------------------------
 
@@ -262,8 +374,11 @@ Future<bool> verifyAssertion({
   required Uint8List authenticatorData,
   required Uint8List clientDataJson,
   required Uint8List derSignature,
-  required Uint8List publicKeyX,
-  required Uint8List publicKeyY,
+  Uint8List? publicKeyX,
+  Uint8List? publicKeyY,
+  int algorithm = -7,
+  Uint8List? publicKeyN,
+  Uint8List? publicKeyE,
 }) async {
   // Build sigBase: authData || SHA-256(clientDataJSON)
   final clientDataHash = Uint8List.fromList(
@@ -271,21 +386,41 @@ Future<bool> verifyAssertion({
   );
   final sigBase = Uint8List.fromList([...authenticatorData, ...clientDataHash]);
 
-  // Convert DER signature to P1363 (r || s)
-  final p1363 = derToP1363(derSignature);
-
-  // Reconstruct the EC public key
-  final publicKey = c.EcPublicKey(
-    x: publicKeyX,
-    y: publicKeyY,
-    type: c.KeyPairType.p256,
-  );
-
-  final algorithm = c.Ecdsa.p256(c.Sha256());
-  final signature = c.Signature(p1363, publicKey: publicKey);
-
   try {
-    return await algorithm.verify(sigBase, signature: signature);
+    if (algorithm == -257) {
+      if (publicKeyN == null ||
+          publicKeyE == null ||
+          derSignature.length != publicKeyN.length) {
+        return false;
+      }
+      final key = _rsaPublicKey(publicKeyN, publicKeyE);
+      final verifier = pc.Signer('SHA-256/RSA')
+        ..init(false, pc.PublicKeyParameter<pc.RSAPublicKey>(key));
+      return verifier.verifySignature(sigBase, pc.RSASignature(derSignature));
+    }
+    if (algorithm != -7 || publicKeyX == null || publicKeyY == null) {
+      return false;
+    }
+    if (publicKeyX.length != 32 || publicKeyY.length != 32) return false;
+    final p1363 = derToP1363(derSignature);
+    BigInt integer(List<int> bytes) => BigInt.parse(
+      bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(),
+      radix: 16,
+    );
+    final curve = pc.ECCurve_secp256r1();
+    final point = curve.curve.createPoint(
+      integer(publicKeyX),
+      integer(publicKeyY),
+    );
+    final verifier = pc.ECDSASigner(pc.SHA256Digest())
+      ..init(
+        false,
+        pc.PublicKeyParameter<pc.ECPublicKey>(pc.ECPublicKey(point, curve)),
+      );
+    return verifier.verifySignature(
+      sigBase,
+      pc.ECSignature(integer(p1363.sublist(0, 32)), integer(p1363.sublist(32))),
+    );
   } catch (_) {
     return false;
   }
@@ -301,9 +436,9 @@ Future<bool> verifyAssertion({
 /// Returns the parsed JSON map on success, throws [FormatException] on mismatch.
 Map<String, dynamic> verifyClientData({
   required Uint8List clientDataJson,
-  required String    expectedChallenge,    // base64url
-  required String    expectedType,         // 'webauthn.create' or 'webauthn.get'
-  required String    expectedOrigin,
+  required String expectedChallenge, // base64url
+  required String expectedType, // 'webauthn.create' or 'webauthn.get'
+  required String expectedOrigin,
 }) {
   final Map<String, dynamic> data;
   try {
@@ -312,24 +447,27 @@ Map<String, dynamic> verifyClientData({
     throw FormatException('clientDataJSON is not valid UTF-8 JSON: $e');
   }
 
-  final type      = data['type']      as String?;
+  final type = data['type'] as String?;
   final challenge = data['challenge'] as String?;
-  final origin    = data['origin']    as String?;
+  final origin = data['origin'] as String?;
 
   if (type != expectedType) {
-    throw FormatException('clientData type mismatch: got $type, want $expectedType');
+    throw FormatException(
+      'clientData type mismatch: got $type, want $expectedType',
+    );
   }
 
   // Challenges may differ in padding; normalise before comparing.
-  final normalise = (String? s) =>
-      s?.replaceAll('=', '') ?? '';
+  String normalise(String? s) => s?.replaceAll('=', '') ?? '';
 
   if (normalise(challenge) != normalise(expectedChallenge)) {
-    throw FormatException('clientData challenge mismatch');
+    throw const FormatException('clientData challenge mismatch');
   }
 
   if (origin != expectedOrigin) {
-    throw FormatException('clientData origin mismatch: got $origin, want $expectedOrigin');
+    throw FormatException(
+      'clientData origin mismatch: got $origin, want $expectedOrigin',
+    );
   }
 
   return data;

@@ -24,19 +24,19 @@ class SquareService {
     http.Client? client,
     void Function(String)? paymentErrorLogger,
   }) : _baseUrl = _normalizeUrl(
-            apiUrl,
-            environment == 'production'
-                ? 'https://connect.squareup.com/'
-                : 'https://connect.squareupsandbox.com/',
-          ),
+         apiUrl,
+         environment == 'production'
+             ? 'https://connect.squareup.com/'
+             : 'https://connect.squareupsandbox.com/',
+       ),
        _client = client ?? http.Client(),
        _paymentErrorLogger = paymentErrorLogger ?? stderr.writeln;
 
-  /// Strips trailing slashes from [url] so that `$_baseUrl/payments` never
-  /// produces a double slash (which Square's CDN silently 404s with no body).
+  /// Accept host-only or /v2 configuration, producing exactly one /v2 prefix.
   static String _normalizeUrl(String? url, String fallback) {
     final base = (url != null && url.isNotEmpty) ? url : fallback;
-    return base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final trimmed = base.replaceAll(RegExp(r'/+$'), '');
+    return trimmed.endsWith('/v2') ? trimmed : '$trimmed/v2';
   }
 
   final String accessToken;
@@ -45,11 +45,25 @@ class SquareService {
   final http.Client _client;
   final void Function(String) _paymentErrorLogger;
 
+  /// Read-only guard: configured recurring prices must match the local catalog.
+  Future<void> verifyMonthlyPlan(String variationId,int amountCents) async {
+    final response=await _client.get(Uri.parse('$_baseUrl/catalog/object/${Uri.encodeComponent(variationId)}'),headers:_headers).timeout(const Duration(seconds:15));
+    if(response.statusCode!=200)throw SquareException(503,'Unable to verify the configured subscription catalog.');
+    final body=jsonDecode(response.body) as Map<String,dynamic>;
+    final object=body['object'] as Map?;
+    final phases=(object?['subscription_plan_variation_data'] as Map?)?['phases'] as List?;
+    if(object?['type']!='SUBSCRIPTION_PLAN_VARIATION'||object?['id']!=variationId||object?['is_deleted']==true||phases==null||phases.length!=1)throw SquareException(409,'Configured subscription catalog does not match the approved monthly plan.');
+    final phase=phases.single as Map;
+    final pricing=phase['pricing'] as Map?;
+    final price=pricing?['price_money'] as Map?;
+    if(phase['cadence']!='MONTHLY'||phase['periods']!=null||pricing?['type']!='STATIC'||price?['currency']!='USD'||price?['amount']!=amountCents)throw SquareException(409,'Configured subscription catalog price must match the approved monthly USD price.');
+  }
+
   Map<String, String> get _headers => {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-        'Square-Version': '2025-04-16',
-      };
+    'Authorization': 'Bearer $accessToken',
+    'Content-Type': 'application/json',
+    'Square-Version': '2025-04-16',
+  };
 
   /// Create a payment from a Square Web Payments SDK nonce.
   ///
@@ -60,47 +74,52 @@ class SquareService {
   Future<SquarePaymentResult> createPayment({
     required String sourceId,
     required int amountCents,
+    String? idempotencyKey,
     String? note,
     String? referenceId,
+
     /// Square customer ID — attaches payment to the customer record so Square
     /// owns the full payment history. Created at signup via [createCustomer].
     String? customerId,
+
     /// When true and [customerId] is set, saves the card on file for future
     /// charges. Requires the customer to have consented.
     bool saveCard = false,
+
     /// Optional cardholder name for display and verification purposes.
     String? cardholderName,
+
     /// Optional billing address forwarded to Square for AVS checks.
     SquareBillingAddress? billingAddress,
   }) async {
-    final idempotencyKey = _uuid.v4();
-
     final body = {
-      'idempotency_key': idempotencyKey,
+      'idempotency_key': idempotencyKey ?? _uuid.v4(),
       'source_id': sourceId,
       'location_id': locationId,
       'amount_money': {
         'amount': amountCents,
         'currency': 'USD',
       },
-      if (note != null)        'note': note,
-      if (referenceId != null) 'reference_id': referenceId,
-      if (customerId != null)  'customer_id': customerId,
+      'note': ?note,
+      'reference_id': ?referenceId,
+      'customer_id': ?customerId,
       if (saveCard && customerId != null)
         'store_payment_method_in_vault': 'ON_SUCCESS',
-      if (billingAddress != null)
-        'billing_address': billingAddress.toJson(),
+      if (billingAddress != null) 'billing_address': billingAddress.toJson(),
     };
 
-
-    final resp = await _client.post(
-      Uri.parse('$_baseUrl/v2/payments'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
+    final resp = await _client
+        .post(
+          Uri.parse('$_baseUrl/payments'),
+          headers: _headers,
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 25));
 
     if (resp.statusCode != 200) {
-      _paymentErrorLogger('[Square] payment request failed: HTTP ${resp.statusCode}');
+      _paymentErrorLogger(
+        '[Square] payment request failed: HTTP ${resp.statusCode}',
+      );
       if (resp.body.isEmpty) {
         // Empty body usually means the URL was wrong (double slash, wrong host)
         // or the nonce was already consumed by a previous attempt.
@@ -108,17 +127,33 @@ class SquareService {
           resp.statusCode,
           resp.statusCode == 404
               ? 'Square API endpoint not found — check SQUARE_API_URL env var '
-                '(current base: $_baseUrl).'
+                    '(current base: $_baseUrl).'
               : 'Payment nonce was already used or has expired. '
-                'Please re-enter your card details and try again.',
+                    'Please re-enter your card details and try again.',
         );
       }
-      final json   = jsonDecode(resp.body) as Map<String, dynamic>;
+      final json = jsonDecode(resp.body) as Map<String, dynamic>;
       final errors = json['errors'] as List? ?? [];
-      final detail = errors.isNotEmpty
-          ? (errors.first as Map)['detail'] as String? ?? 'Unknown error'
-          : 'Square payment error ${resp.statusCode}';
-      throw SquareException(resp.statusCode, detail);
+      const declines = {
+        'CARD_DECLINED',
+        'CVV_FAILURE',
+        'ADDRESS_VERIFICATION_FAILURE',
+        'CARD_EXPIRED',
+        'EXPIRATION_FAILURE',
+        'INSUFFICIENT_FUNDS',
+        'INVALID_CARD',
+        'CARD_NOT_SUPPORTED',
+        'GENERIC_DECLINE',
+      };
+      final declined =
+          resp.statusCode >= 400 &&
+          resp.statusCode < 500 &&
+          errors.any((error) => declines.contains((error as Map)['code']));
+      throw SquareException(
+        resp.statusCode,
+        declined ? 'Payment was declined' : 'Payment could not be confirmed',
+        definitiveDecline: declined,
+      );
     }
 
     final json = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -127,8 +162,11 @@ class SquareService {
     return SquarePaymentResult(
       id: payment['id'] as String,
       status: payment['status'] as String,
-      amountCents: (payment['amount_money']['amount'] as int),
+      amountCents: payment['amount_money']['amount'] as int,
       receiptUrl: payment['receipt_url'] as String?,
+      currency: payment['amount_money']['currency'] as String?,
+      referenceId: payment['reference_id'] as String?,
+      locationId: payment['location_id'] as String?,
     );
   }
 
@@ -149,9 +187,9 @@ class SquareService {
       headers: _headers,
       body: jsonEncode({
         'idempotency_key': _uuid.v4(),
-        'email_address':   email,
-        'company_name':    companyName,
-        if (referenceId != null) 'reference_id': referenceId,
+        'email_address': email,
+        'company_name': companyName,
+        'reference_id': ?referenceId,
       }),
     );
 
@@ -191,7 +229,7 @@ class SquareService {
       'source_id': sourceId,
       'card': {
         'customer_id': customerId,
-        if (cardholderName != null) 'cardholder_name': cardholderName,
+        'cardholder_name': ?cardholderName,
         if (billingAddress != null) 'billing_address': billingAddress.toJson(),
       },
     };
@@ -203,18 +241,20 @@ class SquareService {
     );
 
     if (resp.statusCode != 200) {
-      stderr.writeln('[Square] POST $_baseUrl/cards → ${resp.statusCode}  body: ${resp.body}');
+      stderr.writeln(
+        '[Square] POST $_baseUrl/cards → ${resp.statusCode}  body: ${resp.body}',
+      );
       if (resp.body.isEmpty) {
         throw SquareException(
           resp.statusCode,
           resp.statusCode == 404
               ? 'Square API endpoint not found — check SQUARE_API_URL env var '
-                '(current base: $_baseUrl).'
+                    '(current base: $_baseUrl).'
               : 'Card could not be saved — the payment nonce may have already been used. '
-                'Please re-enter your card details.',
+                    'Please re-enter your card details.',
         );
       }
-      final json   = jsonDecode(resp.body) as Map<String, dynamic>;
+      final json = jsonDecode(resp.body) as Map<String, dynamic>;
       final errors = json['errors'] as List? ?? [];
       final detail = errors.isNotEmpty
           ? (errors.first as Map)['detail'] as String? ?? 'Unknown error'
@@ -248,16 +288,17 @@ class SquareService {
     String? startDate,
   }) async {
     final today = DateTime.now().toUtc();
-    final start = startDate ??
+    final start =
+        startDate ??
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
     final body = {
-      'idempotency_key':    _uuid.v4(),
-      'location_id':        locationId,
-      'plan_variation_id':  planVariationId,
-      'customer_id':        customerId,
-      'start_date':         start,
-      'card_id':            cardId,
+      'idempotency_key': _uuid.v4(),
+      'location_id': locationId,
+      'plan_variation_id': planVariationId,
+      'customer_id': customerId,
+      'start_date': start,
+      'card_id': cardId,
     };
 
     final resp = await _client.post(
@@ -277,8 +318,8 @@ class SquareService {
 
     final sub = json['subscription'] as Map<String, dynamic>;
     return SquareSubscriptionResult(
-      id:                 sub['id'] as String,
-      status:             sub['status'] as String,
+      id: sub['id'] as String,
+      status: sub['status'] as String,
       chargedThroughDate: sub['charged_through_date'] as String?,
     );
   }
@@ -292,7 +333,7 @@ class SquareService {
     );
 
     if (resp.statusCode != 200) {
-      final json  = jsonDecode(resp.body) as Map<String, dynamic>;
+      final json = jsonDecode(resp.body) as Map<String, dynamic>;
       final errors = json['errors'] as List? ?? [];
       final detail = errors.isNotEmpty
           ? (errors.first as Map)['detail'] as String? ?? 'Unknown error'
@@ -305,10 +346,12 @@ class SquareService {
 
   /// Retrieve a payment by its Square payment ID.
   Future<SquarePaymentResult> getPayment(String paymentId) async {
-    final resp = await _client.get(
-      Uri.parse('$_baseUrl/payments/$paymentId'),
-      headers: _headers,
-    );
+    final resp = await _client
+        .get(
+          Uri.parse('$_baseUrl/payments/$paymentId'),
+          headers: _headers,
+        )
+        .timeout(const Duration(seconds: 25));
     final json = jsonDecode(resp.body) as Map<String, dynamic>;
     if (resp.statusCode != 200) {
       throw SquareException(resp.statusCode, 'Payment not found');
@@ -317,8 +360,11 @@ class SquareService {
     return SquarePaymentResult(
       id: payment['id'] as String,
       status: payment['status'] as String,
-      amountCents: (payment['amount_money']['amount'] as int),
+      amountCents: payment['amount_money']['amount'] as int,
       receiptUrl: payment['receipt_url'] as String?,
+      currency: payment['amount_money']['currency'] as String?,
+      referenceId: payment['reference_id'] as String?,
+      locationId: payment['location_id'] as String?,
     );
   }
 
@@ -331,19 +377,25 @@ class SquarePaymentResult {
     required this.status,
     required this.amountCents,
     this.receiptUrl,
+    this.currency,
+    this.referenceId,
+    this.locationId,
   });
 
   final String id;
   final String status;
   final int amountCents;
   final String? receiptUrl;
+  final String? currency;
+  final String? referenceId;
+  final String? locationId;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'status': status,
-        'amount_cents': amountCents,
-        if (receiptUrl != null) 'receipt_url': receiptUrl,
-      };
+    'id': id,
+    'status': status,
+    'amount_cents': amountCents,
+    if (receiptUrl != null) 'receipt_url': receiptUrl,
+  };
 }
 
 class SquareSubscriptionResult {
@@ -353,8 +405,9 @@ class SquareSubscriptionResult {
     this.chargedThroughDate,
   });
 
-  final String  id;
-  final String  status;
+  final String id;
+  final String status;
+
   /// ISO-8601 date string (e.g. "2026-06-09") — the date the subscription is
   /// paid through. Null until the first invoice is processed.
   final String? chargedThroughDate;
@@ -364,38 +417,38 @@ class SquareSubscriptionResult {
 /// Square field names follow their v2 address schema.
 class SquareBillingAddress {
   SquareBillingAddress({
-    this.businessName,
-    required this.addressLine1,
+    required this.addressLine1, required this.city, required this.state, required this.postalCode, this.businessName,
     this.addressLine2,
-    required this.city,
-    required this.state,
-    required this.postalCode,
     this.country = 'US',
   });
 
   final String? businessName;
-  final String  addressLine1;
+  final String addressLine1;
   final String? addressLine2;
-  final String  city;
-  final String  state;
-  final String  postalCode;
-  final String  country;
+  final String city;
+  final String state;
+  final String postalCode;
+  final String country;
 
   Map<String, dynamic> toJson() => {
-        'address_line_1':                 addressLine1,
-        if (addressLine2 != null)
-          'address_line_2':               addressLine2,
-        'locality':                       city,
-        'administrative_district_level_1': state,
-        'postal_code':                    postalCode,
-        'country':                        country,
-      };
+    'address_line_1': addressLine1,
+    if (addressLine2 != null) 'address_line_2': addressLine2,
+    'locality': city,
+    'administrative_district_level_1': state,
+    'postal_code': postalCode,
+    'country': country,
+  };
 }
 
 class SquareException implements Exception {
-  SquareException(this.statusCode, this.detail);
+  SquareException(
+    this.statusCode,
+    this.detail, {
+    this.definitiveDecline = false,
+  });
   final int statusCode;
   final String detail;
+  final bool definitiveDecline;
 
   @override
   String toString() => 'SquareException($statusCode): $detail';

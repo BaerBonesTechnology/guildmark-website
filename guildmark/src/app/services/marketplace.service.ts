@@ -1,5 +1,5 @@
 /** Marketplace business logic — pure functions (Service). */
-import { Package } from "lucide-react";
+import { BadgeCheck, CircleAlert, CircleCheck, Package, ShieldCheck, Tag, TrendingDown } from "lucide-react";
 import { CATEGORY_ICON } from "../constants/marketplace.constants";
 import type { MarketplaceSort } from "../constants/marketplace.constants";
 import type { MarketplaceListing } from "../models/marketplace";
@@ -48,6 +48,40 @@ export function isNewListing(listing: MarketplaceListing): boolean {
 /** Effective unit price (listed, else buyer ask, else 0). */
 export function listingPrice(listing: MarketplaceListing): number {
   return listing.listed_price ?? listing.buyer_ask_price ?? 0;
+}
+
+export type TrustTone = "good" | "warn" | "neutral";
+export interface TrustSignal { label: string; tone: TrustTone; Icon: React.ElementType }
+
+/** Up to three buyer-trust chips (value position, data wipe, condition, warranty). */
+export function buildTrustSignals(listing: MarketplaceListing): TrustSignal[] {
+  const signals: TrustSignal[] = [];
+
+  // Fair-market value position.
+  const price = listingPrice(listing);
+  const fmv = listing.fair_market_value;
+  if (fmv && fmv > 0 && price > 0) {
+    const delta = (price - fmv) / fmv;
+    if (delta <= -0.05) signals.push({ label: `${Math.round(-delta * 100)}% below market value`, tone: "good", Icon: TrendingDown });
+    else if (delta < 0.05) signals.push({ label: "At fair market value", tone: "neutral", Icon: Tag });
+    else signals.push({ label: `Market value $${Math.round(fmv).toLocaleString()}`, tone: "neutral", Icon: Tag });
+  } else if (listing.valuation_flag === "distressed") {
+    signals.push({ label: "Priced to move", tone: "good", Icon: TrendingDown });
+  }
+
+  // Data wipe.
+  if (listing.data_wipe_status === "certified") signals.push({ label: "Certified data wipe", tone: "good", Icon: ShieldCheck });
+  else if (listing.data_wipe_status === "wiped") signals.push({ label: "Data wiped", tone: "good", Icon: ShieldCheck });
+
+  // Working condition.
+  if (listing.functional_status === "fully_functional") signals.push({ label: "Fully functional", tone: "good", Icon: CircleCheck });
+  else if (listing.functional_status === "functional_with_issues") signals.push({ label: "Issues noted", tone: "warn", Icon: CircleAlert });
+  else if (listing.functional_status === "for_parts") signals.push({ label: "Sold for parts", tone: "neutral", Icon: CircleAlert });
+
+  // Warranty — only if room remains.
+  if (signals.length < 3 && listing.warranty_status === "active") signals.push({ label: "Under warranty", tone: "good", Icon: BadgeCheck });
+
+  return signals.slice(0, 3);
 }
 
 interface FilterOptions {

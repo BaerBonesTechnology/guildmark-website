@@ -1,0 +1,41 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: guildmark-api
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '2'
+        run.googleapis.com/cpu-throttling: 'true'
+    spec:
+      serviceAccountName: guildmark-api@guildmark-prod.iam.gserviceaccount.com
+      containerConcurrency: 20
+      timeoutSeconds: 60
+      containers:
+        - image: us-central1-docker.pkg.dev/guildmark-prod/guildmark/api:REPLACE_WITH_TESTED_TAG
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          env:
+            - {name: FIREBASE_PROJECT_ID, value: guildmark-prod}
+            - {name: FIRESTORE_DATABASE_ID, value: '(default)'}
+            - {name: FIREBASE_STORAGE_BUCKET, value: guildmark-prod.firebasestorage.app}
+            - {name: PUBLIC_API_PREFIX, value: /api}
+            - {name: CORS_ORIGIN, value: 'https://guildmark.co'}
+            - {name: ADMIN_CORS_ORIGIN, value: 'https://devdash.guildmark.co'}
+            - {name: PARTNER_CORS_ORIGIN, value: 'https://partners.guildmark.co'}
+            - {name: GM_DEBUG, value: 'false'}
+            - {name: JWT_ACCESS_TTL_SECONDS, value: '900'}
+            - {name: JWT_REFRESH_TTL_SECONDS, value: '2592000'}
+            - {name: ML_SERVICE_URL, value: ''}
+            - name: JWT_ACCESS_SECRET
+              valueFrom: {secretKeyRef: {name: guildmark-jwt-access, key: latest}}
+            - name: JWT_REFRESH_SECRET
+              valueFrom: {secretKeyRef: {name: guildmark-jwt-refresh, key: latest}}

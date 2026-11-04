@@ -1,16 +1,16 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/config_repo.dart';
+import 'package:guildmark_api/repos/firestore/config_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
   if (principal == null) return unauthorized();
   if (!principal.isStaffAdministrator) return forbidden();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -73,13 +73,15 @@ Future<Response> onRequest(RequestContext context) async {
         buyerFee,
         deferralFee,
       ]) {
-        if (v < 0 || v > 1)
+        if (v < 0 || v > 1) {
           return badRequest(
             'Fee rates must be between 0 and 1 (e.g. 0.08 for 8%)',
           );
+        }
       }
-      if (dataWipePrice < 0)
+      if (dataWipePrice < 0) {
         return badRequest('data_wipe_price must be non-negative');
+      }
 
       final updatedBy = (body['updated_by'] as String?)?.trim();
 

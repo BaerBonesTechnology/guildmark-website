@@ -23,10 +23,10 @@ export function Invoices() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(1.8rem, 3vw, 2.3rem)", lineHeight: 1 }}>Invoices</h1>
-          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Generate and manage write-off documentation for accounting</p>
+          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Local draft prototype. Drafts on this page are not saved to your company account. PDF export and accounting compliance are not available.</p>
         </div>
-        <button onClick={() => setGenerateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity shrink-0" style={{ background: AMPS_ACCENT, color: "#fff" }}>
-          <Plus size={13} /> Generate invoice
+        <button onClick={() => setGenerateOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity shrink-0" style={{ background: AMPS_ACCENT, color: "var(--amps-accent-foreground)" }}>
+          <Plus size={13} /> Prepare draft
         </button>
       </div>
 
@@ -78,7 +78,7 @@ export function Invoices() {
                     </td>
                     <td className="py-2.5 px-4 text-right font-semibold" style={{ fontFamily: MONO }}>${inv.writeOffAmount.toLocaleString()}</td>
                     <td className="py-2.5 px-4 text-right" style={{ fontFamily: MONO, color: "var(--muted-foreground)" }}>${inv.marketValue.toLocaleString()}</td>
-                    <td className="py-2.5 px-4"><button className="w-7 h-7 flex items-center justify-center hover:bg-secondary transition-colors" style={{ color: "var(--muted-foreground)" }}><Download size={13} /></button></td>
+                    <td className="py-2.5 px-4"><button disabled aria-label="PDF export unavailable" title="PDF export is not implemented" className="w-7 h-7 flex items-center justify-center opacity-50" style={{ color: "var(--muted-foreground)" }}><Download size={13} /></button></td>
                   </tr>
                 ))}
               </tbody>

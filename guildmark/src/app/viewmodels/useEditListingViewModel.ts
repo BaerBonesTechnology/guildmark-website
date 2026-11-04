@@ -2,9 +2,12 @@
 import { useEffect, useState } from "react";
 import { useUpdateListingPrice } from "../lib/apiHooks";
 import type { Listing } from "../models/listing";
-import { priceFlagHint } from "../services/listing.service";
+import { priceFlagHint, validListingPrice } from "../services/listing.service";
 
-export function useEditListingViewModel(listing: Listing | null, onOpenChange: (open: boolean) => void) {
+export function useEditListingViewModel(
+  listing: Listing | null,
+  onOpenChange: (open: boolean) => void,
+) {
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
   const updatePrice = useUpdateListingPrice();
@@ -20,19 +23,36 @@ export function useEditListingViewModel(listing: Listing | null, onOpenChange: (
   }
 
   function handleSave() {
-    const parsed = parseFloat(price);
-    if (isNaN(parsed) || parsed <= 0) {
-      setError("Enter a valid price greater than 0");
+    if (!listing || updatePrice.isPending) return;
+    const parsed = Number(price);
+    if (!validListingPrice(price)) {
+      setError(
+        "Enter a price from $0.01 to $1,000,000 with at most two decimal places.",
+      );
       return;
     }
     updatePrice.mutate(
-      { listingId: listing!.id, listed_price: parsed },
-      { onSuccess: () => onOpenChange(false) },
+      { listingId: listing.id, listed_price: parsed },
+      {
+        onSuccess: () => onOpenChange(false),
+        onError: () =>
+          setError(
+            "We couldn’t save your price. Your entry is preserved; try again.",
+          ),
+      },
     );
   }
 
   const fmv = listing?.fair_market_value;
   const flagHint = priceFlagHint(parseFloat(price), fmv);
 
-  return { error, flagHint, fmv, handlePriceChange, handleSave, price, updatePrice };
+  return {
+    error,
+    flagHint,
+    fmv,
+    handlePriceChange,
+    handleSave,
+    price,
+    updatePrice,
+  };
 }

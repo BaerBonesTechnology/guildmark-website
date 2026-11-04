@@ -1,10 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
@@ -12,7 +9,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   if (principal == null) return unauthorized();
   if (!principal.isStaffAdministrator) return forbidden();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -51,12 +48,12 @@ Future<Response> onRequest(RequestContext context, String id) async {
       Row row;
       try {
         row = await db.updateRow(
-          databaseId: Aw.databaseId,
-          tableId: Aw.guildmarkEmployees,
+          databaseId: Collections.databaseId,
+          tableId: Collections.guildmarkEmployees,
           rowId: id,
           data: data,
         );
-      } on AppwriteException catch (e) {
+      } on DatastoreException catch (e) {
         if (e.code == 404) return notFound('Employee not found');
         rethrow;
       }
@@ -75,12 +72,12 @@ Future<Response> onRequest(RequestContext context, String id) async {
       // Soft-delete: deactivate rather than remove audit trail.
       try {
         await db.updateRow(
-          databaseId: Aw.databaseId,
-          tableId: Aw.guildmarkEmployees,
+          databaseId: Collections.databaseId,
+          tableId: Collections.guildmarkEmployees,
           rowId: id,
           data: {'is_active': false},
         );
-      } on AppwriteException catch (e) {
+      } on DatastoreException catch (e) {
         if (e.code == 404) return notFound('Employee not found');
         rethrow;
       }

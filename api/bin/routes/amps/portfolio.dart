@@ -1,9 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/portfolio_repo.dart';
+import 'package:guildmark_api/repos/firestore/portfolio_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.get) {
@@ -15,7 +14,7 @@ Future<Response> onRequest(RequestContext context) async {
   final q = context.request.uri.queryParameters;
   final trendMonths = int.tryParse(q['trend_months'] ?? '12') ?? 12;
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }

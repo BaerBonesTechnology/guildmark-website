@@ -1,9 +1,9 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException, Query;
-import 'package:dart_appwrite/models.dart' show Row;
+import 'dart:typed_data';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/http_helpers.dart';
@@ -16,7 +16,7 @@ Future<Response> onRequest(RequestContext context) async {
 
   final cfg = context.read<AppConfig>();
   final jwt = context.read<JwtService>();
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -54,11 +54,11 @@ Future<Response> onRequest(RequestContext context) async {
   Row chalRow;
   try {
     chalRow = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeyChallenges,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeyChallenges,
       rowId: challengeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) {
       return badRequest(
         'Challenge not found, expired, or already used',
@@ -83,8 +83,8 @@ Future<Response> onRequest(RequestContext context) async {
 
   // ── Look up the passkey by credential_id ─────────────────────────────────
   final pkRows = await db.listRows(
-    databaseId: Aw.databaseId,
-    tableId: Aw.employeePasskeys,
+    databaseId: Collections.databaseId,
+    tableId: Collections.employeePasskeys,
     queries: [
       Query.equal('employee_id', employeeId),
       Query.equal('credential_id', credentialId),
@@ -98,8 +98,17 @@ Future<Response> onRequest(RequestContext context) async {
   final pk = pkRows.rows.first;
   final passkeyRowId = pk.$id;
   final storedCount = (pk.data['sign_count'] as num? ?? 0).toInt();
-  final pkX = fromBase64Url(pk.data['public_key_x'].toString());
-  final pkY = fromBase64Url(pk.data['public_key_y'].toString());
+  // Existing ES256 records predate the algorithm field.
+  final algorithm = (pk.data['algorithm'] as num?)?.toInt() ?? -7;
+  Uint8List? keyBytes(String field) {
+    final encoded = pk.data[field];
+    if (encoded is! String) return null;
+    try {
+      return fromBase64Url(encoded);
+    } on FormatException {
+      return null;
+    }
+  }
 
   // ── Verify clientDataJSON ─────────────────────────────────────────────────
   final clientDataBytes = fromBase64Url(clientDataB64);
@@ -108,22 +117,30 @@ Future<Response> onRequest(RequestContext context) async {
       clientDataJson: clientDataBytes,
       expectedChallenge: expectedChallenge,
       expectedType: 'webauthn.get',
-      expectedOrigin: _origin(cfg.webauthnRpId!),
+      expectedOrigin: cfg.adminCorsOrigin ?? _origin(cfg.webauthnRpId!),
     );
   } on FormatException catch (e) {
     return unauthorized('clientData verification failed: $e');
   }
 
-  // ── Verify ECDSA signature ────────────────────────────────────────────────
+  // ── Verify the signature using the stored credential's algorithm ──────────
   final authDataBytes = fromBase64Url(authDataB64);
   final derSignature = fromBase64Url(signatureB64);
+  try {
+    verifyAuthenticatorData(authDataBytes, cfg.webauthnRpId!);
+  } on FormatException {
+    return unauthorized('Authenticator verification failed');
+  }
 
   final valid = await verifyAssertion(
     authenticatorData: authDataBytes,
     clientDataJson: clientDataBytes,
     derSignature: derSignature,
-    publicKeyX: pkX,
-    publicKeyY: pkY,
+    algorithm: algorithm,
+    publicKeyX: keyBytes('public_key_x'),
+    publicKeyY: keyBytes('public_key_y'),
+    publicKeyN: keyBytes('public_key_n'),
+    publicKeyE: keyBytes('public_key_e'),
   );
 
   if (!valid) return unauthorized('Signature verification failed');
@@ -146,11 +163,11 @@ Future<Response> onRequest(RequestContext context) async {
   // ── Consume the challenge (single-use commit point) ───────────────────────
   try {
     await db.deleteRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeyChallenges,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeyChallenges,
       rowId: challengeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) {
       // A concurrent request consumed it first — reject this one.
       return badRequest(
@@ -164,16 +181,16 @@ Future<Response> onRequest(RequestContext context) async {
   final nowIso = DateTime.now().toUtc().toIso8601String();
   if (newCount != null) {
     await db.updateRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeys,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeys,
       rowId: passkeyRowId,
       data: {'sign_count': newCount, 'last_used_at': nowIso},
     );
   } else {
     // Authenticator doesn't implement counter — just update last_used_at
     await db.updateRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.employeePasskeys,
+      databaseId: Collections.databaseId,
+      tableId: Collections.employeePasskeys,
       rowId: passkeyRowId,
       data: {'last_used_at': nowIso},
     );
@@ -183,11 +200,11 @@ Future<Response> onRequest(RequestContext context) async {
   Row emp;
   try {
     emp = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.guildmarkEmployees,
+      databaseId: Collections.databaseId,
+      tableId: Collections.guildmarkEmployees,
       rowId: employeeId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) return serverError('Employee not found');
     rethrow;
   }
@@ -198,15 +215,28 @@ Future<Response> onRequest(RequestContext context) async {
 
   // Update last_login_at
   await db.updateRow(
-    databaseId: Aw.databaseId,
-    tableId: Aw.guildmarkEmployees,
+    databaseId: Collections.databaseId,
+    tableId: Collections.guildmarkEmployees,
     rowId: employeeId,
     data: {'last_login_at': nowIso},
   );
 
-  final token = jwt.issueAccessToken(
-    AccessClaims(userId: employeeId, companyId: 'devdash', role: role, audience: 'staff'),
-  );
+  if (emp.data['is_active'] != true) return unauthorized('Employee inactive');
+  final sessions = firebaseSessions(context);
+  final pendingHash = chalData['firebase_session_hash'] as String?;
+  if (sessions != null && pendingHash == null) {
+    return unauthorized('Password sign-in required');
+  }
+  final token = sessions != null
+      ? await sessions.completeStaff(pendingHash!, 'staff_pending', employeeId)
+      : jwt.issueAccessToken(
+          AccessClaims(
+            userId: employeeId,
+            companyId: 'devdash',
+            role: role,
+            audience: 'staff',
+          ),
+        );
 
   return Response.json(
     body: {

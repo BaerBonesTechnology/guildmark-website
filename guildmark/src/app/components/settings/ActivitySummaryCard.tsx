@@ -1,28 +1,26 @@
-/** Lifetime activity summary card in Account Settings. */
-import { Activity } from "lucide-react";
-import { StatRow } from "./StatRow";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-
-export function ActivitySummaryCard() {
+import { Link } from "react-router";
+import { ArrowUpRight } from "lucide-react";
+/** Account shortcuts replace unavailable lifetime statistics. */
+export function ActivitySummaryCard({ base }: { base: string }) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-primary" />
-          <CardTitle className=" text-base">
-            Activity Summary
-          </CardTitle>
-        </div>
-        <CardDescription className=" text-xs">
-          Lifetime account statistics
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <StatRow label="Total Orders" value="—" />
-        <StatRow label="Active Listings" value="—" />
-        <StatRow label="Total Volume" value="—" />
-        <StatRow label="Member Since" value="—" />
-      </CardContent>
-    </Card>
+    <section className="gm-settings-card">
+      <h2>Your workspace</h2>
+      <nav
+        className="gm-settings-shortcuts"
+        aria-label="Account workspace links"
+      >
+        {[
+          { path: "my-listings", label: "Manage listings" },
+          { path: "offload", label: "Seller shipments" },
+          { path: "orders", label: "Orders & payment records" },
+          { path: "offers", label: "My Offers" },
+        ].map((link) => (
+          <Link key={link.path} to={`${base}/${link.path}`}>
+            {link.label}
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </Link>
+        ))}
+      </nav>
+    </section>
   );
 }

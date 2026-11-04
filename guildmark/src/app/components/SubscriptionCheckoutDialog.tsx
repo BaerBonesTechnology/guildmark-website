@@ -38,7 +38,7 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
   const { data: fees } = usePlatformFees();
   const {
     addr1, addr2, bizName, cardError, cardholderName, city, handleDone, handlePay, isLoading,
-    isUpgrade, meta, saveCard, setAddr1, setAddr2, setBizName, setCardholderName, setCity,
+    isUpgrade, meta, saveCard, checkPayment, setAddr1, setAddr2, setBizName, setCardholderName, setCity,
     setSaveCard, setStateAb, setStep, setZip, stateAb, step, zip,
   } = useSubscriptionCheckoutViewModel(plan, currentPlan, open);
 
@@ -48,7 +48,7 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
         <DialogHeader>
           <DialogTitle className=" flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amps-accent" />
-            {step === "success"
+            {step === "pending" ? "Payment confirmation pending" : step === "success"
               ? "You're all set!"
               : isUpgrade
               ? `Upgrade to ${meta.label}`
@@ -58,6 +58,7 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
             {step === "confirm" && `$${meta.price}/month, billed monthly. Cancel any time.`}
             {step === "card"    && "Enter your payment details to complete the subscription."}
             {step === "success" && `Your ${meta.label} plan is now active.`}
+            {step === "pending" && "Your plan has not been activated by this checkout. Check this payment before attempting another charge."}
           </DialogDescription>
         </DialogHeader>
 
@@ -85,17 +86,18 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                  {meta.sellerFee} marketplace seller fee (vs {formatFeeRate(fees?.seller_fee_free)} on Free)
+                  {formatFeeRate(fees?.[`seller_fee_${plan}`])} marketplace seller fee (vs {formatFeeRate(fees?.seller_fee_free)} on Free)
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                  Full AMPS asset management suite
+                  {meta.valuationCredits.toLocaleString()} fresh valuation credits / billing month
                 </li>
               </ul>
+              <p className="text-xs text-muted-foreground">Company plan. No annual commitment or automatic usage overages. Invoice drafts and MDM pages are prototypes; integrations, expanded reports and invitations are still being prepared.</p>
             </div>
             <div className="flex gap-2 pt-1">
               <Button
-                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white "
+                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground "
                 onClick={() => setStep("card")}
               >
                 Continue to payment
@@ -259,7 +261,7 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
             {/* Action buttons */}
             <div className="flex gap-2">
               <Button
-                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white  gap-2"
+                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground  gap-2"
                 onClick={handlePay}
                 disabled={isLoading}
               >
@@ -293,17 +295,18 @@ export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSucces
             <div className="space-y-1">
               <p className=" font-semibold">{meta.label} plan activated</p>
               <p className="text-sm text-muted-foreground ">
-                Your new features are available immediately. A receipt has been sent to your email.
+                Payment was verified for this plan. Review billing history for your payment record.
               </p>
             </div>
             <Button
-              className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-white "
+              className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground "
               onClick={() => handleDone(onOpenChange, onSuccess)}
             >
               Done
             </Button>
           </div>
         )}
+        {step === "pending" && <div className="space-y-4 py-4"><p className="text-sm text-muted-foreground">The provider or billing service has not supplied a verified completed payment. No new AMPS access is granted here. This attempt is retained in this browser session so checking again does not start another payment.</p>{cardError && <p role="alert" className="text-sm text-destructive">{cardError}</p>}<div className="flex gap-2"><Button onClick={checkPayment} disabled={isLoading}>{isLoading ? "Checking…" : "Check existing payment"}</Button><Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>Close</Button></div></div>}
       </DialogContent>
     </Dialog>
   );

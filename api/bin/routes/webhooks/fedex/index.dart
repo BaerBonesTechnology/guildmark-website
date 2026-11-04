@@ -5,11 +5,11 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/crypto_utils.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/order_repo.dart';
+import 'package:guildmark_api/repos/firestore/order_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 
@@ -43,7 +43,7 @@ Future<Response> onRequest(RequestContext context) async {
   final trackingNumber = _extractTrackingNumber(payload);
   if (trackingNumber == null) {
     // Not an error — FedEx sends various event types; just acknowledge.
-    return Response(statusCode: 200);
+    return Response();
   }
 
   final isDelivered = _isDeliveredEvent(payload);
@@ -51,12 +51,12 @@ Future<Response> onRequest(RequestContext context) async {
     stdout.writeln(
       '[webhook/fedex] non-delivery event for $trackingNumber — ignored',
     );
-    return Response(statusCode: 200);
+    return Response();
   }
 
   stdout.writeln('[webhook/fedex] delivery confirmed for $trackingNumber');
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -68,14 +68,14 @@ Future<Response> onRequest(RequestContext context) async {
   if (order == null) {
     // May be a shipment not managed by GuildMark — not an error.
     stdout.writeln('[webhook/fedex] no order found for $trackingNumber');
-    return Response(statusCode: 200);
+    return Response();
   }
 
   if (order.status != 'shipped') {
     stdout.writeln(
       '[webhook/fedex] order ${order.id} already in ${order.status} — skipping',
     );
-    return Response(statusCode: 200);
+    return Response();
   }
 
   final now = DateTime.now().toUtc();
@@ -106,7 +106,7 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  return Response(statusCode: 200);
+  return Response();
 }
 
 // ---------------------------------------------------------------------------
@@ -128,8 +128,9 @@ bool _isDeliveredEvent(Map<String, dynamic> payload) {
   final events = payload['events'] as List?;
   if (events != null) {
     for (final e in events) {
-      if ((e as Map)['eventType'] == 'DL' || (e)['derivedStatusCode'] == 'DL')
+      if ((e as Map)['eventType'] == 'DL' || e['derivedStatusCode'] == 'DL') {
         return true;
+      }
     }
   }
 

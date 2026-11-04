@@ -1,112 +1,119 @@
-/** Live FedEx tracking panel — 5-step pipeline + event feed for one order. */
-import { CheckCircle2, Clock, Loader2, MapPin, RefreshCw } from "lucide-react";
-import { MonoLabel } from "./MonoLabel";
-import { PIPELINE_ACTIVE_COLOR } from "../../constants/offload.constants";
-import { BODY, MONO } from "../../constants/typography";
+import { RefreshCw } from "lucide-react";
 import { useOrderTracking } from "../../lib/apiHooks";
 import type { Order } from "../../models/order";
-import { buildSteps, fmtDateTime, progressPct } from "../../services/offload.service";
+import { buildSteps, fmtDateTime } from "../../services/offload.service";
 
-export function TrackingPanel({ orderId, order }: { orderId: string; order: Order }) {
-  const { data: tracking, isLoading, error, refetch, isFetching } = useOrderTracking(
-    orderId, order.orderStatus === "shipped" || order.orderStatus === "delivered",
-  );
-  const steps = buildSteps(order, tracking);
-  const pct = progressPct(steps);
-
+export function TrackingPanel({
+  orderId,
+  order,
+}: {
+  orderId: string;
+  order: Order;
+}) {
+  const canTrack =
+    Boolean(order.trackingNumber) &&
+    ["shipped", "delivered"].includes(order.orderStatus);
+  const {
+    data: tracking,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useOrderTracking(orderId, canTrack);
+  const steps = buildSteps(order);
   return (
-    <div className="space-y-6">
-      {/* Progress pipeline */}
-      <div className="relative">
-        <div className="absolute top-8 left-0 right-0 h-px" style={{ background: "var(--border)" }} />
-        <div className="absolute top-8 left-0 h-px transition-all duration-700" style={{ width: `${pct}%`, background: "var(--primary)" }} />
-        <div className="relative flex justify-between">
-          {steps.map((s) => {
-            const complete = s.status === "complete";
-            const active = s.status === "active";
-            return (
-              <div key={s.id} className="flex flex-col items-center">
-                <div className="w-16 h-16 flex items-center justify-center transition-all"
-                  style={{
-                    border: "1px solid var(--border)",
-                    background: complete ? "var(--primary)" : active ? PIPELINE_ACTIVE_COLOR : "var(--secondary)",
-                    color: complete || active ? "#fff" : "var(--muted-foreground)",
-                  }}>
-                  <s.Icon className="w-6 h-6" />
-                </div>
-                <p className="text-xs mt-3 text-center max-w-[72px] leading-tight"
-                  style={{ fontFamily: BODY, color: complete || active ? "var(--foreground)" : "var(--muted-foreground)" }}>
-                  {s.label}
-                </p>
-                {active && <span className="text-xs mt-1" style={{ color: PIPELINE_ACTIVE_COLOR, fontFamily: MONO }}>In Progress</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {isLoading && (
-        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--muted-foreground)" }}>
-          <Loader2 className="w-4 h-4 animate-spin" /> Fetching live tracking…
-        </div>
-      )}
-
-      {tracking && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2"><MonoLabel>Status</MonoLabel>
-              <span className="text-sm font-medium">{tracking.status}</span>
-            </div>
-            {tracking.estimated_delivery && !tracking.actual_delivery && (
-              <div className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5" style={{ color: "var(--muted-foreground)" }} />
-                <MonoLabel>ETA</MonoLabel>
-                <span className="text-sm">{fmtDateTime(tracking.estimated_delivery)}</span>
-              </div>
-            )}
-            {tracking.actual_delivery && (
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--chart-3)" }} />
-                <MonoLabel>Delivered</MonoLabel>
-                <span className="text-sm" style={{ color: "var(--chart-3)" }}>{fmtDateTime(tracking.actual_delivery)}</span>
-              </div>
-            )}
-            <button onClick={() => refetch()} disabled={isFetching}
-              className="ml-auto flex items-center gap-1.5 text-xs hover:text-foreground disabled:opacity-50 transition-colors"
-              style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>
-              <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+    <div className="gm-offload-tracking">
+      <ol className="gm-offload-pipeline" aria-label="Order milestones">
+        {steps.map(({ id, label, Icon, status }) => (
+          <li
+            key={id}
+            className={`is-${status}`}
+            aria-current={status === "active" ? "step" : undefined}
+          >
+            <span className="gm-offload-step-icon">
+              <Icon size={18} aria-hidden="true" />
+            </span>
+            <span>
+              {label}
+              <small>
+                {status === "complete"
+                  ? "Confirmed"
+                  : status === "active"
+                    ? "Next milestone"
+                    : "Pending"}
+              </small>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="gm-offload-footnote">
+        Milestones reflect order records. Delivery does not confirm data erasure
+        or bank settlement.
+      </p>
+      {canTrack && (
+        <div className="gm-offload-carrier">
+          <div>
+            <strong>{order.carrier || "Carrier"} tracking</strong>
+            <button
+              className="gm-text-link"
+              disabled={isFetching}
+              onClick={() => refetch()}
+            >
+              <RefreshCw size={13} aria-hidden="true" />
+              {isFetching ? "Refreshing…" : "Refresh tracking"}
             </button>
           </div>
-
-          {tracking.events.length > 0 && (
-            <div className="border border-border">
-              <div className="max-h-52 overflow-y-auto">
-                {tracking.events.slice(0, 12).map((ev, ndx) => (
-                  <div key={ndx} className="flex gap-4 px-4 py-3 text-sm"
-                    style={{ borderBottom: ndx < tracking.events.length - 1 ? "1px solid var(--border)" : undefined, background: ndx === 0 ? "var(--secondary)" : undefined, fontFamily: BODY }}>
-                    <span className="whitespace-nowrap text-xs shrink-0 pt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{fmtDateTime(ev.timestamp)}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate">{ev.event_description}</p>
-                      {(ev.city || ev.state) && (
-                        <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          {[ev.city, ev.state, ev.country].filter(Boolean).join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <p className="gm-tracking-number">{order.trackingNumber}</p>
+          {isLoading && <p role="status">Loading carrier updates…</p>}
+          {error && (
+            <p role="alert">
+              Carrier updates couldn’t be loaded. Try refreshing tracking.
+            </p>
+          )}
+          {!isLoading && !tracking && !error && (
+            <p>
+              Carrier updates are temporarily unavailable. Your order milestones
+              are shown above.
+            </p>
+          )}
+          {tracking && (
+            <>
+              <p className="gm-carrier-status">{tracking.status}</p>
+              {tracking.actual_delivery ? (
+                <p>Delivered {fmtDateTime(tracking.actual_delivery)}</p>
+              ) : (
+                tracking.estimated_delivery && (
+                  <p>
+                    Estimated delivery{" "}
+                    {fmtDateTime(tracking.estimated_delivery)}
+                  </p>
+                )
+              )}
+              {tracking.events.length > 0 && (
+                <ul className="gm-offload-events">
+                  {tracking.events.slice(0, 6).map((event, index) => (
+                    <li key={`${event.timestamp}-${index}`}>
+                      <time>{fmtDateTime(event.timestamp)}</time>
+                      <div>
+                        <p>{event.event_description}</p>
+                        <small>
+                          {[event.city, event.state, event.country]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </small>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       )}
-
-      {!isLoading && !tracking && !error && order.trackingNumber && (
-        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Tracking unavailable — FedEx may not have scanned this shipment yet.</p>
-      )}
       {!order.trackingNumber && (
-        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No tracking number attached to this order yet.</p>
+        <p className="gm-offload-footnote">
+          No tracking number has been added to this order.
+        </p>
       )}
     </div>
   );

@@ -1,7 +1,8 @@
 /** ViewModel for the Login form: credentials state + auth submission. */
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
+import { loginDestination } from "../services/loginRedirect.service";
 
 export function useLoginViewModel() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ export function useLoginViewModel() {
   const [submitting, setSubmitting] = useState(false);
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (evt: React.SubmitEvent) => {
     evt.preventDefault();
@@ -16,7 +18,7 @@ export function useLoginViewModel() {
     setSubmitting(true);
     try {
       await login(email, password);
-      navigate("/pre/dashboard");
+      navigate(loginDestination(location.pathname, location.state), { replace: true });
     } catch {
       // error is set in useAuth
     } finally {

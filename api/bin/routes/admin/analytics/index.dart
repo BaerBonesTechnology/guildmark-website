@@ -1,10 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show Query, TablesDB;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -20,7 +17,7 @@ Future<Response> onRequest(RequestContext context) async {
   final days = int.tryParse(params['days'] ?? '30') ?? 30;
   final allTime = days <= 0;
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -42,29 +39,29 @@ Future<Response> onRequest(RequestContext context) async {
 
   Future<int> count(String tableId, [List<String> queries = const []]) async {
     final res = await db.listRows(
-      databaseId: Aw.databaseId,
+      databaseId: Collections.databaseId,
       tableId: tableId,
       queries: [...queries, Query.limit(1)],
     );
     return res.total;
   }
 
-  final totalUsers = await count(Aw.users);
-  final newUsers = allTime ? totalUsers : await count(Aw.users, dateQueries);
+  final totalUsers = await count(Collections.users);
+  final newUsers = allTime ? totalUsers : await count(Collections.users, dateQueries);
 
-  final totalSubscribers = await count(Aw.mailingList);
+  final totalSubscribers = await count(Collections.mailingList);
   final newSubscribers = allTime
       ? totalSubscribers
-      : await count(Aw.mailingList, dateQueries);
+      : await count(Collections.mailingList, dateQueries);
 
-  final totalListings = await count(Aw.listings);
-  final activeListings = await count(Aw.listings, [
+  final totalListings = await count(Collections.listings);
+  final activeListings = await count(Collections.listings, [
     Query.equal('status', 'active'),
   ]);
 
   // Orders in the window — paged once, then reduced for count / completed /
   // GMV / per-day activity (§1c tradeoff: no SUM or GROUP BY server-side).
-  final orderRows = await _listAll(db, Aw.orders, dateQueries);
+  final orderRows = await _listAll(db, Collections.orders, dateQueries);
   final totalOrders = orderRows.length;
   var completedOrders = 0;
   var gmvCents = 0;
@@ -78,8 +75,8 @@ Future<Response> onRequest(RequestContext context) async {
   // ── Subscription breakdown ────────────────────────────────────────────────
   // companies LEFT JOIN subscriptions GROUP BY plan → page both tables and
   // group in Dart (subscriptions is unique per company_id, so this is 1:1).
-  final companyRows = await _listAll(db, Aw.companies, const []);
-  final subRows = await _listAll(db, Aw.subscriptions, const []);
+  final companyRows = await _listAll(db, Collections.companies, const []);
+  final subRows = await _listAll(db, Collections.subscriptions, const []);
   final planByCompany = {
     for (final s in subRows)
       s.data['company_id'] as String: (s.data['plan'] as String?) ?? 'free',
@@ -92,9 +89,9 @@ Future<Response> onRequest(RequestContext context) async {
   final planKeys = planCounts.keys.toList()..sort();
 
   // ── Time-series (GROUP BY day → bucket by $createdAt date in Dart) ────────
-  final userGrowth = _perDayCounts(await _listAll(db, Aw.users, dateQueries));
+  final userGrowth = _perDayCounts(await _listAll(db, Collections.users, dateQueries));
   final mailingGrowth = _perDayCounts(
-    await _listAll(db, Aw.mailingList, dateQueries),
+    await _listAll(db, Collections.mailingList, dateQueries),
   );
 
   final orderBuckets = <String, List<Row>>{};
@@ -174,7 +171,7 @@ Future<List<Row>> _listAll(
   String? cursor;
   while (true) {
     final page = await db.listRows(
-      databaseId: Aw.databaseId,
+      databaseId: Collections.databaseId,
       tableId: tableId,
       queries: [
         ...queries,

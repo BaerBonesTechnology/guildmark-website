@@ -89,7 +89,7 @@ export function AddMDMConnectionDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => { onOpenChange(false); resetForm(); }} disabled={connecting}>Cancel</Button>
-          <Button onClick={onConnect} disabled={!selectedMDM || connecting} className="text-white" style={{ background: AMPS_ACCENT }}>
+          <Button onClick={onConnect} disabled={!selectedMDM || connecting} className="text-amps-accent-foreground" style={{ background: AMPS_ACCENT }}>
             {connecting ? <><RefreshCw className="h-4 w-4 animate-spin" /> Connecting…</> : "Connect & sync"}
           </Button>
         </DialogFooter>

@@ -1,9 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException;
-import 'package:dart_appwrite/models.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
@@ -37,7 +35,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
 
   if (newStatus == null) return badRequest('status is required');
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -47,11 +45,11 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final Row current;
   try {
     current = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.partnerServiceAssignments,
+      databaseId: Collections.databaseId,
+      tableId: Collections.partnerServiceAssignments,
       rowId: id,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) {
       return jsonError(404, 'NOT_FOUND', 'Assignment not found');
     }
@@ -114,11 +112,11 @@ Future<Response> onRequest(RequestContext context, String id) async {
   // accepted.
   final data = <String, dynamic>{
     'status': newStatus,
-    if (wipeMethod != null) 'wipe_method': wipeMethod,
-    if (reimageOs != null) 'reimage_os': reimageOs,
-    if (certUrl != null) 'cert_url': certUrl,
-    if (trackingNumber != null) 'tracking_number': trackingNumber,
-    if (carrier != null) 'carrier': carrier,
+    'wipe_method': ?wipeMethod,
+    'reimage_os': ?reimageOs,
+    'cert_url': ?certUrl,
+    'tracking_number': ?trackingNumber,
+    'carrier': ?carrier,
     if (isComplete)
       'completed_at': DateTime.now().toUtc().toIso8601String(),
   };
@@ -126,12 +124,12 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final Row updated;
   try {
     updated = await db.updateRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.partnerServiceAssignments,
+      databaseId: Collections.databaseId,
+      tableId: Collections.partnerServiceAssignments,
       rowId: id,
       data: data,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) {
       return jsonError(404, 'NOT_FOUND', 'Assignment not found');
     }

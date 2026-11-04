@@ -1,11 +1,9 @@
-import 'dart:io';
-
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
+import 'package:guildmark_api/repos/firestore/subscription_repo.dart';
+import 'package:guildmark_api/services/billing_owner.dart';
 import 'package:guildmark_api/services/square_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -16,9 +14,14 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
+  }
+  if (!await isBillingOwner(aw, auth)) {
+    return forbidden(
+      'Only the company billing owner can cancel a subscription.',
+    );
   }
   final square = context.read<SquareService?>();
   final repo = SubscriptionRepo(aw);
@@ -30,18 +33,26 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('Subscription is already cancelled or past due');
   }
 
-  // Cancel the Square subscription if one exists, so Square stops billing.
-  // We intentionally log and swallow Square errors so the user can always
-  // cancel even if the Square API is temporarily unavailable.
-  if (square != null && currentSub.squareSubscriptionId != null) {
+  // Never claim cancellation while the provider may continue billing.
+  if (currentSub.squareSubscriptionId != null) {
+    if (square == null) {
+      return jsonError(
+        503,
+        'BILLING_UNAVAILABLE',
+        'Provider cancellation is unavailable; billing remains unchanged.',
+      );
+    }
     try {
       await square.cancelSubscription(currentSub.squareSubscriptionId!);
-    } catch (e) {
-      stderr.writeln('[cancel] Square cancelSubscription error (ignored): $e');
+    } on Exception {
+      return jsonError(
+        502,
+        'CANCELLATION_UNCONFIRMED',
+        'Provider cancellation failed; billing remains unchanged.',
+      );
     }
   }
 
-  // Mark as cancelled in our DB regardless of the Square result.
   await repo.cancel(auth.companyId);
 
   return Response.json(

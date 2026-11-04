@@ -15,12 +15,12 @@ export const AMPS_TOOLTIP_STYLE = {
   backgroundColor: "var(--card)",
   border: "1px solid var(--border)",
   borderRadius: 0,
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: "'DM Sans', sans-serif",
   fontSize: 12,
 };
 
 // Pie-slice palette for the "fleet by asset type" chart.
-export const FLEET_TYPE_COLORS = ["#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE"];
+export const FLEET_TYPE_COLORS = ["var(--amps-accent)", "#5483C2", "#91AFCF", "#C4D3E4"];
 
 export const PORTFOLIO_QUICK_ACTIONS: QuickAction[] = [
   { to: "/pre/amps/assets?filter=aging", icon: AlertCircle, label: "List Aging Assets", sub: "Assets > 36 months" },

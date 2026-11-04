@@ -1,8 +1,3 @@
-/**
- * AccountSettings — profile / company / security / notifications hub (View).
- * All form state lives in useAccountSettingsViewModel; each section is its
- * own card component. Presentation only.
- */
 import { AccountStatusCard } from "../components/settings/AccountStatusCard";
 import { ActivitySummaryCard } from "../components/settings/ActivitySummaryCard";
 import { CompanyCard } from "../components/settings/CompanyCard";
@@ -10,52 +5,67 @@ import { DangerZoneCard } from "../components/settings/DangerZoneCard";
 import { NotificationsCard } from "../components/settings/NotificationsCard";
 import { ProfileCard } from "../components/settings/ProfileCard";
 import { SecurityCard } from "../components/settings/SecurityCard";
+import { AccountSettingsDialog } from "../components/settings/AccountSettingsDialog";
 import { useAccountSettingsViewModel } from "../viewmodels/useAccountSettingsViewModel";
+import { ampsEnabled } from "../config";
+import { validResetEmail } from "../services/accountSettings.service";
+import "../../styles/account-settings.css";
 
 export function AccountSettings() {
-  const {
-    company, logout, notifs, passwords, profile, setCompany, setNotif, setPasswords,
-    setProfile, setShowCurrent, setShowNew, setTwoFaEnabled, showCurrent, showNew,
-    twoFaEnabled, user,
-  } = useAccountSettingsViewModel();
-
+  const vm = useAccountSettingsViewModel();
   return (
-    <div className="space-y-6 pb-20">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl  font-semibold text-foreground">
-          Account Settings
+    <div className="gm-settings gm-container">
+      <header className="gm-settings-heading">
+        <h1>
+          Your account.
+          <br />
+          In clear view.
         </h1>
-        <p className="text-sm text-muted-foreground  mt-1">
-          Manage your profile, security, and notification preferences.
+        <p>
+          Review your identity, company plan, and available account controls.
         </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
-        {/* ── Left column (2/3) ───────────────────────────────────────────── */}
-        <div className="col-span-2 space-y-6">
-          <ProfileCard profile={profile} setProfile={setProfile} />
-          <CompanyCard company={company} setCompany={setCompany} />
+      </header>
+      <nav className="gm-settings-section-nav" aria-label="Account sections">
+        <a href="#account-profile">Profile</a>
+        <a href="#account-company">Organization</a>
+        <a href="#account-security">Security</a>
+        <a href="#account-notifications">Notifications</a>
+      </nav>
+      <div className="gm-settings-layout">
+        <div className="gm-settings-main">
+          <ProfileCard user={vm.user} />
+          <CompanyCard user={vm.user} base={vm.base} />
           <SecurityCard
-            passwords={passwords}
-            setPasswords={setPasswords}
-            setShowCurrent={setShowCurrent}
-            setShowNew={setShowNew}
-            setTwoFaEnabled={setTwoFaEnabled}
-            showCurrent={showCurrent}
-            showNew={showNew}
-            twoFaEnabled={twoFaEnabled}
+            email={vm.user?.email}
+            disabled={vm.signingOut || !validResetEmail(vm.user?.email)}
+            onReset={() => vm.openDialog("reset")}
           />
-          <NotificationsCard notifs={notifs} setNotif={setNotif} />
+          <NotificationsCard />
         </div>
-
-        {/* ── Right column (1/3) ──────────────────────────────────────────── */}
-        <div className="space-y-6">
-          <AccountStatusCard user={user} />
-          <ActivitySummaryCard />
-          <DangerZoneCard onLogout={logout} />
-        </div>
+        <aside
+          className="gm-settings-sidebar"
+          aria-label="Company plan and account access"
+        >
+          <AccountStatusCard
+            data={vm.subscription.data}
+            loading={vm.subscription.isLoading}
+            error={vm.subscription.isError}
+            fetching={vm.subscription.isFetching}
+            onRetry={() => vm.subscription.refetch()}
+            base={vm.base}
+            ampsEnabled={ampsEnabled}
+          />
+          <ActivitySummaryCard base={vm.base} />
+          <DangerZoneCard
+            base={vm.base}
+            onExport={() => vm.openDialog("export")}
+            onLogout={vm.signOut}
+            busy={vm.signingOut}
+            error={vm.signOutError}
+          />
+        </aside>
       </div>
+      <AccountSettingsDialog model={vm} />
     </div>
   );
 }

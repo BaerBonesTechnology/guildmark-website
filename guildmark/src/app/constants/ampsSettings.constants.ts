@@ -1,6 +1,8 @@
 /** AMPS account Settings constants — plan tiers, ranks, notification rows. */
 
-export type PlanKey = "free" | "growth" | "pro" | "starter";
+import { PAID_PLANS, PLAN_CATALOG } from "./planCatalog.ts";
+export type { PlanKey } from "./planCatalog.ts";
+import type { PlanKey } from "./planCatalog.ts";
 
 export interface PlanTier {
   devices: string;
@@ -8,6 +10,7 @@ export interface PlanTier {
   label: string;
   price: number;
   users: string;
+  additionalSeatPrice?: number;
 }
 
 export interface NotificationRow {
@@ -23,10 +26,8 @@ export const BILLING_HEADERS = ["Date", "Plan", "Period", "Amount", "Status", ""
 export const PLAN_RANK: Record<PlanKey, number> = { free: 0, starter: 1, growth: 2, pro: 3 };
 
 export const PLANS: PlanTier[] = [
-  { key: "free", label: "Free", price: 0, devices: "Up to 10 devices", users: "1 user" },
-  { key: "starter", label: "Starter", price: 49, devices: "Up to 100 devices", users: "2 team members" },
-  { key: "growth", label: "Growth", price: 149, devices: "Up to 500 devices", users: "5 team members" },
-  { key: "pro", label: "Pro", price: 349, devices: "Unlimited devices", users: "Unlimited users" },
+  { key: "free", label: "Free", price: 0, devices: "Marketplace access; no AMPS", users: "Account owner" },
+  ...PAID_PLANS.map((key) => ({ key, label: PLAN_CATALOG[key].label, price: PLAN_CATALOG[key].price, devices: `${PLAN_CATALOG[key].physicalDevices.toLocaleString("en-US")} active physical devices`, users: "1 included owner seat", additionalSeatPrice: PLAN_CATALOG[key].additionalSeatPrice })),
 ];
 
 export const SETTINGS_NOTIFICATION_ROWS: NotificationRow[] = [

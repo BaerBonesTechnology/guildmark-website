@@ -9,54 +9,43 @@ class AppConfig {
     required this.refreshTokenTtl,
     required this.corsOrigin,
     required this.isDebug,
-    // ML service is optional — API degrades gracefully when unavailable.
+    // Square Web Payments
+    required this.squareAccessToken, required this.squareApplicationId, required this.squareLocationId, required this.squareEnvironment, required this.squareApiUrl, // MDM — only the shared Graph API base URL lives here; credentials are per-company in DB
+    required this.intuneApiUrl, required this.ebayApiUrl, required this.backmarketApiUrl, required this.resendApiUrl, required this.escrowApiUrl, required this.fedexApiUrl, // ML service is optional — API degrades gracefully when unavailable.
     this.mlServiceUrl,
     this.mlServiceToken,
-    // Appwrite — endpoint defaults to the in-cluster gateway; PROJECT_ID and
-    // API_KEY are optional so the API still boots before a project exists.
-    required this.appwriteEndpoint,
-    required this.appwritePublicEndpoint,
-    this.appwriteProjectId,
-    this.appwriteApiKey,
-    // Square Web Payments
-    required this.squareAccessToken,
-    required this.squareApplicationId,
-    required this.squareLocationId,
-    required this.squareEnvironment,
+    this.firebaseProjectId,
+    this.authMode,
+    this.firebaseAuthEmulatorHost,
+    this.firestoreDatabaseId = '(default)',
+    this.firebaseStorageBucket,
+    this.publicApiPrefix = '',
     this.squarePlanStarterMonthly,
     this.squarePlanStarterAnnual,
     this.squarePlanGrowthMonthly,
     this.squarePlanGrowthAnnual,
     this.squarePlanProMonthly,
     this.squarePlanProAnnual,
-    required this.squareApiUrl,
     // GuildMark Wallet — ACH payout details (optional until wallet is live)
     this.gmWalletAchRouting,
     this.gmWalletAchAccount,
-    // MDM — only the shared Graph API base URL lives here; credentials are per-company in DB
-    required this.intuneApiUrl,
     // Market data sources (optional)
     // eBay uses OAuth — all three IDs are needed to exchange for a token.
     this.ebayAppId,
     this.ebayCertId,
     this.ebayDevId,
-    required this.ebayApiUrl,
     this.backmarketApiKey,
-    required this.backmarketApiUrl,
     // Email — Resend (optional; emails are skipped when key is absent)
     this.resendApiKey,
-    required this.resendApiUrl,
     // Escrow.com (optional; escrow steps are skipped when not configured)
     this.escrowApiKey,
     this.escrowEmail,
     this.escrowSandbox = true,
-    required this.escrowApiUrl,
     // FedEx Track API (optional; tracking falls back to manual)
     this.fedexApiKey,
     this.fedexSecretKey,
     this.fedexWebhookSecret,
     this.fedexSandbox = true,
-    required this.fedexApiUrl,
     this.adminAuthUser,
     this.adminAuthPass,
     this.adminCorsOrigin,
@@ -92,9 +81,7 @@ class AppConfig {
     int requireInt(String key) => int.parse(require(key));
 
     bool optionalBool(String key, {bool defaultValue = false}) =>
-        (Platform.environment[key] ?? '').toLowerCase() == 'true'
-        ? true
-        : defaultValue;
+        (Platform.environment[key] ?? '').toLowerCase() == 'true' || defaultValue;
 
     final squareEnvironment =
         Platform.environment['SQUARE_ENVIRONMENT'] ?? 'sandbox';
@@ -104,7 +91,13 @@ class AppConfig {
         Platform.environment['FEDEX_ENVIRONMENT'] ?? 'sandbox';
 
     return AppConfig(
-      port: int.tryParse(Platform.environment['API_PORT'] ?? '') ?? 8080,
+      port:
+          int.tryParse(
+            Platform.environment['PORT'] ??
+                Platform.environment['API_PORT'] ??
+                '',
+          ) ??
+          8080,
       jwtAccessSecret: require('JWT_ACCESS_SECRET'),
       jwtRefreshSecret: require('JWT_REFRESH_SECRET'),
       accessTokenTtl: Duration(seconds: requireInt('JWT_ACCESS_TTL_SECONDS')),
@@ -124,23 +117,17 @@ class AppConfig {
       isDebug: optionalBool('GM_DEBUG'),
       mlServiceUrl: optional('ML_SERVICE_URL'),
       mlServiceToken: optional('ML_SERVICE_TOKEN'),
-      // Appwrite
-      appwriteEndpoint: env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
-      // Browser-reachable endpoint used to build product-image view URLs. The
-      // in-cluster APPWRITE_ENDPOINT (http://appwrite/v1) is not resolvable
-      // from the browser, so production must set this to the public gateway.
-      // Falls back to APPWRITE_ENDPOINT, which is already host-reachable in
-      // local dev (e.g. http://localhost:9444/v1).
-      appwritePublicEndpoint: env(
-        'APPWRITE_PUBLIC_ENDPOINT',
-        env('APPWRITE_ENDPOINT', 'http://appwrite/v1'),
-      ),
-      appwriteProjectId: optional('APPWRITE_PROJECT_ID'),
-      appwriteApiKey: optional('APPWRITE_API_KEY'),
+      firebaseProjectId:
+          optional('FIREBASE_PROJECT_ID') ?? optional('GOOGLE_CLOUD_PROJECT'),
+      authMode: env('AUTH_MODE', 'firebase-emulator'),
+      firebaseAuthEmulatorHost: optional('FIREBASE_AUTH_EMULATOR_HOST'),
+      firestoreDatabaseId: env('FIRESTORE_DATABASE_ID', '(default)'),
+      firebaseStorageBucket: optional('FIREBASE_STORAGE_BUCKET'),
+      publicApiPrefix: env('PUBLIC_API_PREFIX', ''),
       // Square
-      squareAccessToken: require('SQUARE_ACCESS_TOKEN'),
-      squareApplicationId: require('SQUARE_APPLICATION_ID'),
-      squareLocationId: require('SQUARE_LOCATION_ID'),
+      squareAccessToken: env('SQUARE_ACCESS_TOKEN', ''),
+      squareApplicationId: env('SQUARE_APPLICATION_ID', ''),
+      squareLocationId: env('SQUARE_LOCATION_ID', ''),
       squareEnvironment: squareEnvironment,
       // Subscription plan variation IDs — monthly and annual per tier.
       squarePlanStarterMonthly: optional('SQUARE_PLAN_STARTER_MONTHLY'),
@@ -220,13 +207,12 @@ class AppConfig {
 
   final String? mlServiceUrl;
   final String? mlServiceToken;
-
-  // ── Appwrite ────────────────────────────────────────────────────────────────
-  final String appwriteEndpoint;
-  /// Public gateway used when building browser-facing file URLs.
-  final String appwritePublicEndpoint;
-  final String? appwriteProjectId;
-  final String? appwriteApiKey;
+  final String? firebaseProjectId;
+  final String? authMode;
+  final String? firebaseAuthEmulatorHost;
+  final String firestoreDatabaseId;
+  final String? firebaseStorageBucket;
+  final String publicApiPrefix;
 
   // ── Square Web Payments ─────────────────────────────────────────────────────
 

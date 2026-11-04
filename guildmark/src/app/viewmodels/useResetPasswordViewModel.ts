@@ -5,7 +5,7 @@ import { api, ApiError } from "../lib/api";
 
 export function useResetPasswordViewModel() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token") ?? "";
+  const token = (searchParams.get("token") ?? searchParams.get("oobCode")) ?? "";
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState("");
   const [done, setDone] = useState(false);

@@ -20,6 +20,7 @@ import { AMPSLayout } from "./components/AMPSLayout";
 import { ComplianceLayout } from "./components/ComplianceLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PortfolioOverview } from "./pages/amps/PortfolioOverview";
+import { Assistant } from "./pages/amps/Assistant";
 import { AssetInventory } from "./pages/amps/AssetInventory";
 import { MDMConnections } from "./pages/amps/MDMConnections";
 import { Invoices } from "./pages/amps/Invoices";
@@ -134,6 +135,7 @@ export const router = createBrowserRouter([
             Component: AMPSLayout,
             children: [
               { index: true, Component: PortfolioOverview },
+              { path: "assistant", Component: Assistant },
               { path: "assets", Component: AssetInventory },
               { path: "mdm", Component: MDMConnections },
               { path: "invoices", Component: Invoices },
@@ -253,6 +255,7 @@ export const preLaunchRouter = createBrowserRouter([
             Component: AMPSLayout,
             children: [
               { index: true, Component: PortfolioOverview },
+              { path: "assistant", Component: Assistant },
               { path: "assets", Component: AssetInventory },
               { path: "mdm", Component: MDMConnections },
               { path: "invoices", Component: Invoices },

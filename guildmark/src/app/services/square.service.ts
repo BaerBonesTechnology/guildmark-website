@@ -70,5 +70,5 @@ export function computeOrderTotals(listing: MarketplaceListing, quantity: number
 }
 
 export function money(num: number): string {
-  return `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

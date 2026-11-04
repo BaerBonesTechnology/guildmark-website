@@ -1,41 +1,113 @@
-/** Logistics Generation card — shipping method selection (actions disabled). */
-import { Download, Truck } from "lucide-react";
-import { MonoLabel } from "./MonoLabel";
-import { SectionTitle } from "./SectionTitle";
-import { SHIPPING_METHOD_OPTIONS } from "../../constants/offload.constants";
-import { BODY } from "../../constants/typography";
+import { ArrowUpRight, PackageCheck } from "lucide-react";
+import { Link } from "react-router";
+import type { Order } from "../../models/order";
+import { useOffloadShippingViewModel } from "../../viewmodels/useOffloadShippingViewModel";
 
-const selectClass = "px-2 py-1 text-xs border border-border text-foreground focus:outline-none focus:border-primary appearance-none";
-const selectStyle = { fontFamily: BODY, background: "var(--input-background)" } as const;
-
-export function LogisticsGenerationCard() {
+export function LogisticsGenerationCard({
+  funded,
+  base,
+}: {
+  funded: Order[];
+  base: string;
+}) {
+  const vm = useOffloadShippingViewModel(funded);
   return (
-    <div className="border border-border p-6" style={{ background: "var(--card)" }}>
-      <SectionTitle>Logistics Generation</SectionTitle>
-      <div className="grid md:grid-cols-2 gap-6 mt-5">
-        <div>
-          <label className="block mb-2"><MonoLabel>Shipping Method</MonoLabel></label>
-          <select className={`w-full ${selectClass} py-2.5 text-sm`} style={selectStyle}>
-            {SHIPPING_METHOD_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
-          </select>
-        </div>
-        <div className="flex items-end">
-          <p className="text-xs leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-            Labels are generated per order when a buyer offer is accepted and the escrow is funded.
-          </p>
-        </div>
+    <section className="gm-offload-card gm-dispatch">
+      <div className="gm-offload-section-heading">
+        <h2>Prepare your next shipment</h2>
+        <PackageCheck size={20} aria-hidden="true" />
       </div>
-      <div className="flex gap-4 mt-6">
-        <button disabled className="flex-1 px-4 py-3 text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-50" style={{ background: "var(--primary)", color: "#fff" }}>
-          <Download className="w-4 h-4" /> Generate Shipping Labels
-        </button>
-        <button disabled className="flex-1 px-4 py-3 text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-50 border border-border" style={{ color: "var(--muted-foreground)" }}>
-          <Truck className="w-4 h-4" /> Schedule Pallet Pickup
-        </button>
-      </div>
-      <p className="text-xs mt-3" style={{ color: "var(--muted-foreground)" }}>
-        Logistics actions are triggered automatically through the order flow — select a funded order to proceed.
+      <p>
+        Confirm payment is funded and review the delivery address before
+        dispatch. Add tracking once your equipment has shipped.
       </p>
-    </div>
+      {vm.notice && (
+        <p className="gm-offload-success" role="status">
+          {vm.notice}
+        </p>
+      )}
+      {vm.selected ? (
+        <>
+          <span className="gm-offload-tag">{funded.length} ready to ship</span>
+          <form
+            className="gm-dispatch-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              vm.submit();
+            }}
+            aria-busy={vm.isPending}
+          >
+            <label className="gm-offload-label" htmlFor="dispatch-order">
+              Funded order
+            </label>
+            <select
+              id="dispatch-order"
+              disabled={vm.isPending}
+              value={vm.selected.id}
+              onChange={(event) => vm.select(event.target.value)}
+            >
+              {funded.map((order) => (
+                <option value={order.id} key={order.id}>
+                  {order.transactionId} · {order.productName}
+                </option>
+              ))}
+            </select>
+            <p className="gm-dispatch-product">
+              {vm.selected.productName}
+              <br />
+              {vm.selected.quantity} units · {vm.selected.transactionId}
+            </p>
+            <Link
+              className="gm-text-link"
+              to={`${base}/orders/${encodeURIComponent(vm.selected.id)}`}
+            >
+              Review order and address{" "}
+              <ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+            <label className="gm-offload-label" htmlFor="dispatch-tracking">
+              FedEx tracking number
+            </label>
+            <input
+              id="dispatch-tracking"
+              aria-describedby="dispatch-help"
+              required
+              maxLength={120}
+              autoComplete="off"
+              disabled={vm.isPending}
+              value={vm.trackingNumber}
+              onChange={(event) => vm.setTrackingNumber(event.target.value)}
+            />
+            <p id="dispatch-help" className="gm-offload-footnote">
+              Recording tracking marks this order as shipped and shares the
+              number with the buyer.
+            </p>
+            {vm.error && (
+              <p role="alert" className="gm-offload-form-error">
+                {vm.error}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="gm-button gm-button-small"
+              disabled={vm.isPending || !vm.trackingNumber.trim()}
+            >
+              {vm.isPending ? "Recording shipment…" : "Record shipment"}
+            </button>
+          </form>
+        </>
+      ) : (
+        <div className="gm-offload-quiet">
+          <h3>No shipments to prepare</h3>
+          <p>Sales appear here when buyer payment is funded.</p>
+          <Link className="gm-text-link" to={`${base}/my-listings`}>
+            Review your listings <ArrowUpRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+      )}
+      <p className="gm-offload-footnote">
+        Shipping labels and pallet booking are not available here. Arrange
+        shipping before recording dispatch.
+      </p>
+    </section>
   );
 }

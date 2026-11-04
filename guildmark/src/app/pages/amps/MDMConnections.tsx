@@ -23,9 +23,9 @@ export function MDMConnections() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(1.8rem, 3vw, 2.3rem)", lineHeight: 1 }}>MDM Connections</h1>
-          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Manage device-management platform integrations</p>
+          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Prototype only. Jamf and Intune connections are simulated and do not sync live devices. Use inventory or CSV import for saved assets.</p>
         </div>
-        <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity shrink-0" style={{ background: AMPS_ACCENT, color: "#fff" }}>
+        <button disabled title="Live MDM connections are not implemented" className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium opacity-50 shrink-0" style={{ background: AMPS_ACCENT, color: "var(--amps-accent-foreground)" }}>
           <Plus size={13} /> Add connection
         </button>
       </div>
@@ -35,7 +35,7 @@ export function MDMConnections() {
         <div className="border border-border py-16 flex flex-col items-center gap-3 mb-6" style={{ background: "var(--card)" }}>
           <Cloud size={28} className="opacity-30" style={{ color: "var(--muted-foreground)" }} />
           <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No MDM platforms connected yet</p>
-          <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors">Connect your first MDM</button>
+          <p className="text-xs text-muted-foreground">Live connection setup is not available yet.</p>
         </div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-4 mb-6">

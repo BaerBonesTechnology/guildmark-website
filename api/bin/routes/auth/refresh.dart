@@ -1,12 +1,17 @@
+import 'package:guildmark_api/auth/firebase_sessions.dart';
+import 'package:guildmark_api/auth/firebase_routes.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/user_repo.dart';
+import 'package:guildmark_api/repos/firestore/user_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
+  if (firebaseSessions(context) != null) {
+    return firebaseAuthRoute(context, 'refresh');
+  }
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
@@ -14,7 +19,7 @@ Future<Response> onRequest(RequestContext context) async {
   final oldToken = _readRefreshCookie(context);
   if (oldToken == null) return unauthorized('No refresh token');
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -45,7 +50,7 @@ Future<Response> onRequest(RequestContext context) async {
     },
     headers: {
       'Set-Cookie':
-          'astech_refresh=$newPlain; Path=/auth; Max-Age=${cfg.refreshTokenTtl.inSeconds}; HttpOnly; SameSite=Strict; Secure',
+          'astech_refresh=$newPlain; Path=${cfg.publicApiPrefix}/auth; Max-Age=${cfg.refreshTokenTtl.inSeconds}; HttpOnly; SameSite=Strict; Secure',
     },
   );
 }

@@ -3,14 +3,13 @@ library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'mdm_connection.freezed.dart';
 part 'mdm_connection.g.dart';
 
 @Freezed()
 abstract class MdmConnection with _$MdmConnection {
-  const MdmConnection._();
 
   const factory MdmConnection({
     required String id,
@@ -22,6 +21,7 @@ abstract class MdmConnection with _$MdmConnection {
     String?  lastSyncStatus,
     int?     deviceCount,
   }) = _MdmConnection;
+  const MdmConnection._();
 
   factory MdmConnection.fromJson(Map<String, dynamic> json) =>
       _$MdmConnectionFromJson(json);

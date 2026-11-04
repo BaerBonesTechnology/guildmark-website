@@ -4,14 +4,13 @@ library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'portfolio.freezed.dart';
 part 'portfolio.g.dart';
 
 @Freezed()
 abstract class ValuationSnapshot with _$ValuationSnapshot {
-  const ValuationSnapshot._();
 
   const factory ValuationSnapshot({
     @DateOnlyConverter()         required DateTime snapshotDate,
@@ -20,6 +19,7 @@ abstract class ValuationSnapshot with _$ValuationSnapshot {
     required double totalDepreciation,
     required int    totalDevices,
   }) = _ValuationSnapshot;
+  const ValuationSnapshot._();
 
   factory ValuationSnapshot.fromJson(Map<String, dynamic> json) =>
       _$ValuationSnapshotFromJson(json);

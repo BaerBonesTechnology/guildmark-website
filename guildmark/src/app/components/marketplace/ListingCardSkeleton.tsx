@@ -1,12 +1,13 @@
-/** Loading placeholder for a marketplace listing card. */
+/** Loading placeholder mirroring a marketplace listing card. */
 export function ListingCardSkeleton() {
   return (
-    <div className="border border-border animate-pulse" style={{ background: "var(--card)" }}>
-      <div className="h-32" style={{ background: "var(--secondary)" }} />
-      <div className="p-4 space-y-3">
-        <div className="h-3 w-2/3" style={{ background: "var(--secondary)" }} />
-        <div className="h-2 w-1/2" style={{ background: "var(--secondary)" }} />
-        <div className="h-6 w-1/3" style={{ background: "var(--secondary)" }} />
+    <div className="gm-listing gm-listing-skeleton" aria-hidden="true">
+      <div className="gm-listing-image" />
+      <div className="gm-skeleton-body">
+        <span className="gm-skeleton-line" style={{ width: "40%" }} />
+        <span className="gm-skeleton-line" style={{ width: "85%", height: 15 }} />
+        <span className="gm-skeleton-line" style={{ width: "55%" }} />
+        <span className="gm-skeleton-line is-price" />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 /**
  * GuildMark Seller Platform Agreement
  */
+import { formatFeeRate, usePlatformFees } from "../../lib/apiHooks";
 
 function Section({ n, title, children }: { n?: string | number; title: string; children: React.ReactNode }) {
   return (
@@ -21,6 +22,7 @@ function Clause({ letter, children }: { letter: string; children: React.ReactNod
 }
 
 export function SellerPlatformAgreement() {
+  const { data: fees } = usePlatformFees();
   return (
     <div className="space-y-10">
       <div className="space-y-3">
@@ -68,7 +70,7 @@ export function SellerPlatformAgreement() {
 
         <Section n={4} title="Platform Fee">
           <p>
-            GuildMark charges a platform fee of <strong>12% of the final accepted sale price</strong> per
+            GuildMark charges a platform fee based on the seller's plan: <strong>Free {formatFeeRate(fees?.seller_fee_free)}, Starter {formatFeeRate(fees?.seller_fee_starter)}, Growth {formatFeeRate(fees?.seller_fee_growth)}, or Pro {formatFeeRate(fees?.seller_fee_pro)} of the final accepted sale price</strong> per
             completed transaction. The platform fee is deducted from the seller proceeds prior to
             disbursement from escrow. No platform fee is charged on transactions that do not complete.
           </p>

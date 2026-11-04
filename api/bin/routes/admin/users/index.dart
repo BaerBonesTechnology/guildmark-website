@@ -1,10 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show Query, TablesDB;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -22,7 +19,7 @@ Future<Response> onRequest(RequestContext context) async {
   final search = (params['q'] ?? '').trim();
   final plan = (params['plan'] ?? '').trim();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -32,11 +29,11 @@ Future<Response> onRequest(RequestContext context) async {
   // (company name, subscription plan), so: page all three tables, stitch and
   // filter in Dart, then apply offset/limit in memory (§1c fetch+reduce
   // tradeoff — fine for a bounded, admin-scale dataset).
-  final userRows = await _listAll(db, Aw.users, [
+  final userRows = await _listAll(db, Collections.users, [
     Query.orderDesc(r'$createdAt'),
   ]);
-  final companyRows = await _listAll(db, Aw.companies, []);
-  final subRows = await _listAll(db, Aw.subscriptions, []);
+  final companyRows = await _listAll(db, Collections.companies, []);
+  final subRows = await _listAll(db, Collections.subscriptions, []);
 
   final companiesById = {for (final r in companyRows) r.$id: r};
   final subsByCompany = {
@@ -105,7 +102,7 @@ Future<List<Row>> _listAll(
   String? cursor;
   while (true) {
     final page = await db.listRows(
-      databaseId: Aw.databaseId,
+      databaseId: Collections.databaseId,
       tableId: tableId,
       queries: [
         ...queries,

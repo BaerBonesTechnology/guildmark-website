@@ -4,7 +4,6 @@ import {
   TrendingUp, BookOpen, Zap, ShoppingCart, Sparkles, Home,
   Tags, Receipt, Inbox, Settings, LogOut, ChevronDown, Menu, Sun, Moon,
 } from "lucide-react";
-import logoLong from "../../../logo-long.svg";
 import { ampsEnabled } from "../../config";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
@@ -16,7 +15,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 
 const BODY = "'DM Sans', sans-serif";
-const MONO = "'JetBrains Mono', monospace";
+const MONO = "'DM Sans', sans-serif";
 
 interface NavItem { label: string; icon: React.ElementType; to: string; sep?: boolean }
 
@@ -72,7 +71,7 @@ export function GMNavbar() {
   const ampsActive = location.pathname.startsWith("/pre/amps");
   const initial = user?.company?.charAt(0)?.toUpperCase() ?? "?";
 
-  // ── GM Pro pill (purple accent, sharp) ──────────────────────────────────
+  // ── GM Pro pill (GuildMark blue, sharp) ──────────────────────────────────
   const GmProLink = ({ sidebar = false, onClick }: { sidebar?: boolean; onClick?: () => void }) => (
     <NavLink
       to="/pre/amps"
@@ -81,7 +80,7 @@ export function GMNavbar() {
       style={{
         fontFamily: BODY,
         border: "1px solid color-mix(in srgb, var(--amps-accent) 35%, transparent)",
-        color: ampsActive ? "#fff" : "var(--amps-accent)",
+        color: ampsActive ? "var(--amps-accent-foreground)" : "var(--amps-accent)",
         background: ampsActive ? "var(--amps-accent)" : "color-mix(in srgb, var(--amps-accent) 8%, transparent)",
         fontWeight: 500,
       }}
@@ -142,20 +141,20 @@ export function GMNavbar() {
   );
 
   return (
-    <div className="sticky top-0 z-50" style={{ background: "var(--background)" }}>
+    <div className="gm-app-nav sticky top-0 z-50" style={{ background: "var(--background)" }}>
       {/* Demo mode banner */}
       <div
         className="text-center text-[11px] py-1.5 border-b border-border"
         style={{ fontFamily: BODY, color: "var(--muted-foreground)", background: "var(--card)" }}
       >
-        Currently in Demo Mode, current product showings are for demonstration purposes only.
+        Marketplace preview · Listings are for demonstration purposes.
       </div>
 
       {/* Main header */}
       <header className="border-b border-border" style={{ background: "var(--background)" }}>
-        <div className="px-6 h-12 flex items-center gap-6">
+        <div className="gm-container h-20 flex items-center gap-6">
           <Link to={isAuthenticated ? "/pre/marketplace" : "/"} className="shrink-0">
-            <img src={logoLong} className="h-6" alt="GuildMark" />
+            <span className="gm-wordmark">GuildMark<span>.</span></span>
           </Link>
 
           {/* Desktop nav */}
@@ -184,10 +183,10 @@ export function GMNavbar() {
               </>
             ) : (
               <>
-                <Button asChild variant="outline" size="sm" className="h-7 rounded-none text-xs">
+                <Button asChild variant="outline" size="sm" className="h-10 rounded-md text-sm">
                   <Link to="/pre/login">Sign In</Link>
                 </Button>
-                <Button asChild size="sm" className="h-7 rounded-none text-xs bg-primary text-white hover:bg-primary/90">
+                <Button asChild size="sm" className="h-10 rounded-md text-sm bg-primary text-white hover:bg-primary/90">
                   <Link to="/pre/signup">Sign Up Free</Link>
                 </Button>
               </>
@@ -214,7 +213,7 @@ export function GMNavbar() {
         <SheetContent side="left" className="w-72 p-0 flex flex-col bg-background">
           <SheetHeader className="px-5 py-4 border-b border-border">
             <SheetTitle asChild>
-              <img src={logoLong} alt="GuildMark" className="h-6" />
+              <span className="gm-wordmark">GuildMark<span>.</span></span>
             </SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-0.5 px-2 py-3 overflow-y-auto flex-1" style={{ fontFamily: BODY }}>

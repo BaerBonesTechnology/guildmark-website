@@ -1,18 +1,19 @@
 /** Subscription checkout constants — paid plan tiers + display metadata. */
 
-export type PaidPlan = "growth" | "pro" | "starter";
+import { PAID_PLANS, PLAN_CATALOG } from "./planCatalog.ts";
+export type { PaidPlan } from "./planCatalog.ts";
+import type { PaidPlan } from "./planCatalog.ts";
 
 export interface PlanMeta {
   color: string;
   devices: string;
   label: string;
   price: number;
-  sellerFee: string;
   teamMembers: string;
+  valuationCredits: number;
 }
 
-export const PLAN_META: Record<PaidPlan, PlanMeta> = {
-  starter: { label: "Starter", price: 49, sellerFee: "6%", devices: "Up to 100 devices", teamMembers: "2 team members", color: "text-blue-500" },
-  growth: { label: "Growth", price: 149, sellerFee: "5%", devices: "Up to 500 devices", teamMembers: "5 team members", color: "text-violet-500" },
-  pro: { label: "Pro", price: 349, sellerFee: "3%", devices: "Unlimited devices", teamMembers: "Unlimited team members", color: "text-amber-500" },
-};
+export const PLAN_META = Object.fromEntries(PAID_PLANS.map((key) => {
+  const p = PLAN_CATALOG[key];
+  return [key, { label: p.label, price: p.price, devices: `Up to ${p.physicalDevices.toLocaleString("en-US")} active physical devices`, teamMembers: "1 included owner seat", valuationCredits: p.valuationCredits, color: "text-amps-accent" }];
+})) as Record<PaidPlan, PlanMeta>;

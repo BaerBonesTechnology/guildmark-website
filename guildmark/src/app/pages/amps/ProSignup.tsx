@@ -4,7 +4,7 @@
  * cards are their own components; copy lives in proSignup.constants.
  */
 import { ArrowLeft, Sparkles } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { PlanCard } from "../../components/amps/PlanCard";
 import { ValuePropCard } from "../../components/amps/ValuePropCard";
 import { SubscriptionCheckoutDialog } from "../../components/SubscriptionCheckoutDialog";
@@ -15,6 +15,7 @@ import { useProSignupViewModel } from "../../viewmodels/useProSignupViewModel";
 
 export function ProSignup() {
   const { checkoutPlan, currentPlan, fees, onCheckoutSuccess, setCheckoutPlan } = useProSignupViewModel();
+  const prefix = useLocation().pathname.startsWith("/pre/") ? "/pre" : "";
 
   return (
     <div className="min-h-screen" style={{ fontFamily: BODY, background: "var(--background)" }}>
@@ -22,14 +23,14 @@ export function ProSignup() {
       <div className="border-b border-border px-6 sm:px-8 py-4 flex items-center justify-between" style={{ background: "var(--card)" }}>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 flex items-center justify-center" style={{ background: AMPS_ACCENT }}>
-            <Sparkles size={15} className="text-white" />
+            <Sparkles size={15} className="text-amps-accent-foreground" />
           </div>
           <span className="font-semibold" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "1.1rem" }}>
             Guild<span style={{ color: AMPS_ACCENT }}>Mark</span>
           </span>
-          <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold text-white tracking-wider" style={{ background: AMPS_ACCENT, fontFamily: MONO }}>GM PRO</span>
+          <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold text-amps-accent-foreground tracking-wider" style={{ background: AMPS_ACCENT, fontFamily: MONO }}>GM PRO</span>
         </div>
-        <Link to="/pre/marketplace" className="flex items-center gap-1.5 text-xs hover:text-foreground transition-colors" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>
+        <Link to={`${prefix}/marketplace`} className="flex items-center gap-1.5 text-xs hover:text-foreground transition-colors" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>
           <ArrowLeft size={13} /> Back to Marketplace
         </Link>
       </div>
@@ -42,7 +43,7 @@ export function ProSignup() {
           </div>
           <h1 className="tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.2rem, 5vw, 3.2rem)", lineHeight: 1 }}>Stop guessing what your IT assets are worth</h1>
           <p className="text-base max-w-2xl mx-auto" style={{ color: "var(--muted-foreground)" }}>
-            GM Pro connects your MDM, values every device with live market data, and puts your surplus hardware in front of verified B2B buyers — all from one dashboard.
+            AMPS brings your asset inventory, supported laptop estimates and guided resale preparation into one workspace. You review every listing decision. MDM integrations and expanded reporting are still in development.
           </p>
         </div>
 
@@ -53,7 +54,7 @@ export function ProSignup() {
 
         {/* Value props */}
         <div className="space-y-6">
-          <h2 className="text-center" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "1.6rem" }}>Why finance and IT ops teams choose GM Pro</h2>
+          <h2 className="text-center" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "1.6rem" }}>A guided workflow for asset owners</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {VALUE_PROPS.map((prop) => <ValuePropCard key={prop.title} fees={fees} prop={prop} />)}
           </div>
@@ -61,7 +62,7 @@ export function ProSignup() {
 
         {/* CTA footer */}
         <div className="text-center space-y-3 pb-8">
-          <p className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>No long-term contracts · Cancel any time · Instant access after payment</p>
+          <p className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Monthly company plans · Cancel any time · Limits do not trigger automatic overage charges</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {PLANS.map((plan) => (
               <button key={plan.key} onClick={() => setCheckoutPlan(plan.key)} className="px-4 py-2 text-xs border border-border hover:border-foreground transition-colors">

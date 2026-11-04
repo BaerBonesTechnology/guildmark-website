@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { usePlatformFees, useValuationEstimate } from "../lib/apiHooks";
 import { buildValuationRequest, computeRecovery } from "../services/calculator.service";
+import { calculatorSellerFeeRate } from "../services/platformFee.service";
 
 export function useMarketCalculatorViewModel() {
   const [ageMonths, setAgeMonths] = useState<number>(12);
@@ -14,7 +15,7 @@ export function useMarketCalculatorViewModel() {
   const [ram, setRam] = useState("");
 
   const { data: fees } = usePlatformFees();
-  const platformFeePct = fees?.seller_fee_free ?? 0;
+  const platformFeePct = calculatorSellerFeeRate(fees);
 
   const valuationRequest = useMemo(
     () => buildValuationRequest({ ageMonths, brand, condition, cpu, model, ram }),
@@ -31,7 +32,7 @@ export function useMarketCalculatorViewModel() {
 
   return {
     ageMonths, brand, condition, confidence, cpu, fees, fmvPerUnit, includeDataWipe,
-    model, quantity, ram, recovery, setAgeMonths, setBrand, setCondition, setCpu,
+    model, platformFeePct, quantity, ram, recovery, setAgeMonths, setBrand, setCondition, setCpu,
     setIncludeDataWipe, setModel, setQuantity, setRam, showResults, valuation,
   };
 }

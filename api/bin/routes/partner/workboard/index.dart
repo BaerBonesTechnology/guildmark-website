@@ -1,10 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show Query;
-import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -15,7 +12,7 @@ Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<PartnerPrincipal?>();
   if (principal == null) return unauthorized();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -27,8 +24,8 @@ Future<Response> onRequest(RequestContext context) async {
   var offset = 0;
   while (true) {
     final res = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.partnerServiceAssignments,
+      databaseId: Collections.databaseId,
+      tableId: Collections.partnerServiceAssignments,
       queries: [
         Query.equal('status', 'available'),
         Query.isNull('partner_id'),

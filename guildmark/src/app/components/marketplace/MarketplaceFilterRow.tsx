@@ -9,7 +9,7 @@ interface MarketplaceFilterRowProps {
 
 export function MarketplaceFilterRow({ checked, label, onToggle }: MarketplaceFilterRowProps) {
   return (
-    <button onClick={onToggle} className="flex items-center gap-2 w-full text-left group py-0.5">
+    <button role="checkbox" aria-checked={checked} onClick={onToggle} className="flex items-center gap-2 w-full text-left group py-0.5">
       <span className="w-3.5 h-3.5 border flex items-center justify-center shrink-0 transition-colors"
         style={{ borderColor: checked ? "var(--primary)" : "var(--border)", background: checked ? "var(--primary)" : "transparent" }}>
         {checked && <span className="w-1.5 h-1.5" style={{ background: "#fff" }} />}

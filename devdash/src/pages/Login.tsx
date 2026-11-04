@@ -57,7 +57,7 @@ export function Login() {
           challenge:        base64urlToBuffer(pendingChallenge.challenge),
           rpId:             window.location.hostname,
           allowCredentials,
-          userVerification: "preferred",
+          userVerification: "required",
           timeout:          60000,
         },
       }) as PublicKeyCredential | null;

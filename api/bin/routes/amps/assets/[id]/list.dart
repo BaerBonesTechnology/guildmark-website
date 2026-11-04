@@ -1,11 +1,13 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
-import 'package:guildmark_api/repos/appwrite/asset_repo.dart';
-import 'package:guildmark_api/repos/appwrite/listing_repo.dart';
+import 'package:guildmark_api/models/plan_catalog.dart';
+import 'package:guildmark_api/services/metered_valuation.dart';
+import 'package:guildmark_api/repos/firestore/asset_repo.dart';
+import 'package:guildmark_api/repos/firestore/listing_repo.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
   if (context.request.method != HttpMethod.post) {
@@ -14,7 +16,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -27,7 +29,14 @@ Future<Response> onRequest(RequestContext context, String id) async {
   // Request fair market value from the ML service.
   double? fmv;
   try {
-    final valuation = await ml.estimateFairMarketValue(
+    if (asset.purchaseDate == null) {
+      throw const PlanLimitException(
+        'MISSING_DATA',
+        'Purchase date is unknown.',
+      );
+    }
+    final valuation = await MeteredValuation(aw, ml).estimate(
+      auth.companyId,
       ValuationRequest(
         assetType: asset.assetType,
         modelName: asset.modelName,
@@ -38,9 +47,12 @@ Future<Response> onRequest(RequestContext context, String id) async {
         storageGb: asset.storageGb?.toInt() ?? 0,
         originalPrice: asset.originalPurchasePrice,
       ),
+      assetId: asset.id,
     );
     fmv = valuation.fairMarketValue;
-  } on MlServiceException {
+  } on PlanLimitException {
+    // No extra inference when credits are exhausted.
+  } on Exception {
     // Non-fatal — proceed without FMV; listing will be flagged 'insufficient_data'.
   }
 

@@ -81,7 +81,7 @@ export function GenerateInvoiceDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => { onOpenChange(false); resetForm(); }}>Cancel</Button>
-          <Button onClick={onGenerate} disabled={!formData.asset || !formData.type || !qty || !fmv} className="text-white" style={{ background: AMPS_ACCENT }}>
+          <Button onClick={onGenerate} disabled={!formData.asset || !formData.type || !qty || !fmv} className="text-amps-accent-foreground" style={{ background: AMPS_ACCENT }}>
             <FileText className="h-4 w-4" /> Generate &amp; download
           </Button>
         </DialogFooter>

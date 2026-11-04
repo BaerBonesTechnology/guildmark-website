@@ -62,7 +62,6 @@ Future<Response> onRequest(RequestContext context) async {
   _restartStack(bearerToken);
 
   return Response(
-    statusCode: HttpStatus.ok,
     body: jsonEncode({'status': 'restarting'}),
     headers: {'Content-Type': 'application/json'},
   );

@@ -1,30 +1,14 @@
-/**
- * BuyNowDialog — Square-backed one-click purchase for a marketplace listing (View).
- *
- * Step 1 — card: Square Web Payments card form + billing address + order summary
- * Step 2 — success: order confirmation
- *
- * The Square SDK lifecycle, order math, and payment flow live in
- * useBuyNowViewModel / square.service. Presentation only.
- */
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Loader2, CheckCircle2, AlertCircle, CreditCard, ShieldCheck } from "lucide-react";
-import { MONO } from "../constants/typography";
+/** Checkout presentation; Square lifecycle and payment retries remain in the view model. */
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Loader2, CheckCircle2, AlertCircle, CreditCard, LockKeyhole, ArrowRight } from "lucide-react";
 import type { MarketplaceListing } from "../models/marketplace";
 import { money } from "../services/square.service";
+import { categoryIcon } from "../services/marketplace.service";
 import { useBuyNowViewModel } from "../viewmodels/useBuyNowViewModel";
-
-const inputCls =
-  "w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm " +
-  "placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50";
 
 interface Props {
   listing: MarketplaceListing;
   onOpenChange: (open: boolean) => void;
-  /** Called after a successful purchase, just before the dialog closes. */
   onSuccess?: () => void;
   open: boolean;
   quantity: number;
@@ -35,137 +19,66 @@ export function BuyNowDialog({ listing, onOpenChange, onSuccess, open, quantity 
     addr1, addr2, cardError, cardholderName, city, handlePay, isLoading, setAddr1, setAddr2,
     setCardholderName, setCity, setStateAb, setZip, stateAb, step, totals, unit, zip,
   } = useBuyNowViewModel(listing, quantity, open);
-
   const { buyerFee, buyerFeeRate, qty, subtotal, total } = totals;
+  const Icon = categoryIcon(listing.asset_type);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            {step === "success" ? "Order confirmed" : "Buy Now"}
-          </DialogTitle>
-          <DialogDescription>
-            {step === "card"
-              ? "Escrow-secured purchase. Your card is tokenised by Square — we never see it."
-              : `Your order for ${listing.model_name ?? "this listing"} is funded and in escrow.`}
-          </DialogDescription>
+      <DialogContent className="gm-checkout">
+        <DialogHeader className="gm-checkout-header">
+          <p className="gm-eyebrow"><LockKeyhole size={13} /> GuildMark checkout</p>
+          <DialogTitle>{step === "success" ? "Your next chapter is on its way." : "Make it yours."}</DialogTitle>
+          <DialogDescription>{step === "card" ? "Review your order, then complete your payment." : "Your payment is confirmed. You can follow the next steps in My Orders."}</DialogDescription>
         </DialogHeader>
 
-        {step === "card" && (
-          <div className="space-y-5 py-2">
-            {/* Order summary */}
-            <div className="rounded-lg border bg-muted p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">{listing.model_name ?? "Listing"}</span>
-                <span className="text-xs text-muted-foreground" style={{ fontFamily: MONO }}>×{qty}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal ({qty} × {money(unit)})</span>
-                <span>{money(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  Buyer fee
-                  {buyerFeeRate != null && (
-                    <span className="text-xs text-muted-foreground/60">({(buyerFeeRate * 100).toFixed(1)}%)</span>
-                  )}
-                </span>
-                <span>{buyerFee != null ? money(buyerFee) : "—"}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <span className="font-semibold">Total due today</span>
-                <span className="font-bold">{money(total)}</span>
-              </div>
+        {step === "card" ? <div className="gm-checkout-grid" aria-busy={isLoading}>
+          <aside className="gm-checkout-summary" aria-label="Order summary">
+            <h2>Order summary</h2>
+            <div className="gm-checkout-product">
+              <div className="gm-checkout-thumbnail">{listing.product_images?.[0] ? <img src={listing.product_images[0]} alt="" /> : <Icon size={34} strokeWidth={1} />}</div>
+              <div><h3>{listing.model_name ?? "Hardware listing"}</h3><p>{listing.seller_name ?? "Business seller"}</p><span>{qty} {qty === 1 ? "unit" : "units"} × {money(unit)}</span></div>
             </div>
+            <dl className="gm-order-totals">
+              <div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div>
+              <div><dt>Buyer fee {buyerFeeRate != null && <span>({(buyerFeeRate * 100).toFixed(1)}%)</span>}</dt><dd>{buyerFee != null ? money(buyerFee) : "Loading…"}</dd></div>
+              <div className="gm-order-total"><dt>Total due today<span>USD</span></dt><dd>{buyerFee != null ? money(total) : "—"}</dd></div>
+            </dl>
+            <p className="gm-checkout-assurance"><LockKeyhole size={15} /> Card payments are processed by Square.</p>
+            <button className="gm-checkout-back" onClick={() => onOpenChange(false)} disabled={isLoading}>Back to listing</button>
+          </aside>
 
-            {/* Card details */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-foreground">Card Details</p>
-              <div className="space-y-1">
-                <label className="text-xs text-foreground/70">Cardholder Name *</label>
-                <input className={inputCls} placeholder="Jane Smith" value={cardholderName}
-                  onChange={(e) => setCardholderName(e.target.value)} autoComplete="cc-name" disabled={isLoading} />
-              </div>
-              <div className="space-y-1">
-
-                <div id="gm-buynow-card" className="rounded-md border border-input bg-input-background p-1 min-h-[56px]" />
-              </div>
-            </div>
-
-            {/* Billing address */}
-            <div className="space-y-3 border-t pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-foreground">Billing Address</p>
-              <div className="space-y-1">
-                <label className="text-xs text-foreground/70">Address Line 1 *</label>
-                <input className={inputCls} placeholder="123 Main St" value={addr1}
-                  onChange={(e) => setAddr1(e.target.value)} autoComplete="address-line1" disabled={isLoading} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-foreground/70">Address Line 2</label>
-                <input className={inputCls} placeholder="Suite 400" value={addr2}
-                  onChange={(e) => setAddr2(e.target.value)} autoComplete="address-line2" disabled={isLoading} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-foreground/70">City *</label>
-                  <input className={inputCls} placeholder="New York" value={city}
-                    onChange={(e) => setCity(e.target.value)} autoComplete="address-level2" disabled={isLoading} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-foreground/70">State *</label>
-                  <input className={inputCls} placeholder="NY" maxLength={2} value={stateAb}
-                    onChange={(e) => setStateAb(e.target.value.toUpperCase())} autoComplete="address-level1" disabled={isLoading} />
+          <div className="gm-checkout-payment">
+            <section aria-labelledby="card-details-title">
+              <h2 id="card-details-title"><span>01</span> Payment details</h2>
+              <label className="gm-field" htmlFor="checkout-name">Cardholder name <span>(required)</span>
+                <input id="checkout-name" placeholder="Full name on card" value={cardholderName} onChange={e => setCardholderName(e.target.value)} autoComplete="cc-name" disabled={isLoading} />
+              </label>
+              <div className="gm-card-field"><p>Card details</p><div id="gm-buynow-card" aria-label="Square card details" /></div>
+            </section>
+            <section aria-labelledby="billing-title">
+              <h2 id="billing-title"><span>02</span> Billing address</h2>
+              <div className="gm-customer-form">
+                <label className="gm-field" htmlFor="checkout-address">Street address <span>(required)</span><input id="checkout-address" placeholder="Street address" value={addr1} onChange={e => setAddr1(e.target.value)} autoComplete="address-line1" disabled={isLoading} /></label>
+                <label className="gm-field" htmlFor="checkout-address2">Apartment, suite, etc. <span>(optional)</span><input id="checkout-address2" placeholder="Apartment or suite" value={addr2} onChange={e => setAddr2(e.target.value)} autoComplete="address-line2" disabled={isLoading} /></label>
+                <div className="gm-billing-locality">
+                  <label className="gm-field" htmlFor="checkout-city">City <span>(required)</span><input id="checkout-city" placeholder="City" value={city} onChange={e => setCity(e.target.value)} autoComplete="address-level2" disabled={isLoading} /></label>
+                  <label className="gm-field" htmlFor="checkout-state">State <span>(required)</span><input id="checkout-state" placeholder="NY" maxLength={2} value={stateAb} onChange={e => setStateAb(e.target.value.toUpperCase())} autoComplete="address-level1" disabled={isLoading} /></label>
+                <label className="gm-field gm-zip-field" htmlFor="checkout-zip">ZIP code <span>(required)</span><input id="checkout-zip" placeholder="10001" value={zip} onChange={e => setZip(e.target.value)} autoComplete="postal-code" disabled={isLoading} /></label>
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-foreground/70">ZIP Code *</label>
-                <input className={`${inputCls} max-w-[160px]`} placeholder="10001" value={zip}
-                  onChange={(e) => setZip(e.target.value)} autoComplete="postal-code" disabled={isLoading} />
-              </div>
-            </div>
-
-            {cardError && (
-              <div className="flex items-start gap-2 text-sm text-destructive">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                {cardError}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <Button className="flex-1 bg-primary hover:bg-primary/90 text-white gap-2" onClick={handlePay} disabled={isLoading || unit <= 0}>
-                {isLoading
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
-                  : <><CreditCard className="w-4 h-4" /> Pay {money(total)}</>}
-              </Button>
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>Cancel</Button>
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Secured by Square · Funds are held in escrow until you confirm delivery.
-            </p>
+            </section>
+            {cardError && <div className="gm-feedback gm-feedback-error" role="alert"><AlertCircle size={18} /><span>{cardError}</span></div>}
+            <button className="gm-button gm-button-primary gm-full-width" onClick={handlePay} disabled={isLoading || unit <= 0 || buyerFee == null}>
+              {isLoading ? <><Loader2 size={17} className="animate-spin" /> Processing payment…</> : <><CreditCard size={17} /> {buyerFee == null ? "Loading total…" : `Pay ${money(total)}`} <ArrowRight size={16} /></>}
+            </button>
           </div>
-        )}
-
-        {step === "success" && (
-          <div className="py-6 flex flex-col items-center gap-4 text-center">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="font-semibold">Payment received</p>
-              <p className="text-sm text-muted-foreground">
-                {money(total)} charged. Your order is funded and held in escrow — track it under My Orders.
-                A receipt has been emailed to you.
-              </p>
-            </div>
-            <Button className="mt-2 bg-primary hover:bg-primary/90 text-white"
-              onClick={() => { onOpenChange(false); onSuccess?.(); }}>
-              Done
-            </Button>
-          </div>
-        )}
+        </div> : <div className="gm-checkout-success" role="status">
+          <CheckCircle2 size={46} strokeWidth={1.5} />
+          <h2>Thank you for your order.</h2>
+          <p>{qty} {qty === 1 ? "unit" : "units"} · {listing.model_name ?? "Hardware listing"}</p>
+          <p>Track your order and payment details under My Orders.</p>
+          <button className="gm-button gm-button-primary" onClick={() => { onOpenChange(false); onSuccess?.(); }}>Done <ArrowRight size={17} /></button>
+        </div>}
       </DialogContent>
     </Dialog>
   );

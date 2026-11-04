@@ -10,7 +10,7 @@ abstract final class AssetType {
   static const license = 'license';
   static const other = 'other';
 
-  static const all = [
+  static const List<String> all = [
     laptop,
     desktop,
     server,
@@ -28,7 +28,7 @@ abstract final class ConditionGrade {
   static const a = 'A';
   static const b = 'B';
   static const c = 'C';
-  static const all = [a, b, c];
+  static const List<String> all = [a, b, c];
 }
 
 abstract final class MdmSource {
@@ -36,14 +36,14 @@ abstract final class MdmSource {
   static const jamfPro = 'jamf_pro';
   static const jamfSchool = 'jamf_school';
   static const intune = 'intune';
-  static const all = [manual, jamfPro, jamfSchool, intune];
+  static const List<String> all = [manual, jamfPro, jamfSchool, intune];
 }
 
 abstract final class MdmType {
   static const jamfPro = 'jamf_pro';
   static const jamfSchool = 'jamf_school';
   static const intune = 'intune';
-  static const all = [jamfPro, jamfSchool, intune];
+  static const List<String> all = [jamfPro, jamfSchool, intune];
 }
 
 abstract final class ValuationFlag {
@@ -74,7 +74,7 @@ abstract final class InvoiceType {
   static const loss = 'loss';
   static const sale = 'sale';
   static const donation = 'donation';
-  static const all = [disposal, loss, sale, donation];
+  static const List<String> all = [disposal, loss, sale, donation];
 }
 
 abstract final class UserRole {

@@ -1,9 +1,8 @@
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/invoice_repo.dart';
+import 'package:guildmark_api/repos/firestore/invoice_repo.dart';
 
 const _allowedTypes = {'disposal', 'loss', 'sale', 'donation'};
 
@@ -35,7 +34,7 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }

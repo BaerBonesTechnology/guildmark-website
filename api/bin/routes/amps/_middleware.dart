@@ -1,16 +1,17 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
+import 'package:guildmark_api/repos/firestore/subscription_repo.dart';
+import 'package:guildmark_api/repos/firestore/amps_inventory_repo.dart';
 
 Handler middleware(Handler handler) {
   return (context) async {
     final auth = context.read<AuthPrincipal?>();
     if (auth == null) return unauthorized();
 
-    final aw = context.read<AppwriteService?>();
+    final aw = context.read<FirebaseService?>();
     if (aw == null) {
       return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
     }
@@ -18,44 +19,32 @@ Handler middleware(Handler handler) {
     // Look up this company's subscription status.
     final sub = await SubscriptionRepo(aw).findByCompany(auth.companyId);
 
-    // No subscription row → treat as free.
-    final plan = sub?.plan ?? 'free';
-    final status = sub?.status ?? 'active';
-
-    // Free plan is not allowed on AMPS routes.
-    if (plan == 'free') {
-      return Response.json(
-        statusCode: 403,
-        body: {
-          'code': 'SUBSCRIPTION_REQUIRED',
-          'message': 'GM Pro subscription required to access this feature.',
-          'plan': plan,
-        },
+    final path = context.request.uri.path;
+    final retainedAssetPath = RegExp(
+      r'/amps/assets(?:/[^/]+)?$',
+    ).hasMatch(path);
+    final retentionRequest =
+        retainedAssetPath &&
+        {
+          HttpMethod.get,
+          HttpMethod.patch,
+          HttpMethod.delete,
+        }.contains(context.request.method);
+    var canRetain = sub != null && sub.plan != 'free';
+    if (sub != null && !canRetain && retentionRequest) {
+      final row = await aw.tablesDB.getRow(
+        databaseId: '',
+        tableId: 'subscriptions',
+        rowId: sub.id,
       );
+      canRetain = row.data['amps_ever_paid'] == true;
     }
-
-    // Past-due subscriptions get a grace-period message.
-    if (status == 'past_due') {
-      return Response.json(
-        statusCode: 402,
-        body: {
-          'code': 'PAYMENT_REQUIRED',
-          'message':
-              'Your subscription payment is past due. Please update your payment method.',
-          'plan': plan,
-        },
-      );
-    }
-
-    // Cancelled subscriptions are denied.
-    if (status == 'cancelled') {
-      return Response.json(
-        statusCode: 403,
-        body: {
-          'code': 'SUBSCRIPTION_CANCELLED',
-          'message': 'Your subscription has been cancelled.',
-          'plan': plan,
-        },
+    if (retentionRequest && canRetain) return handler(context);
+    if (!activePaid(sub)) {
+      return jsonError(
+        403,
+        'SUBSCRIPTION_REQUIRED',
+        'An active AMPS plan is required for this action.',
       );
     }
 

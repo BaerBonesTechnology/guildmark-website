@@ -1,5 +1,8 @@
 /** ViewModel for the Buy Now dialog: Square card lifecycle + payment flow. */
 import { useEffect, useRef, useState } from "react";
+import { ApiError } from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
+import { loadCheckout, saveCheckout, canRestartCheckout, type CheckoutAttempt } from "../services/checkoutAttempt";
 import { squareApplicationId, squareLocationId } from "../config";
 import { useBuyListing, usePlatformFees } from "../lib/apiHooks";
 import type { MarketplaceListing } from "../models/marketplace";
@@ -11,6 +14,10 @@ type Step = "card" | "success";
 
 export function useBuyNowViewModel(listing: MarketplaceListing, quantity: number, open: boolean) {
   const buy = useBuyListing(listing.id);
+  const { user } = useAuth();
+  const attemptRef = useRef<{ scope: string; attempt: CheckoutAttempt } | null>(null);
+  const payingRef = useRef(false);
+  const scope = `guildmark-checkout:${user?.company_id ?? "anonymous"}:${listing.id}`;
   const { data: fees } = usePlatformFees();
 
   const [step, setStep] = useState<Step>("card");
@@ -61,7 +68,10 @@ export function useBuyNowViewModel(listing: MarketplaceListing, quantity: number
     if (!open) {
       setStep("card");
       setCardError("");
-      setIsLoading(false);
+      if (step === "success") {
+        sessionStorage.removeItem(scope);
+        attemptRef.current = null;
+      }
       setCardInitKey(0);
       setCardholderName("");
       setAddr1(""); setAddr2(""); setCity(""); setStateAb(""); setZip("");
@@ -70,46 +80,51 @@ export function useBuyNowViewModel(listing: MarketplaceListing, quantity: number
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handlePay() {
-    // Sandbox shortcut — bypass the SDK card form and use Square's static test
-    // nonce so backend config can be verified without a matching frontend appId.
-    if (isSquareSandbox()) {
-      setIsLoading(true);
-      setCardError("");
-      try {
-        await buy.mutateAsync({ source_id: "cnon:card-nonce-ok", quantity: qty, payment_terms: "immediate" });
-        setStep("success");
-      } catch (err) {
-        setCardError(err instanceof Error ? err.message : "Payment failed.");
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // Production flow — real SDK tokenisation.
-    if (!cardRef.current) { setCardError("Payment form not ready — please wait."); return; }
-    if (!cardholderName.trim()) { setCardError("Cardholder name is required."); return; }
-    if (!addr1.trim() || !city.trim() || !stateAb.trim() || !zip.trim()) {
-      setCardError("Please fill in all required billing address fields (marked *).");
-      return;
-    }
-
+    if (payingRef.current) return;
+    payingRef.current = true;
     setIsLoading(true);
     setCardError("");
     try {
-      const result = await cardRef.current.tokenize();
-      if (result.status !== "OK" || !result.token) {
-        setCardError(result.errors?.[0]?.message ?? "Card tokenisation failed");
-        setIsLoading(false);
-        return;
+      if (attemptRef.current?.scope !== scope) {
+        attemptRef.current = { scope, attempt: loadCheckout(sessionStorage, scope, qty) };
       }
-      await buy.mutateAsync({ source_id: result.token, quantity: qty, payment_terms: "immediate" });
+      const attempt = attemptRef.current.attempt;
+      if (attempt.submitted && attempt.quantity !== qty) {
+        throw new Error(`An earlier checkout for ${attempt.quantity} items is unresolved. Restore that quantity to resume it.`);
+      }
+      if (!attempt.submitted) {
+        attempt.quantity = qty;
+        attempt.expectedTotalCents = Math.round(total * 100);
+        if (isSquareSandbox()) {
+          attempt.source = "cnon:card-nonce-ok";
+        } else {
+          if (!cardRef.current) throw new Error("Payment form not ready — please wait.");
+          if (!cardholderName.trim() || !addr1.trim() || !city.trim() || !stateAb.trim() || !zip.trim()) {
+            throw new Error("Complete the required billing fields before paying.");
+          }
+          const result = await cardRef.current.tokenize();
+          if (result.status !== "OK" || !result.token) throw new Error(result.errors?.[0]?.message ?? "Card tokenisation failed");
+          attempt.source = result.token;
+        }
+        // Persist the key before sending. Reloads resume instead of charging again.
+        attempt.submitted = true;
+      }
+      saveCheckout(sessionStorage, scope, attempt);
+      await buy.mutateAsync({
+        source_id: attempt.source, idempotency_key: attempt.key,
+        expected_total_cents: attempt.expectedTotalCents ?? Math.round(total * 100),
+        quantity: attempt.quantity, payment_terms: "immediate",
+      });
       setStep("success");
     } catch (err) {
-      setCardError(err instanceof Error ? err.message : "Payment failed. Please try again.");
-      // The nonce is single-use — force a fresh card form for the next attempt.
-      setCardInitKey((k) => k + 1);
+      if (err instanceof ApiError && canRestartCheckout(err.code)) {
+        sessionStorage.removeItem(scope);
+        attemptRef.current = null;
+        setCardInitKey(k => k + 1);
+      }
+      setCardError(err instanceof Error ? err.message : "Payment could not be confirmed. Retry this checkout.");
     } finally {
+      payingRef.current = false;
       setIsLoading(false);
     }
   }

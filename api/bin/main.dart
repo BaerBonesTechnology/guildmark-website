@@ -5,10 +5,12 @@ library;
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/auth/firebase_auth.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/config.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/http_routing.dart';
 import 'package:guildmark_api/ml/ml_client.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
@@ -21,7 +23,12 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   // ML service is optional — the API degrades gracefully when unavailable.
   // Routes that require ML must check for a null MlClient and return a 503.
   final ml = cfg.mlServiceUrl != null
-      ? MlClient(baseUrl: cfg.mlServiceUrl!, serviceToken: cfg.mlServiceToken)
+      ? MlClient(
+          baseUrl: cfg.mlServiceUrl!,
+          serviceToken: cfg.mlServiceToken,
+          cacheVersion:
+              Platform.environment['ML_CACHE_VERSION'] ?? 'valuation-0.1.0',
+        )
       : null;
 
   if (ml == null) {
@@ -30,19 +37,29 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     );
   }
 
-  // Appwrite is THE datastore (Postgres was removed at the cutover — see
-  // api/POSTGRES_TO_APPWRITE.md). The provider stays nullable so the server
-  // can boot for diagnostics, but every data route returns 503 until
-  // APPWRITE_PROJECT_ID and APPWRITE_API_KEY are set.
-  final appwrite = AppwriteService.fromConfig(cfg);
-  if (appwrite == null) {
+  // Credentials come from Cloud Run workload identity or local ADC/emulators.
+  final firestore = FirebaseService.fromConfig(cfg);
+  if (firestore == null) {
     stderr.writeln(
-      '[boot] WARNING: APPWRITE_PROJECT_ID/APPWRITE_API_KEY not set — '
-      'no datastore; all data routes will return 503.',
+      '[boot] FIREBASE_PROJECT_ID is missing; data routes return 503.',
     );
   } else {
-    stdout.writeln('[boot] Appwrite datastore → ${appwrite.endpoint}');
+    stdout.writeln('[boot] Firestore project: ${firestore.projectId}');
   }
+
+  if (cfg.authMode != null &&
+      !{'legacy', 'firebase-emulator'}.contains(cfg.authMode)) {
+    throw StateError('Unsupported AUTH_MODE');
+  }
+  final firebaseAuth = cfg.authMode == 'firebase-emulator'
+      ? FirebaseSessions(
+          FirebaseAuth(
+            projectId: cfg.firebaseProjectId ?? '',
+            host: cfg.firebaseAuthEmulatorHost ?? '',
+          ),
+          firestore!,
+        )
+      : null;
 
   final jwt = JwtService(
     accessSecret: cfg.jwtAccessSecret,
@@ -54,12 +71,15 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
     accessTtl: cfg.accessTokenTtl,
   );
 
-  final square = SquareService(
-    accessToken: cfg.squareAccessToken,
-    locationId:  cfg.squareLocationId,
-    environment: cfg.squareEnvironment,
-    apiUrl:      cfg.squareApiUrl,
-  );
+  final square =
+      cfg.squareAccessToken.isNotEmpty && cfg.squareLocationId.isNotEmpty
+      ? SquareService(
+          accessToken: cfg.squareAccessToken,
+          locationId: cfg.squareLocationId,
+          environment: cfg.squareEnvironment,
+          apiUrl: cfg.squareApiUrl,
+        )
+      : null;
 
   final email = EmailService(
     apiKey: cfg.resendApiKey ?? '',
@@ -70,30 +90,34 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
   }
 
   final escrow = EscrowService(
-    apiKey:       cfg.escrowApiKey ?? '',
-    accountEmail: cfg.escrowEmail  ?? '',
-    sandbox:      cfg.escrowSandbox,
-    apiUrl:       cfg.escrowApiUrl,
+    apiKey: cfg.escrowApiKey ?? '',
+    accountEmail: cfg.escrowEmail ?? '',
+    sandbox: cfg.escrowSandbox,
+    apiUrl: cfg.escrowApiUrl,
   );
   if (!escrow.isConfigured) {
-    stdout.writeln('[boot] ESCROW_API_KEY/ESCROW_EMAIL not set — escrow steps will be skipped.');
+    stdout.writeln(
+      '[boot] ESCROW_API_KEY/ESCROW_EMAIL not set — escrow steps will be skipped.',
+    );
   }
 
   final fedex = FedexService(
-    clientId:     cfg.fedexApiKey    ?? '',
+    clientId: cfg.fedexApiKey ?? '',
     clientSecret: cfg.fedexSecretKey ?? '',
-    sandbox:      cfg.fedexSandbox,
-    apiUrl:       cfg.fedexApiUrl,
+    sandbox: cfg.fedexSandbox,
+    apiUrl: cfg.fedexApiUrl,
   );
   if (!fedex.isConfigured) {
-    stdout.writeln('[boot] FEDEX_API_KEY/FEDEX_SECRET_KEY not set — tracking lookups disabled.');
+    stdout.writeln(
+      '[boot] FEDEX_API_KEY/FEDEX_SECRET_KEY not set — tracking lookups disabled.',
+    );
   }
 
   // Inject singletons. Routes read via `context.read<T>()`.
-  final wrapped = handler
+  var wrapped = apiRouter(handler)
       .use(provider<AppConfig>((_) => cfg))
       .use(provider<MlClient?>((_) => ml))
-      .use(provider<AppwriteService?>((_) => appwrite))
+      .use(provider<FirebaseService?>((_) => firestore))
       .use(provider<JwtService>((_) => jwt))
       .use(provider<PartnerJwtService>((_) => partnerJwt))
       .use(provider<SquareService?>((_) => square))
@@ -101,5 +125,13 @@ Future<HttpServer> run(Handler handler, InternetAddress ip, int port) async {
       .use(provider<EscrowService>((_) => escrow))
       .use(provider<FedexService>((_) => fedex));
 
-  return serve(wrapped, ip, cfg.port);
+  if (firebaseAuth != null) {
+    wrapped = wrapped.use(provider<FirebaseSessions>((_) => firebaseAuth));
+  }
+
+  final bindAddress =
+      (Platform.environment['GM_LOCAL_STACK'] == 'true' || firebaseAuth != null)
+      ? InternetAddress.loopbackIPv4
+      : ip;
+  return serve(wrapped, bindAddress, cfg.port);
 }

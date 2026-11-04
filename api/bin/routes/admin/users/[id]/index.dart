@@ -1,11 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart'
-    show AppwriteException, Query, TablesDB;
-import 'package:dart_appwrite/models.dart' show Row;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context, String id) async {
@@ -17,7 +13,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'DELETE only');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -28,11 +24,11 @@ Future<Response> onRequest(RequestContext context, String id) async {
   Row user;
   try {
     user = await db.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.users,
+      databaseId: Collections.databaseId,
+      tableId: Collections.users,
       rowId: id,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code == 404) return notFound('User not found');
     rethrow;
   }
@@ -41,8 +37,8 @@ Future<Response> onRequest(RequestContext context, String id) async {
   // orders referenced companies with ON DELETE RESTRICT — the PG delete blew
   // up (500) when the company had orders. Mirror that invariant explicitly.
   final orderRefs = await db.listRows(
-    databaseId: Aw.databaseId,
-    tableId: Aw.orders,
+    databaseId: Collections.databaseId,
+    tableId: Collections.orders,
     queries: [
       Query.or([
         Query.equal('seller_company_id', companyId),
@@ -63,58 +59,58 @@ Future<Response> onRequest(RequestContext context, String id) async {
   // admin-only destructive endpoint.
 
   // 1. Users of the company + their tokens.
-  await _forEach(db, Aw.users, [Query.equal('company_id', companyId)], (
+  await _forEach(db, Collections.users, [Query.equal('company_id', companyId)], (
     u,
   ) async {
-    await _deleteWhere(db, Aw.refreshTokens, [Query.equal('user_id', u.$id)]);
-    await _deleteWhere(db, Aw.passwordResetTokens, [
+    await _deleteWhere(db, Collections.refreshTokens, [Query.equal('user_id', u.$id)]);
+    await _deleteWhere(db, Collections.passwordResetTokens, [
       Query.equal('user_id', u.$id),
     ]);
     await db.deleteRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.users,
+      databaseId: Collections.databaseId,
+      tableId: Collections.users,
       rowId: u.$id,
     );
   });
 
   // 2. Listings (+ offers on them).
-  await _forEach(db, Aw.listings, [Query.equal('company_id', companyId)], (
+  await _forEach(db, Collections.listings, [Query.equal('company_id', companyId)], (
     l,
   ) async {
-    await _deleteWhere(db, Aw.buyerOffers, [Query.equal('listing_id', l.$id)]);
+    await _deleteWhere(db, Collections.buyerOffers, [Query.equal('listing_id', l.$id)]);
     await db.deleteRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.listings,
+      databaseId: Collections.databaseId,
+      tableId: Collections.listings,
       rowId: l.$id,
     );
   });
 
   // 3. Assets (+ their valuations).
-  await _forEach(db, Aw.assets, [Query.equal('company_id', companyId)], (
+  await _forEach(db, Collections.assets, [Query.equal('company_id', companyId)], (
     a,
   ) async {
-    await _deleteWhere(db, Aw.assetValuations, [
+    await _deleteWhere(db, Collections.assetValuations, [
       Query.equal('asset_id', a.$id),
     ]);
     await db.deleteRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.assets,
+      databaseId: Collections.databaseId,
+      tableId: Collections.assets,
       rowId: a.$id,
     );
   });
 
   // 4. Offers this company made on other companies' listings.
-  await _deleteWhere(db, Aw.buyerOffers, [
+  await _deleteWhere(db, Collections.buyerOffers, [
     Query.equal('buyer_company_id', companyId),
   ]);
 
   // 5. Remaining company-scoped children.
   for (final table in [
-    Aw.mdmConnections,
-    Aw.taxInvoices,
-    Aw.valuationSnapshots,
-    Aw.subscriptionInvoices,
-    Aw.subscriptions,
+    Collections.mdmConnections,
+    Collections.taxInvoices,
+    Collections.valuationSnapshots,
+    Collections.subscriptionInvoices,
+    Collections.subscriptions,
   ]) {
     await _deleteWhere(db, table, [Query.equal('company_id', companyId)]);
   }
@@ -122,11 +118,11 @@ Future<Response> onRequest(RequestContext context, String id) async {
   // 6. The company itself — commit point.
   try {
     await db.deleteRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.companies,
+      databaseId: Collections.databaseId,
+      tableId: Collections.companies,
       rowId: companyId,
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     // Company row already gone → mirror the empty PG RETURNING set.
     if (e.code == 404) return notFound('User not found');
     rethrow;
@@ -145,7 +141,7 @@ Future<void> _forEach(
 ) async {
   while (true) {
     final page = await db.listRows(
-      databaseId: Aw.databaseId,
+      databaseId: Collections.databaseId,
       tableId: tableId,
       queries: [...queries, Query.limit(100)],
     );
@@ -168,7 +164,7 @@ Future<void> _deleteWhere(
   tableId,
   queries,
   (row) => db.deleteRow(
-    databaseId: Aw.databaseId,
+    databaseId: Collections.databaseId,
     tableId: tableId,
     rowId: row.$id,
   ),

@@ -1,73 +1,204 @@
-/** Order History table — clickable rows jump the tracker to that shipment. */
-import { AlertCircle, Loader2, Truck } from "lucide-react";
-import { SectionTitle } from "./SectionTitle";
-import { ORDER_HISTORY_HEADERS, TRACKING_LINK_COLOR } from "../../constants/offload.constants";
-import { MONO } from "../../constants/typography";
-import type { Order, OrdersResponse } from "../../models/order";
+import { Link } from "react-router";
+import { ArrowRight, Search } from "lucide-react";
+import type { Order } from "../../models/order";
 import { fmt, statusStyle, usd } from "../../services/offload.service";
+import { lifecycleLabel } from "../../services/order.service";
 
-interface OrderHistoryTableProps {
-  data: OrdersResponse | undefined;
-  error: unknown;
-  isLoading: boolean;
-  onTrack: (orderId: string) => void;
+interface Props {
   orders: Order[];
+  total: number;
+  filteredCount: number;
+  search: string;
+  status: string;
+  setSearch: (value: string) => void;
+  setStatus: (value: string) => void;
+  clearFilters: () => void;
+  onTrack: (id: string) => void;
   trackedOrder: Order | null;
+  page: number;
+  totalPages: number;
+  setPage: (page: number) => void;
+  base: string;
 }
-
-export function OrderHistoryTable({ data, error, isLoading, onTrack, orders, trackedOrder }: OrderHistoryTableProps) {
+export function OrderHistoryTable(props: Props) {
+  const {
+    orders,
+    total,
+    filteredCount,
+    search,
+    status,
+    setSearch,
+    setStatus,
+    clearFilters,
+    onTrack,
+    trackedOrder,
+    page,
+    totalPages,
+    setPage,
+    base,
+  } = props;
+  function track(id: string) {
+    onTrack(id);
+    const target = document.getElementById("shipment-tracker");
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+      block: "start",
+    });
+  }
   return (
-    <div className="border border-border" style={{ background: "var(--card)" }}>
-      <div className="p-6 border-b border-border flex items-center justify-between">
-        <SectionTitle>Order History</SectionTitle>
-        {data?.stats && (
-          <div className="flex gap-4 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>
-            <span>{data.stats.totalOrders} orders</span>
-            <span style={{ color: "var(--primary)" }}>{usd(data.stats.totalValue * 100)} total value</span>
-          </div>
-        )}
+    <section className="gm-offload-card gm-sales-history">
+      <div className="gm-offload-section-heading">
+        <h2>Sales history</h2>
+        <span role="status">
+          {filteredCount} of {total} sales
+        </span>
       </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="gm-offload-history-tools">
+        <label className="gm-search">
+          <Search size={17} aria-hidden="true" />
+          <input
+            aria-label="Search sales"
+            placeholder="Search order, product, or buyer"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <select
+          aria-label="Filter sales by status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="all">All statuses</option>
+          {[
+            "awaiting_payment",
+            "funded",
+            "shipped",
+            "delivered",
+            "inspecting",
+            "complete",
+            "disputed",
+            "cancelled",
+          ].map((value) => (
+            <option key={value} value={value}>
+              {lifecycleLabel(value as Order["orderStatus"])}
+            </option>
+          ))}
+        </select>
+      </div>
+      {orders.length === 0 ? (
+        <div className="gm-offload-quiet">
+          <h3>{total ? "No matching sales" : "Ready for your first sale?"}</h3>
+          <p>
+            {total
+              ? "Try a different order, buyer, or status."
+              : "Create a listing to put your equipment in front of business buyers."}
+          </p>
+          {total ? (
+            <button className="gm-text-link" onClick={clearFilters}>
+              Clear search and filters
+            </button>
+          ) : (
+            <Link
+              className="gm-button gm-button-small"
+              to={`${base}/my-listings`}
+            >
+              Manage listings <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+      ) : (
+        <table className="gm-offload-table">
+          <caption className="sr-only">
+            Your sales orders, status and order actions
+          </caption>
           <thead>
-            <tr className="border-b border-border">
-              {ORDER_HISTORY_HEADERS.map((h) => (
-                <th key={h} className="text-left p-4 text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{h}</th>
+            <tr>
+              {[
+                "Order / equipment",
+                "Buyer",
+                "Status",
+                "Order value",
+                "Actions",
+              ].map((header) => (
+                <th scope="col" key={header}>
+                  {header}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={7} className="p-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}><Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" /> Loading…</td></tr>}
-            {error && <tr><td colSpan={7} className="p-8 text-center"><div className="flex items-center justify-center gap-2 text-sm" style={{ color: "var(--chart-4)" }}><AlertCircle className="w-4 h-4" /> Failed to load orders</div></td></tr>}
-            {!isLoading && orders.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>No orders yet</td></tr>}
-            {orders.map((order, ndx) => (
-              <tr key={order.id}
-                className="hover:bg-muted/40 cursor-pointer transition-colors"
-                style={{ borderBottom: ndx !== orders.length - 1 ? "1px solid color-mix(in srgb, var(--border) 60%, transparent)" : undefined, background: trackedOrder?.id === order.id ? "color-mix(in srgb, var(--primary) 5%, transparent)" : undefined }}
-                onClick={() => { if (["shipped", "delivered"].includes(order.orderStatus)) { onTrack(order.id); window.scrollTo({ top: 0, behavior: "smooth" }); } }}>
-                <td className="p-4"><span className="text-sm">{order.transactionId}</span></td>
-                <td className="p-4">
-                  <p className="text-sm truncate max-w-[160px]">{order.productName}</p>
-                  {order.specs && <p className="text-xs truncate max-w-[160px]" style={{ color: "var(--muted-foreground)" }}>{order.specs}</p>}
+            {orders.map((order) => (
+              <tr
+                key={order.id}
+                className={
+                  trackedOrder?.id === order.id ? "is-selected" : undefined
+                }
+              >
+                <td data-label="Order / equipment">
+                  <Link to={`${base}/orders/${encodeURIComponent(order.id)}`}>
+                    {order.transactionId}
+                  </Link>
+                  <strong>{order.productName}</strong>
+                  <small>
+                    {order.quantity} units · {fmt(order.createdAt)}
+                  </small>
                 </td>
-                <td className="p-4"><span className="text-sm" style={{ color: "var(--muted-foreground)" }}>{order.quantity}</span></td>
-                <td className="p-4"><span className="inline-flex px-2 py-0.5 text-xs" style={statusStyle(order.orderStatus)}>{order.orderStatus.replace(/_/g, " ")}</span></td>
-                <td className="p-4"><span className="text-sm" style={{ color: "var(--muted-foreground)" }}>{fmt(order.createdAt)}</span></td>
-                <td className="p-4"><span className="text-sm" style={{ color: "var(--primary)", fontFamily: MONO }}>{usd(order.totalValue * 100)}</span></td>
-                <td className="p-4">
-                  {order.trackingNumber ? (
-                    <button className="text-xs flex items-center gap-1" style={{ color: TRACKING_LINK_COLOR, fontFamily: MONO }}
-                      onClick={(e) => { e.stopPropagation(); onTrack(order.id); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-                      <Truck className="w-3 h-3" /> {order.trackingNumber.slice(0, 12)}…
+                <td data-label="Buyer">
+                  {order.counterparty || "Business buyer"}
+                </td>
+                <td data-label="Status">
+                  <span
+                    className="gm-offload-status"
+                    style={statusStyle(order.orderStatus)}
+                  >
+                    {lifecycleLabel(order.orderStatus)}
+                  </span>
+                </td>
+                <td data-label="Order value">{usd(order.totalValue * 100)}</td>
+                <td data-label="Actions">
+                  {!["cancelled", "disputed"].includes(order.orderStatus) ? (
+                    <button
+                      aria-label={`Follow ${order.transactionId}`}
+                      className="gm-text-link"
+                      onClick={() => track(order.id)}
+                    >
+                      Follow sale <ArrowRight size={14} aria-hidden="true" />
                     </button>
-                  ) : <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>—</span>}
+                  ) : (
+                    <Link
+                      className="gm-text-link"
+                      to={`${base}/orders/${encodeURIComponent(order.id)}`}
+                    >
+                      View order <ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      )}
+      {totalPages > 1 && (
+        <nav className="gm-pagination" aria-label="Sales history pages">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div>
+            <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+              Previous
+            </button>
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </button>
+          </div>
+        </nav>
+      )}
+    </section>
   );
 }

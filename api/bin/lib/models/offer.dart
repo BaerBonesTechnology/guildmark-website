@@ -3,14 +3,13 @@ library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'json_helpers.dart';
+import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'offer.freezed.dart';
 part 'offer.g.dart';
 
 @Freezed()
 abstract class BuyerOffer with _$BuyerOffer {
-  const BuyerOffer._();
 
   const factory BuyerOffer({
     required String id,
@@ -24,6 +23,7 @@ abstract class BuyerOffer with _$BuyerOffer {
     double?  counterPrice,
     String?  message,
   }) = _BuyerOffer;
+  const BuyerOffer._();
 
   factory BuyerOffer.fromJson(Map<String, dynamic> json) =>
       _$BuyerOfferFromJson(json);

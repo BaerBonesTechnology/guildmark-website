@@ -1,15 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
-import 'package:guildmark_api/appwrite/lookups.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/firebase/lookups.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/offer_repo.dart';
+import 'package:guildmark_api/repos/firestore/offer_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
 const _allowedActions = {'accept', 'reject', 'counter'};
@@ -38,7 +36,7 @@ Future<Response> onRequest(
     }
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -72,7 +70,7 @@ Future<Response> onRequest(
 }
 
 Future<void> _notifyBuyer({
-  required AppwriteService aw,
+  required FirebaseService aw,
   required EmailService email,
   required String offerId,
   required String action,
@@ -82,8 +80,8 @@ Future<void> _notifyBuyer({
     // Was a 5-table JOIN — now stitched: offer → buyer company contact,
     // offer → listing → asset model name.
     final offerRow = await aw.tablesDB.getRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.buyerOffers,
+      databaseId: Collections.databaseId,
+      tableId: Collections.buyerOffers,
       rowId: offerId,
     );
     final buyerEmail = await companyContactEmail(
@@ -108,7 +106,7 @@ Future<void> _notifyBuyer({
       counterPrice: counterPrice,
       offersUrl: 'https://app.guildmark.co/orders',
     );
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     if (e.code != 404) {
       stderr.writeln('[offer] Failed to send buyer notification: $e');
     }

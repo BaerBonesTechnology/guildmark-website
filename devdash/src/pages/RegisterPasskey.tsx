@@ -6,13 +6,13 @@
  *   1. Read setup_token + employee from sessionStorage (put there by /admin/auth)
  *   2. POST /admin/passkey/register/begin   → get challenge + RP options
  *   3. navigator.credentials.create()       → authenticator creates a key pair
- *   4. POST /admin/passkey/register/complete → verify + store → receive full JWT
- *   5. Store full JWT, redirect to /
+ *   4. POST /admin/passkey/register/complete → verify + store → receive session
+ *   5. Update shared auth state, redirect to /
  */
 
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import { base64urlToBuffer, bufferToBase64url } from "../hooks/useAuth";
+import { Navigate, useNavigate } from "react-router";
+import { useAuth, base64urlToBuffer, bufferToBase64url } from "../hooks/useAuth";
 
 const API = import.meta.env.VITE_API_URL ?? "https://api.guildmark.co";
 
@@ -33,6 +33,7 @@ interface RegisterOptions {
 
 export function RegisterPasskey() {
   const navigate    = useNavigate();
+  const { token, completePasskeySetup } = useAuth();
   const [status, setStatus]   = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
   const [friendlyName, setFriendlyName] = useState("Work device");
@@ -42,10 +43,7 @@ export function RegisterPasskey() {
   const employee     = employeeJson ? JSON.parse(employeeJson) as { full_name: string; email: string } : null;
 
   // Redirect if there's no setup token — shouldn't land here otherwise
-  if (!setupToken) {
-    navigate("/login", { replace: true });
-    return null;
-  }
+  if (!setupToken) return <Navigate to={token ? "/" : "/login"} replace />;
 
   async function handleRegister() {
     setStatus("busy");
@@ -81,7 +79,7 @@ export function RegisterPasskey() {
           })),
           authenticatorSelection: {
             residentKey:             opts.authenticator_selection?.resident_key   as ResidentKeyRequirement ?? "preferred",
-            userVerification:        opts.authenticator_selection?.user_verification as UserVerificationRequirement ?? "preferred",
+            userVerification:        "required",
             authenticatorAttachment: opts.authenticator_selection?.authenticator_attachment as AuthenticatorAttachment ?? "platform",
           },
           timeout:     opts.timeout     ?? 60000,
@@ -114,13 +112,9 @@ export function RegisterPasskey() {
       }
       const data = await completeRes.json() as { access_token: string };
 
-      // ── Step 4: store full token, clean up setup artifacts ─────────────
-      sessionStorage.setItem("devdash_token", data.access_token);
-      sessionStorage.removeItem("devdash_setup_token");
-      sessionStorage.removeItem("devdash_setup_employee");
-
-      setStatus("done");
-      setTimeout(() => navigate("/", { replace: true }), 800);
+      // Update the provider before the protected route renders.
+      completePasskeySetup(data.access_token);
+      navigate("/", { replace: true });
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Registration failed");

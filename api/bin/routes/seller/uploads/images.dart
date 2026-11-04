@@ -1,11 +1,8 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show AppwriteException;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/product_image_repo.dart';
+import 'package:guildmark_api/repos/firestore/product_image_repo.dart';
 
 /// Max accepted upload size — mirrors the bucket's `maximumFileSize`.
 const int _maxImageBytes = 10 * 1024 * 1024;
@@ -24,7 +21,7 @@ Future<Response> onRequest(RequestContext context) async {
   final auth = context.read<AuthPrincipal?>();
   if (auth == null) return unauthorized();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -48,18 +45,14 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('Image exceeds the 10 MB limit');
   }
 
-  final cfg = context.read<AppConfig>();
   try {
-    final uploaded = await ProductImageRepo(
-      aw,
-      publicEndpoint: cfg.appwritePublicEndpoint,
-    ).upload(
+    final uploaded = await ProductImageRepo(aw).upload(
       bytes: bytes,
       filename: file.name,
       contentType: file.contentType.mimeType,
     );
     return Response.json(statusCode: 201, body: uploaded.toJson());
-  } on AppwriteException catch (e) {
+  } on DatastoreException catch (e) {
     return jsonError(502, 'UPLOAD_FAILED', e.message ?? 'Upload failed');
   }
 }

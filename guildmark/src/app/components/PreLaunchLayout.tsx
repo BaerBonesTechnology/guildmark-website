@@ -1,4 +1,4 @@
-import { Outlet } from "react-router";
+import { Outlet, ScrollRestoration } from "react-router";
 
 /**
  * Thin shell for the pre-launch experience. Each page (PreLaunch, Blog,
@@ -10,6 +10,7 @@ export function PreLaunchLayout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Outlet />
+      <ScrollRestoration />
     </div>
   );
 }

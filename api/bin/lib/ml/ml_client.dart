@@ -31,43 +31,53 @@ class ValuationRequest {
   final double? originalPrice;
 
   Map<String, dynamic> toJson() => {
-        'asset_type': assetType,
-        'model_name': modelName,
-        'condition_grade': conditionGrade,
-        'age_months': ageMonths,
-        if (cpuScore != null) 'cpu_score': cpuScore,
-        if (ramGb != null) 'ram_gb': ramGb,
-        if (storageGb != null) 'storage_gb': storageGb,
-        if (originalPrice != null) 'original_price': originalPrice,
-      };
+    'asset_type': assetType,
+    'model_name': modelName,
+    'condition_grade': conditionGrade,
+    'age_months': ageMonths,
+    if (cpuScore != null) 'cpu_score': cpuScore,
+    if (ramGb != null) 'ram_gb': ramGb,
+    if (storageGb != null) 'storage_gb': storageGb,
+    if (originalPrice != null) 'original_price': originalPrice,
+  };
 }
 
 class ValuationResponse {
-  ValuationResponse({
-    required this.fairMarketValue,
-    required this.confidence,
-    required this.modelVersion,
-  });
-
-  final double fairMarketValue;
-  final double confidence;
-  final String modelVersion;
 
   factory ValuationResponse.fromJson(Map<String, dynamic> json) {
     return ValuationResponse(
       fairMarketValue: (json['fair_market_value'] as num).toDouble(),
       confidence: (json['confidence'] as num).toDouble(),
       modelVersion: json['model_version'] as String,
+      cached: json['cached'] == true,
     );
   }
+  ValuationResponse({
+    required this.fairMarketValue,
+    required this.confidence,
+    required this.modelVersion,
+    this.cached = false,
+    this.creditCharged = false,
+  });
+
+  final double fairMarketValue;
+  final double confidence;
+  final String modelVersion;
+  final bool cached;
+  final bool creditCharged;
 }
 
 class MlClient {
-  MlClient({required this.baseUrl, this.serviceToken, http.Client? client})
-      : _client = client ?? http.Client();
+  MlClient({
+    required this.baseUrl,
+    this.serviceToken,
+    this.cacheVersion = 'valuation-0.1.0',
+    http.Client? client,
+  }) : _client = client ?? http.Client();
 
   final String baseUrl;
   final String? serviceToken;
+  final String cacheVersion;
 
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
@@ -76,7 +86,8 @@ class MlClient {
   final http.Client _client;
 
   Future<ValuationResponse> estimateFairMarketValue(
-      ValuationRequest req) async {
+    ValuationRequest req,
+  ) async {
     final resp = await _client.post(
       Uri.parse('$baseUrl/predict/valuation'),
       headers: _headers,
@@ -86,7 +97,8 @@ class MlClient {
       throw MlServiceException(resp.statusCode, resp.body);
     }
     return ValuationResponse.fromJson(
-        jsonDecode(resp.body) as Map<String, dynamic>);
+      jsonDecode(resp.body) as Map<String, dynamic>,
+    );
   }
 
   Future<List<DepreciationPoint>> forecastDepreciation({
@@ -133,16 +145,16 @@ class MlClient {
 }
 
 class DepreciationPoint {
-  DepreciationPoint({required this.month, required this.projectedValue});
-
-  final String month; // YYYY-MM
-  final double projectedValue;
 
   factory DepreciationPoint.fromJson(Map<String, dynamic> json) =>
       DepreciationPoint(
         month: json['month'] as String,
         projectedValue: (json['projected_value'] as num).toDouble(),
       );
+  DepreciationPoint({required this.month, required this.projectedValue});
+
+  final String month; // YYYY-MM
+  final double projectedValue;
 }
 
 class MlServiceException implements Exception {

@@ -1,6 +1,7 @@
 /** GM Pro signup page content — plans and value props. */
 import { BarChart2, Cpu, Package, Shield, TrendingUp, Zap } from "lucide-react";
 import type { PaidPlan } from "../components/SubscriptionCheckoutDialog";
+import { PAID_PLANS, PLAN_CATALOG, planFeatures } from "./planCatalog.ts";
 
 export interface Plan {
   features: string[];
@@ -16,17 +17,13 @@ export interface ValueProp {
   title: string;
 }
 
-export const PLANS: Plan[] = [
-  { key: "starter", label: "Starter", price: 39, features: ["Up to 350 devices", "2 team members", "Full asset inventory", "MDM integrations (Jamf + Intune)", "AI-powered FMV valuations", "Tax invoice generation"] },
-  { key: "growth", label: "Growth", price: 79, highlight: true, features: ["Up to 700 devices", "5 team members", "Everything in Starter", "Bulk quick-list to GuildMarket", "Portfolio trend analytics", "Priority support"] },
-  { key: "pro", label: "Pro", price: 149, features: ["Unlimited devices", "Unlimited team members", "Everything in Growth", "Dedicated account manager", "Custom reporting", "Lowest seller fees (3%)"] },
-];
+export const PLANS: Plan[] = PAID_PLANS.map(key => ({key, label: PLAN_CATALOG[key].label, price: PLAN_CATALOG[key].price, highlight: key === "growth", features: planFeatures(key)}));
 
 export const VALUE_PROPS: ValueProp[] = [
-  { icon: Zap, title: "Know what every asset is worth", body: "Our ML valuation engine pulls live eBay and BackMarket data to give you accurate FMV — so you never under-price or sit on overpriced inventory." },
+  { icon: Zap, title: "Estimate supported laptops", body: "Use recorded specifications, condition and age to request ML-assisted estimates. Estimates have limitations and are not guaranteed sale prices." },
   { icon: TrendingUp, title: "Recover more from every offload", body: null },
-  { icon: Cpu, title: "Sync your entire fleet automatically", body: "Connect Jamf or Intune and your device inventory stays up to date — no spreadsheets, no manual entry, no surprises at audit time." },
-  { icon: BarChart2, title: "Forecast depreciation before it hits", body: "Portfolio analytics surface devices approaching value cliffs 6 months out, so you can list them while the market still wants them." },
-  { icon: Shield, title: "Compliance-ready from day one", body: "Generate tax-compliant write-off invoices for every disposition, and keep a full audit trail — all in the platform." },
-  { icon: Package, title: "Sell faster with buyer demand signals", body: "Market Pulse shows real buyer demand for each model so you can prioritise what to list and set prices that close quickly." },
+  { icon: Cpu, title: "Keep your inventory portable", body: "Manage recorded quantities and import or export CSV data. Jamf and Intune connections are prototypes, not working fleet integrations." },
+  { icon: BarChart2, title: "Review your valuation history", body: "Review saved estimates. Portfolio trend reports and expanded batch workflows are planned for Growth and Pro." },
+  { icon: Shield, title: "Prepare records for review", body: "Invoice drafts are a prototype. PDF generation and tax compliance require verification before use." },
+  { icon: Package, title: "Control the resale decision", body: "The guided assistant prepares listing previews. You review asset details and decide what to publish." },
 ];

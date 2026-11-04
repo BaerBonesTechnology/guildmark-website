@@ -1,9 +1,6 @@
-import 'package:dart_appwrite/dart_appwrite.dart'
-    show AppwriteException, ID, Query;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -44,7 +41,7 @@ Future<Response> onRequest(RequestContext context) async {
   ];
   final notes = parts.join(' | ');
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -56,15 +53,15 @@ Future<Response> onRequest(RequestContext context) async {
   // existing source; otherwise insert with source 'contact'. The unique
   // email index rejects the loser of a create race — retried as an update.
   final existing = await db.listRows(
-    databaseId: Aw.databaseId,
-    tableId: Aw.mailingList,
+    databaseId: Collections.databaseId,
+    tableId: Collections.mailingList,
     queries: [Query.equal('email', normalized), Query.limit(1)],
   );
 
   Future<void> appendToExisting(String rowId, String? existingNotes) =>
       db.updateRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.mailingList,
+        databaseId: Collections.databaseId,
+        tableId: Collections.mailingList,
         rowId: rowId,
         data: {
           'notes': existingNotes == null ? notes : '$existingNotes || $notes',
@@ -77,16 +74,16 @@ Future<Response> onRequest(RequestContext context) async {
   } else {
     try {
       await db.createRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.mailingList,
+        databaseId: Collections.databaseId,
+        tableId: Collections.mailingList,
         rowId: ID.unique(),
         data: {'email': normalized, 'source': 'contact', 'notes': notes},
       );
-    } on AppwriteException catch (e) {
+    } on DatastoreException catch (e) {
       if (e.code != 409) rethrow;
       final raced = await db.listRows(
-        databaseId: Aw.databaseId,
-        tableId: Aw.mailingList,
+        databaseId: Collections.databaseId,
+        tableId: Collections.mailingList,
         queries: [Query.equal('email', normalized), Query.limit(1)],
       );
       if (raced.rows.isNotEmpty) {

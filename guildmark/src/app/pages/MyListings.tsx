@@ -1,98 +1,240 @@
-/** My Listings page (View) — stat strip, dialogs, and the listings table. */
-import { Package, Plus, Upload } from "lucide-react";
+import { Plus, Search, Upload, Package } from "lucide-react";
 import { CreateListingDialog } from "../components/CreateListingDialog";
 import { EditListingDialog } from "../components/EditListingDialog";
 import { ImportListingsDialog } from "../components/ImportListingsDialog";
 import { ListingRow } from "../components/listings/ListingRow";
-import { ListingStatCell } from "../components/listings/ListingStatCell";
-import { LISTING_TABLE_HEADERS } from "../constants/listing.constants";
-import { BODY, MONO, DISPLAY } from "../constants/typography";
 import { useMyListingsViewModel } from "../viewmodels/useMyListingsViewModel";
+import "../../styles/listings.css";
 
 export function MyListings() {
-  const {
-    createOpen, editListing, importOpen, isLoading, isPublishing, isWithdrawing,
-    listings, publish, setCreateOpen, setEditListing, setImportOpen, stats, withdraw,
-  } = useMyListingsViewModel();
-
+  const vm = useMyListingsViewModel();
   return (
-    <div className="px-6 py-6 max-w-[1600px] mx-auto pb-20" style={{ fontFamily: BODY }}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="gm-inventory gm-container">
+      <header className="gm-inventory-heading">
         <div>
-          <h1 className="tracking-tight" style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(1.8rem, 3vw, 2.3rem)", lineHeight: 1 }}>My Listings</h1>
-          <p className="text-xs mt-1.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Manage your marketplace listings and track valuation flags</p>
+          <h1>
+            Your equipment.
+            <br />
+            Ready for what’s next.
+          </h1>
+          <p>
+            Build clear, credible listings for business buyers. Review pricing,
+            publish drafts, and keep your inventory current.
+          </p>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <button onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors" style={{ fontFamily: BODY }}>
-            <Upload size={13} /> Import CSV
+        <div className="gm-inventory-header-actions">
+          <button
+            className="gm-text-link"
+            onClick={() => vm.setImportOpen(true)}
+          >
+            <Upload size={15} aria-hidden="true" />
+            Import CSV
           </button>
-          <button onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:opacity-90 transition-opacity" style={{ background: "var(--primary)", color: "#fff", fontFamily: BODY }}>
-            <Plus size={13} /> Create Listing
+          <button className="gm-button" onClick={() => vm.setCreateOpen(true)}>
+            <Plus size={16} aria-hidden="true" />
+            Create listing
           </button>
         </div>
-      </div>
-
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px border border-border mb-6" style={{ background: "var(--border)" }}>
-        <ListingStatCell label="Active Listings" value={String(stats.activeCount)} />
-        <ListingStatCell label="Total Value" value={`$${stats.totalValue.toLocaleString()}`} color="var(--primary)" />
-        <ListingStatCell label="Total Listings" value={String(listings.length)} />
-        <ListingStatCell label="Overpriced Flags" value={String(stats.flaggedCount)} color={stats.flaggedCount > 0 ? "var(--chart-4)" : undefined} />
-      </div>
-
-      <CreateListingDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <ImportListingsDialog open={importOpen} onOpenChange={setImportOpen} />
-      <EditListingDialog listing={editListing} onOpenChange={(open) => { if (!open) setEditListing(null); }} />
-
-      {/* Listings table */}
-      <div className="border border-border" style={{ background: "var(--card)" }}>
-        <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
-          <span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>Your Listings</span>
-          <span className="text-[10px]" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{listings.length} total</span>
+      </header>
+      <dl className="gm-inventory-summary">
+        {[
+          { label: "Active listings", value: vm.stats.activeCount },
+          {
+            label: "Drafts",
+            value: vm.listings.filter((listing) => listing.status === "draft")
+              .length,
+          },
+          {
+            label: "Inventory asking value",
+            value: `$${vm.stats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          },
+          { label: "Price reviews", value: vm.stats.flaggedCount },
+        ].map((stat) => (
+          <div key={stat.label}>
+            <dt>{stat.label}</dt>
+            <dd>
+              {vm.isLoading || (vm.isError && !vm.data) ? "—" : stat.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <CreateListingDialog
+        open={vm.createOpen}
+        onOpenChange={vm.setCreateOpen}
+      />
+      <ImportListingsDialog
+        open={vm.importOpen}
+        onOpenChange={vm.setImportOpen}
+      />
+      <EditListingDialog
+        listing={vm.editListing}
+        onOpenChange={(open) => {
+          if (!open) vm.setEditListing(null);
+        }}
+      />
+      {vm.isError && (
+        <div className="gm-inventory-notice" role="alert">
+          <div>
+            <strong>We couldn’t refresh your listings.</strong>
+            <p>
+              {vm.data
+                ? "Showing the last available inventory."
+                : "Inventory is unavailable. Try again to see your listings."}
+            </p>
+          </div>
+          <button
+            className="gm-button gm-button-small"
+            disabled={vm.isFetching}
+            onClick={() => vm.refetch()}
+          >
+            {vm.isFetching ? "Retrying…" : "Try again"}
+          </button>
         </div>
-
-        {isLoading ? (
-          <div className="py-20 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Loading listings…</div>
-        ) : listings.length === 0 ? (
-          <div className="py-20 flex flex-col items-center gap-3">
-            <Package size={28} className="opacity-30" style={{ color: "var(--muted-foreground)" }} />
-            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No listings yet</p>
-            <button onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-border hover:border-foreground transition-colors" style={{ fontFamily: BODY }}>
-              <Plus size={13} /> Create your first listing
-            </button>
+      )}
+      {vm.actionError && (
+        <p className="gm-inventory-notice" role="alert">
+          {vm.actionError}
+        </p>
+      )}
+      {vm.notice && (
+        <p className="gm-inventory-notice is-success" role="status">
+          {vm.notice}
+        </p>
+      )}
+      <section
+        className="gm-inventory-panel"
+        aria-label="Your listings"
+        aria-busy={vm.isLoading}
+      >
+        <div className="gm-inventory-panel-heading">
+          <h2>My listings</h2>
+          <span role="status">
+            {vm.isLoading
+              ? "Loading inventory…"
+              : vm.isError && !vm.data
+                ? "Inventory unavailable"
+                : `${vm.filteredCount} of ${vm.listings.length} listings`}
+          </span>
+        </div>
+        <div className="gm-inventory-tools">
+          <label className="gm-search">
+            <Search size={17} aria-hidden="true" />
+            <input
+              aria-label="Search your listings"
+              placeholder="Search equipment or listing ID"
+              value={vm.search}
+              onChange={(event) => vm.setSearch(event.target.value)}
+            />
+          </label>
+          <select
+            aria-label="Filter listing status"
+            value={vm.status}
+            onChange={(event) => vm.setStatus(event.target.value)}
+          >
+            <option value="all">All statuses</option>
+            {["draft", "active", "sold", "withdrawn", "expired"].map(
+              (status) => (
+                <option key={status} value={status}>
+                  {status[0].toUpperCase() + status.slice(1)}
+                </option>
+              ),
+            )}
+          </select>
+        </div>
+        {vm.isLoading ? (
+          <div className="gm-inventory-loading">
+            {[1, 2, 3].map((i) => (
+              <div key={i} aria-hidden="true" />
+            ))}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" style={{ minWidth: 720 }}>
+          (!vm.isError || vm.data) &&
+          (vm.pageItems.length ? (
+            <table className="gm-inventory-table">
+              <caption className="sr-only">
+                Your hardware listings and publishing actions
+              </caption>
               <thead>
-                <tr className="border-b border-border">
-                  {LISTING_TABLE_HEADERS.map((header, ndx) => (
-                    <th key={ndx} className="text-left py-2.5 px-4 text-[10px] tracking-wider uppercase font-normal" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>{header}</th>
+                <tr>
+                  {[
+                    "Equipment",
+                    "Units",
+                    "Price / unit",
+                    "Gross value",
+                    "Status",
+                    "Actions",
+                  ].map((title) => (
+                    <th key={title} scope="col">
+                      {title}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {listings.map((listing, ndx) => (
+                {vm.pageItems.map((listing) => (
                   <ListingRow
                     key={listing.id}
                     listing={listing}
-                    striped={ndx % 2 === 1}
-                    isPublishing={isPublishing}
-                    isWithdrawing={isWithdrawing}
-                    onEdit={() => setEditListing(listing)}
-                    onPublish={() => publish(listing.id)}
-                    onWithdraw={() => withdraw(listing.id)}
+                    isActing={vm.isActing}
+                    isBusy={vm.busyId === listing.id}
+                    busyAction={vm.busyAction}
+                    onEdit={() => vm.setEditListing(listing)}
+                    onPublish={() => vm.publish(listing.id)}
+                    onWithdraw={() => vm.withdraw(listing.id)}
                   />
                 ))}
               </tbody>
             </table>
-          </div>
+          ) : (
+            <div className="gm-inventory-empty">
+              <Package size={28} aria-hidden="true" />
+              <h3>
+                {vm.listings.length
+                  ? "No matching listings"
+                  : "Give your hardware a next chapter."}
+              </h3>
+              <p>
+                {vm.listings.length
+                  ? "Try another product or status."
+                  : "Start with a draft. Add specifications, condition, and pricing before publishing."}
+              </p>
+              {vm.listings.length ? (
+                <button className="gm-text-link" onClick={vm.clearFilters}>
+                  Clear search and filters
+                </button>
+              ) : (
+                <button
+                  className="gm-button gm-button-small"
+                  onClick={() => vm.setCreateOpen(true)}
+                >
+                  Create your first listing
+                </button>
+              )}
+            </div>
+          ))
         )}
-      </div>
+        {vm.totalPages > 1 && (
+          <nav className="gm-pagination" aria-label="Listing pages">
+            <span>
+              Page {vm.page} of {vm.totalPages}
+            </span>
+            <div>
+              <button
+                disabled={vm.page === 1}
+                onClick={() => vm.setPage(vm.page - 1)}
+              >
+                Previous
+              </button>
+              <button
+                disabled={vm.page === vm.totalPages}
+                onClick={() => vm.setPage(vm.page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </nav>
+        )}
+      </section>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import 'dart:math';
+import 'package:guildmark_api/auth/firebase_auth.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 import 'dart:typed_data';
 
-import 'package:dart_appwrite/dart_appwrite.dart' show ID, Query;
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/config.dart';
@@ -18,6 +19,12 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
+  if (firebaseSessions(context) != null &&
+      !(context.request.headers['content-type'] ?? '').startsWith(
+        'application/json',
+      )) {
+    return badRequest('JSON body required');
+  }
   final body = await context.request.json() as Map<String, dynamic>?;
   final email =
       (body?['email'] as String?)?.trim().toLowerCase() ??
@@ -29,8 +36,12 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   final cfg = context.read<AppConfig>();
+  final sessions = firebaseSessions(context);
+  if (sessions != null && cfg.webauthnRpId == null) {
+    return jsonError(503, 'MFA_REQUIRED', 'Staff passkeys must be configured');
+  }
   final jwt = context.read<JwtService>();
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -38,8 +49,8 @@ Future<Response> onRequest(RequestContext context) async {
 
   // ── 1. Employee table lookup ─────────────────────────────────────────────
   final rows = await db.listRows(
-    databaseId: Aw.databaseId,
-    tableId: Aw.guildmarkEmployees,
+    databaseId: Collections.databaseId,
+    tableId: Collections.guildmarkEmployees,
     queries: [
       Query.equal('email', email),
       Query.equal('is_active', true),
@@ -52,20 +63,34 @@ Future<Response> onRequest(RequestContext context) async {
     final data = row.data;
     final hash = data['password_hash'].toString();
 
-    if (!verifyPassword(password, hash)) {
+    Map<String, dynamic>? firebaseLogin;
+    if (sessions != null) {
+      try {
+        firebaseLogin = await sessions.auth.signIn(email, password);
+        if (data['firebase_uid'] != firebaseLogin['localId']) {
+          return unauthorized('Invalid credentials');
+        }
+      } on FirebaseAuthFailure catch (e) {
+        return e.code == 'AUTH_UNAVAILABLE'
+            ? jsonError(
+                503,
+                'AUTH_UNAVAILABLE',
+                'Authentication temporarily unavailable',
+              )
+            : unauthorized('Invalid credentials');
+      }
+    } else if (!verifyPassword(password, hash)) {
       return unauthorized('Invalid credentials');
     }
 
     final id = row.$id;
-    final role = data['full_name'] != null
-        ? data['role'].toString()
-        : 'admin';
+    final role = data['role']?.toString() ?? 'support';
     final fullName = data['full_name']?.toString() ?? 'Employee';
 
     // Update last_login_at
     await db.updateRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.guildmarkEmployees,
+      databaseId: Collections.databaseId,
+      tableId: Collections.guildmarkEmployees,
       rowId: id,
       data: {'last_login_at': DateTime.now().toUtc().toIso8601String()},
     );
@@ -74,8 +99,8 @@ Future<Response> onRequest(RequestContext context) async {
     if (cfg.webauthnRpId != null) {
       // Check for existing passkeys (an employee has at most a handful).
       final pkRows = await db.listRows(
-        databaseId: Aw.databaseId,
-        tableId: Aw.employeePasskeys,
+        databaseId: Collections.databaseId,
+        tableId: Collections.employeePasskeys,
         queries: [
           Query.equal('employee_id', id),
           Query.orderAsc(r'$createdAt'),
@@ -85,17 +110,22 @@ Future<Response> onRequest(RequestContext context) async {
 
       if (pkRows.rows.isNotEmpty) {
         // ── Path A: employee has passkeys — issue authentication challenge ──
+        final pending = sessions == null
+            ? null
+            : await sessions.issue(firebaseLogin!, 'staff_pending');
         final challengeBytes = _randomBytes(32);
         final challengeB64 = toBase64Url(challengeBytes);
 
         // PG set expires_at via a column default (now() + 5 minutes);
         // Appwrite has no expression defaults, so compute it here.
         final chalRow = await db.createRow(
-          databaseId: Aw.databaseId,
-          tableId: Aw.employeePasskeyChallenges,
+          databaseId: Collections.databaseId,
+          tableId: Collections.employeePasskeyChallenges,
           rowId: ID.unique(),
           data: {
             'employee_id': id,
+            if (pending != null)
+              'firebase_session_hash': FirebaseSessions.digest(pending),
             'challenge': challengeB64,
             'type': 'authentication',
             'expires_at': DateTime.now()
@@ -125,9 +155,16 @@ Future<Response> onRequest(RequestContext context) async {
         );
       } else {
         // ── Path B: no passkeys yet — issue a setup token ───────────────────
-        final setupToken = jwt.issueAccessToken(
-          AccessClaims(userId: id, companyId: 'devdash_setup', role: role, audience: 'staff_setup'),
-        );
+        final setupToken = sessions != null
+            ? await sessions.issue(firebaseLogin!, 'staff_setup')
+            : jwt.issueAccessToken(
+                AccessClaims(
+                  userId: id,
+                  companyId: 'devdash_setup',
+                  role: role,
+                  audience: 'staff_setup',
+                ),
+              );
         return Response.json(
           body: {
             'requires_passkey_setup': true,
@@ -145,7 +182,12 @@ Future<Response> onRequest(RequestContext context) async {
 
     // ── Path C: passkeys not configured — issue full JWT immediately ─────────
     final token = jwt.issueAccessToken(
-      AccessClaims(userId: id, companyId: 'devdash', role: role, audience: 'staff'),
+      AccessClaims(
+        userId: id,
+        companyId: 'devdash',
+        role: role,
+        audience: 'staff',
+      ),
     );
     return Response.json(
       body: {
@@ -161,12 +203,19 @@ Future<Response> onRequest(RequestContext context) async {
   }
 
   // ── 2. Env-var fallback (bootstrap / emergency access) ───────────────────
-  if (cfg.adminAuthUser != null && cfg.adminAuthPass != null) {
+  if (sessions == null &&
+      cfg.adminAuthUser != null &&
+      cfg.adminAuthPass != null) {
     final userMatch = constantTimeEquals(email, cfg.adminAuthUser!);
     final passMatch = constantTimeEquals(password, cfg.adminAuthPass!);
     if (userMatch && passMatch) {
       final token = jwt.issueAccessToken(
-        AccessClaims(userId: 'admin', companyId: 'devdash', role: 'admin', audience: 'staff'),
+        AccessClaims(
+          userId: 'admin',
+          companyId: 'devdash',
+          role: 'admin',
+          audience: 'staff',
+        ),
       );
       return Response.json(
         body: {

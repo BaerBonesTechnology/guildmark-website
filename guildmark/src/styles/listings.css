@@ -1,0 +1,605 @@
+/* Seller inventory and portalled create/edit dialogs share one typography system. */
+.gm-inventory {
+  padding-block: 48px 72px;
+  font-family: "DM Sans", sans-serif;
+}
+.gm-inventory-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 32px;
+}
+.gm-inventory h1 {
+  font-size: clamp(34px, 3.4vw, 48px);
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+.gm-inventory-heading p {
+  max-width: 510px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.gm-inventory-header-actions {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.gm-inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.gm-inventory-summary > div {
+  padding: 22px;
+}
+.gm-inventory-summary > div:first-child {
+  padding-left: 0;
+}
+.gm-inventory-summary > div + div {
+  border-left: 1px solid var(--border);
+}
+.gm-inventory-summary dt {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.gm-inventory-summary dd {
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.gm-inventory-panel {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  padding: 24px;
+}
+.gm-inventory-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.gm-inventory-panel h2 {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.gm-inventory-panel-heading > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.gm-inventory-tools {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.gm-inventory-tools > select {
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 5px;
+  font-size: 13px;
+}
+.gm-inventory-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.gm-inventory-table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.gm-inventory-table th:first-child {
+  width: 28%;
+}
+.gm-inventory-table th:nth-child(2) {
+  width: 7%;
+}
+.gm-inventory-table th:last-child {
+  width: 25%;
+}
+.gm-inventory-table td {
+  padding: 18px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+.gm-inventory-table tr:last-child td {
+  border-bottom: 0;
+}
+.gm-inventory-table strong {
+  display: block;
+  font-weight: 500;
+  font-size: 14px;
+}
+.gm-inventory-table small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-top: 7px;
+}
+.gm-inventory-grade {
+  font-weight: 500;
+}
+.gm-inventory .grade-a {
+  color: var(--grade-a-text);
+}
+.gm-inventory .grade-b {
+  color: var(--grade-b-text);
+}
+.gm-inventory .grade-c {
+  color: var(--grade-c-text);
+}
+.gm-inventory-warning {
+  display: inline-block;
+  color: var(--grade-b-text);
+  font-size: 11px;
+  margin-top: 8px;
+}
+.gm-inventory-status {
+  display: inline-flex;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted-foreground);
+  padding: 4px 7px;
+  text-transform: capitalize;
+}
+.gm-inventory .status-active {
+  color: var(--grade-a-text);
+  background: var(--grade-a-subtle);
+  border-color: color-mix(in srgb, var(--grade-a) 30%, transparent);
+}
+.gm-inventory .status-draft {
+  color: var(--grade-b-text);
+  background: var(--grade-b-subtle);
+  border-color: color-mix(in srgb, var(--grade-b) 30%, transparent);
+}
+.gm-inventory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+.gm-inventory-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--foreground);
+  min-height: 36px;
+}
+.gm-inventory-actions button:first-child {
+  color: var(--primary);
+}
+.gm-inventory-actions button:hover {
+  text-decoration: underline;
+}
+.gm-inventory-muted {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.gm-inventory-notice {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--grade-b-subtle);
+  color: var(--grade-b-text);
+  border: 1px solid var(--grade-b);
+  border-radius: 7px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.gm-inventory-notice.is-success {
+  background: var(--grade-a-subtle);
+  color: var(--grade-a-text);
+  border-color: var(--grade-a);
+}
+.gm-inventory-notice strong {
+  font-weight: 500;
+}
+.gm-inventory-notice p {
+  margin-top: 4px;
+}
+.gm-inventory-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 50px 20px;
+}
+.gm-inventory-empty > svg {
+  color: var(--muted-foreground);
+}
+.gm-inventory-empty h3 {
+  font-size: 20px;
+  font-weight: 500;
+}
+.gm-inventory-empty p {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+}
+.gm-inventory-loading > div {
+  height: 70px;
+  margin-top: 14px;
+  background: var(--secondary);
+  border-radius: 5px;
+  animation: gmPulse 1.4s ease-in-out infinite;
+}
+.gm-listing-dialog[data-slot="dialog-content"] {
+  font-family: "DM Sans", sans-serif;
+  width: calc(100% - 40px);
+  max-width: 780px;
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.gm-listing-dialog [data-slot="dialog-header"] {
+  text-align: left;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.gm-listing-dialog [data-slot="dialog-title"] {
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.3;
+  padding-right: 25px;
+}
+.gm-listing-dialog [data-slot="dialog-description"] {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.gm-create-listing > form {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 30px;
+  min-height: 0;
+}
+.gm-create-fields {
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.gm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.gm-listing-dialog label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--foreground);
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+.gm-listing-dialog input:not([type="checkbox"]),
+.gm-listing-dialog select,
+.gm-listing-dialog textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--foreground);
+  font:
+    14px "DM Sans",
+    sans-serif;
+  padding: 10px 12px;
+  box-shadow: none;
+}
+.gm-listing-dialog textarea {
+  resize: vertical;
+}
+.gm-listing-dialog input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+.gm-listing-dialog label:has(input[type="checkbox"]) {
+  display: flex;
+}
+.gm-listing-dialog .text-red-500,
+.gm-listing-dialog .gm-field-error {
+  color: var(--grade-c-text);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.gm-listing-dialog [aria-invalid="true"] {
+  border-color: var(--grade-c);
+}
+.gm-listing-dialog .gm-listing-help {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+}
+.gm-listing-disclosure {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.gm-listing-disclosure summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.gm-listing-disclosure summary span {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin: 5px 0 0 17px;
+}
+.gm-listing-disclosure[open] > .gm-form-grid {
+  margin-top: 18px;
+}
+.gm-listing-dialog .gm-listing-dialog-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 30px;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+.gm-listing-dialog-footer button {
+  min-height: 44px;
+}
+.gm-create-estimate {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--secondary);
+}
+.gm-create-estimate h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+.gm-create-estimate dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  font-size: 12px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.gm-create-estimate dt {
+  color: var(--muted-foreground);
+}
+.gm-create-estimate dd {
+  font-weight: 500;
+  text-align: right;
+}
+.gm-create-estimate dl > div:last-child {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.gm-create-estimate > p {
+  margin-top: 14px;
+}
+.gm-edit-listing[data-slot="dialog-content"] {
+  max-width: 480px;
+  overflow-y: auto;
+}
+.gm-edit-listing form > fieldset {
+  border: 0;
+  padding: 24px 30px;
+  min-width: 0;
+}
+.gm-edit-listing form > .gm-field-error {
+  padding: 0 30px 18px;
+}
+.gm-price-context {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+}
+.gm-price-context p + p {
+  margin-top: 8px;
+}
+.gm-price-context .is-good {
+  color: var(--grade-a-text);
+}
+.gm-price-context .is-warning {
+  color: var(--grade-b-text);
+}
+.gm-inventory :is(a, button, input, select):focus-visible,
+.gm-listing-dialog
+  :is(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [role="button"]
+  ):focus-visible {
+  outline: 3px solid #83a5f2;
+  outline-offset: 3px;
+}
+.gm-inventory button:disabled,
+.gm-listing-dialog button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 900px) {
+  .gm-inventory-heading {
+    flex-direction: column;
+    align-items: start;
+    gap: 22px;
+  }
+  .gm-inventory-table th:last-child {
+    width: 20%;
+  }
+  .gm-inventory-actions {
+    flex-direction: column;
+    align-items: start;
+  }
+}
+@media (max-width: 700px) {
+  .gm-inventory {
+    padding-block: 30px 50px;
+  }
+  .gm-inventory-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gm-inventory-summary > div {
+    padding: 18px 14px !important;
+  }
+  .gm-inventory-summary > div:nth-child(3) {
+    border-left: 0;
+  }
+  .gm-inventory-summary > div:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+  .gm-inventory-summary dd {
+    font-size: 23px;
+  }
+  .gm-inventory-header-actions {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .gm-inventory-panel {
+    padding: 18px;
+  }
+  .gm-inventory-panel-heading {
+    flex-wrap: wrap;
+  }
+  .gm-inventory-tools {
+    flex-direction: column;
+  }
+  .gm-inventory-tools select,
+  .gm-inventory input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .gm-inventory-table,
+  .gm-inventory-table tbody,
+  .gm-inventory-table tr,
+  .gm-inventory-table td {
+    display: block;
+    width: 100%;
+  }
+  .gm-inventory-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .gm-inventory-table tr {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .gm-inventory-table td {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 0 12px;
+    border: 0;
+    padding: 7px 0;
+  }
+  .gm-inventory-table td:before {
+    content: attr(data-label);
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    color: var(--muted-foreground);
+    font-size: 11px;
+    padding-top: 2px;
+  }
+  .gm-inventory-table td > * {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .gm-inventory-actions {
+    flex-direction: row;
+    gap: 4px 12px;
+  }
+  .gm-inventory-actions button {
+    min-height: 44px;
+  }
+  .gm-inventory-notice {
+    align-items: start;
+    flex-direction: column;
+  }
+  .gm-listing-dialog[data-slot="dialog-content"] {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .gm-listing-dialog [data-slot="dialog-header"] {
+    padding: 24px 20px 18px;
+  }
+  .gm-listing-dialog [data-slot="dialog-title"] {
+    font-size: 23px;
+  }
+  .gm-create-listing > form {
+    padding: 20px;
+  }
+  .gm-form-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .gm-form-grid > .col-span-2 {
+    grid-column: 1;
+  }
+  .gm-listing-dialog input:not([type="checkbox"]),
+  .gm-listing-dialog select,
+  .gm-listing-dialog textarea {
+    font-size: 16px;
+  }
+  .gm-listing-dialog .gm-listing-dialog-footer {
+    padding: 14px 20px;
+  }
+  .gm-edit-listing form > fieldset {
+    padding: 20px;
+  }
+  .gm-create-estimate {
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-inventory,
+  .gm-inventory *,
+  .gm-listing-dialog,
+  .gm-listing-dialog * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) { body:has(.gm-listing-dialog) [data-slot="dialog-overlay"] { animation: none !important; transition: none !important; } }

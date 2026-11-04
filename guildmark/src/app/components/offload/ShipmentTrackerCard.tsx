@@ -1,50 +1,63 @@
-/** Active Shipment Tracker card — order selector + live TrackingPanel. */
-import { Loader2, Truck } from "lucide-react";
-import { SectionTitle } from "./SectionTitle";
+import { Link } from "react-router";
+import { Truck } from "lucide-react";
 import { TrackingPanel } from "./TrackingPanel";
-import { BODY, MONO } from "../../constants/typography";
+import { lifecycleLabel } from "../../services/order.service";
 import type { Order } from "../../models/order";
 
-const selectClass = "px-2 py-1 text-xs border border-border text-foreground focus:outline-none focus:border-primary appearance-none";
-const selectStyle = { fontFamily: BODY, background: "var(--input-background)" } as const;
-
-interface ShipmentTrackerCardProps {
-  isLoading: boolean;
-  onSelect: (orderId: string) => void;
-  shipped: Order[];
-  trackedId: string | null;
+export function ShipmentTrackerCard({
+  orders,
+  onSelect,
+  trackedOrder,
+  base,
+}: {
+  orders: Order[];
+  onSelect: (id: string) => void;
   trackedOrder: Order | null;
-}
-
-export function ShipmentTrackerCard({ isLoading, onSelect, shipped, trackedId, trackedOrder }: ShipmentTrackerCardProps) {
+  base: string;
+}) {
   return (
-    <div className="border border-border p-6" style={{ background: "var(--card)" }}>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <SectionTitle>{trackedOrder ? `Active Shipment: ${trackedOrder.transactionId}` : "Shipment Tracker"}</SectionTitle>
-          {trackedOrder?.trackingNumber && (
-            <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: MONO }}>FedEx {trackedOrder.trackingNumber}</p>
-          )}
-        </div>
-        {shipped.length > 1 && (
-          <select value={trackedId ?? trackedOrder?.id ?? ""} onChange={(e) => onSelect(e.target.value)} className={selectClass} style={selectStyle}>
-            {shipped.map((o) => <option key={o.id} value={o.id}>{o.transactionId}</option>)}
-          </select>
-        )}
+    <section className="gm-offload-card" id="shipment-tracker" tabIndex={-1}>
+      <div className="gm-offload-section-heading">
+        <h2>Follow your sale</h2>
+        <Truck size={20} aria-hidden="true" />
       </div>
-
-      {isLoading && (
-        <div className="flex items-center gap-2 text-sm py-8 justify-center" style={{ color: "var(--muted-foreground)" }}>
-          <Loader2 className="w-4 h-4 animate-spin" /> Loading orders…
+      {trackedOrder ? (
+        <>
+          <label className="gm-offload-label" htmlFor="offload-shipment">
+            Order
+          </label>
+          <select
+            id="offload-shipment"
+            value={trackedOrder.id}
+            onChange={(e) => onSelect(e.target.value)}
+          >
+            {orders.map((order) => (
+              <option key={order.id} value={order.id}>
+                {order.transactionId} · {order.productName}
+              </option>
+            ))}
+          </select>
+          <div className="gm-offload-tracked">
+            <Link to={`${base}/orders/${encodeURIComponent(trackedOrder.id)}`}>
+              {trackedOrder.transactionId}
+            </Link>
+            <span>{lifecycleLabel(trackedOrder.orderStatus)}</span>
+          </div>
+          <TrackingPanel
+            key={trackedOrder.id}
+            orderId={trackedOrder.id}
+            order={trackedOrder}
+          />
+        </>
+      ) : (
+        <div className="gm-offload-quiet">
+          <h3>Every sale, in one place</h3>
+          <p>
+            Once you have an order, follow its payment, shipment, and inspection
+            milestones here.
+          </p>
         </div>
       )}
-      {!isLoading && trackedOrder && <TrackingPanel orderId={trackedOrder.id} order={trackedOrder} />}
-      {!isLoading && !trackedOrder && (
-        <div className="py-10 flex flex-col items-center gap-2 text-center">
-          <Truck className="w-10 h-10" style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
-          <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No active shipments. Orders in transit will appear here.</p>
-        </div>
-      )}
-    </div>
+    </section>
   );
 }

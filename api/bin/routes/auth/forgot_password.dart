@@ -1,3 +1,5 @@
+import 'package:guildmark_api/auth/firebase_sessions.dart';
+import 'package:guildmark_api/auth/firebase_routes.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -5,16 +7,17 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/user_repo.dart';
+import 'package:guildmark_api/repos/firestore/user_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
-import 'package:dart_appwrite/dart_appwrite.dart' show ID, Query;
-
 Future<Response> onRequest(RequestContext context) async {
+  if (firebaseSessions(context) != null) {
+    return firebaseAuthRoute(context, 'forgot_password');
+  }
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
@@ -25,7 +28,7 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('email is required');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -45,8 +48,8 @@ Future<Response> onRequest(RequestContext context) async {
     // one, so only the most-recently-requested token is ever valid. No
     // multi-row UPDATE in Appwrite — list then update each.
     final live = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.passwordResetTokens,
+      databaseId: Collections.databaseId,
+      tableId: Collections.passwordResetTokens,
       queries: [
         Query.equal('user_id', user.id),
         Query.isNull('used_at'),
@@ -56,16 +59,16 @@ Future<Response> onRequest(RequestContext context) async {
     );
     for (final row in live.rows) {
       await db.updateRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.passwordResetTokens,
+        databaseId: Collections.databaseId,
+        tableId: Collections.passwordResetTokens,
         rowId: row.$id,
         data: {'used_at': now.toIso8601String()},
       );
     }
 
     await db.createRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.passwordResetTokens,
+      databaseId: Collections.databaseId,
+      tableId: Collections.passwordResetTokens,
       rowId: ID.unique(),
       data: {
         'user_id': user.id,

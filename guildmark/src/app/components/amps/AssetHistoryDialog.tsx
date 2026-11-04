@@ -1,0 +1,10 @@
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { useAssetValuations } from "../../lib/apiHooks";
+import { inventoryError } from "../../services/persistentInventory.service";
+
+export function AssetHistoryDialog({ asset, onClose }: { asset: {id: string; model_name: string}; onClose: () => void }) {
+  const history = useAssetValuations(asset.id);
+  return <Dialog open onOpenChange={open => {if (!open) onClose();}}><DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto"><DialogHeader><DialogTitle>Valuation history</DialogTitle><DialogDescription>{asset.model_name}. Saved estimates are historical snapshots, not guaranteed sale prices. Viewing history does not request a fresh valuation.</DialogDescription></DialogHeader>
+    {history.isPending ? <p role="status">Loading saved valuations…</p> : history.isError ? <div role="alert"><p>{inventoryError(history.error)}</p><button className="mt-3 underline" onClick={() => history.refetch()}>Retry history</button></div> : !history.data?.valuations.length ? <p className="text-sm text-muted-foreground">No saved estimates for this asset yet. Use the guided assistant for a supported laptop estimate.</p> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><caption className="sr-only">Latest saved estimates, up to 100 records.</caption><thead><tr>{["Date", "Estimated unit value", "Model version", "Source"].map(h => <th scope="col" key={h} className="p-2">{h}</th>)}</tr></thead><tbody>{history.data.valuations.map(v => <tr key={v.id} className="border-t border-border"><td className="p-2">{new Date(v.created_at).toLocaleString()}</td><td className="p-2">{new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(v.fair_market_value)}</td><td className="p-2">{v.model_version || "Not reported"}</td><td className="p-2">{v.source}</td></tr>)}</tbody></table><p className="mt-3 text-xs text-muted-foreground">Showing up to the latest 100 saved valuations.</p></div>}
+  </DialogContent></Dialog>;
+}

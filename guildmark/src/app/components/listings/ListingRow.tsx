@@ -1,62 +1,108 @@
-/** One row in the My Listings table, with publish / edit / withdraw actions. */
-import { Pencil, Trash2, Zap } from "lucide-react";
-import { ListingSpecPill } from "./ListingSpecPill";
-import { DISPLAY, MONO } from "../../constants/typography";
-import { gradeColor, listingFlagColor, listingTotalValue } from "../../services/listing.service";
+import { Pencil, ArrowUpRight, Archive } from "lucide-react";
 import type { Listing } from "../../models/listing";
+import { listingTotalValue } from "../../services/listing.service";
 
-interface ListingRowProps {
-  isPublishing: boolean;
-  isWithdrawing: boolean;
+interface Props {
   listing: Listing;
+  isBusy: boolean;
+  busyAction: string | null;
+  isActing: boolean;
   onEdit: () => void;
   onPublish: () => void;
   onWithdraw: () => void;
-  striped: boolean;
 }
-
-export function ListingRow({ isPublishing, isWithdrawing, listing, onEdit, onPublish, onWithdraw, striped }: ListingRowProps) {
-  const flagColor = listingFlagColor(listing.valuation_flag ?? undefined);
-
+export function ListingRow({
+  listing,
+  isBusy,
+  busyAction,
+  isActing,
+  onEdit,
+  onPublish,
+  onWithdraw,
+}: Props) {
+  const name = listing.model_name ?? "Untitled hardware";
   return (
-    <tr className="border-b border-border last:border-0" style={{ background: striped ? "var(--secondary)" : "transparent" }}>
-      <td className="py-3 px-4">
-        <p className="font-medium">{listing.model_name ?? "Listing"}</p>
-        <div className="flex gap-1 mt-1 flex-wrap">
-          {listing.asset_type && <ListingSpecPill>{listing.asset_type}</ListingSpecPill>}
-          {listing.condition_grade && <span className="text-[9px] px-1.5 py-0.5 tracking-wide uppercase" style={{ fontFamily: MONO, color: gradeColor(listing.condition_grade), border: `1px solid color-mix(in srgb, ${gradeColor(listing.condition_grade)} 30%, transparent)` }}>Grade {listing.condition_grade}</span>}
-          {listing.ram_gb != null && <ListingSpecPill>{listing.ram_gb}GB</ListingSpecPill>}
-        </div>
+    <tr>
+      <td data-label="Equipment">
+        <strong>{name}</strong>
+        <small>
+          {listing.asset_type ?? "Hardware"}
+          {listing.condition_grade && (
+            <>
+              {" "}
+              ·{" "}
+              <span
+                className={`gm-inventory-grade grade-${listing.condition_grade.toLowerCase()}`}
+              >
+                Grade {listing.condition_grade}
+              </span>
+            </>
+          )}
+        </small>
+        {listing.valuation_flag === "seller_overpriced" && (
+          <span className="gm-inventory-warning">Above fair-market range</span>
+        )}
+        {listing.valuation_flag === "distressed" && (
+          <span className="gm-inventory-warning">Below fair-market range</span>
+        )}
+        {(!listing.valuation_flag ||
+          listing.valuation_flag === "insufficient_data") && (
+          <small>Valuation unavailable</small>
+        )}
       </td>
-      <td className="py-3 px-4" style={{ fontFamily: MONO }}>{listing.quantity ?? 1}</td>
-      <td className="py-3 px-4" style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "1rem", color: flagColor }}>
-        {listing.listed_price != null ? `$${listing.listed_price.toLocaleString()}` : "—"}
+      <td data-label="Units">{listing.quantity ?? 1}</td>
+      <td data-label="Price / unit">
+        {listing.listed_price == null
+          ? "Not priced"
+          : `$${listing.listed_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
       </td>
-      <td className="py-3 px-4" style={{ fontFamily: MONO }}>${listingTotalValue(listing).toLocaleString()}</td>
-      <td className="py-3 px-4">
-        <span className="text-[10px] px-2 py-0.5 tracking-wider uppercase" style={{
-          fontFamily: MONO,
-          color: listing.status === "active" ? "var(--primary)" : "var(--muted-foreground)",
-          border: `1px solid ${listing.status === "active" ? "color-mix(in srgb, var(--primary) 35%, transparent)" : "var(--border)"}`,
-          background: listing.status === "active" ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "transparent",
-        }}>{listing.status}</span>
+      <td data-label="Gross value">
+        {listing.listed_price == null
+          ? "—"
+          : `$${listingTotalValue(listing).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
       </td>
-      <td className="py-3 px-4">
-        <div className="flex items-center justify-end gap-1">
+      <td data-label="Status">
+        <span className={`gm-inventory-status status-${listing.status}`}>
+          {listing.status}
+        </span>
+      </td>
+      <td data-label="Actions">
+        <div className="gm-inventory-actions">
           {listing.status === "draft" && (
-            <button title="Publish to marketplace" disabled={isPublishing} onClick={onPublish}
-              className="w-7 h-7 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40" style={{ color: "var(--primary)" }}>
-              <Zap size={13} />
+            <button
+              disabled={isActing}
+              onClick={onPublish}
+              aria-label={`Publish ${name}`}
+            >
+              <ArrowUpRight size={14} aria-hidden="true" />
+              {isBusy && busyAction === "publish" ? "Publishing…" : "Publish"}
             </button>
           )}
-          <button title="Edit price" onClick={onEdit}
-            className="w-7 h-7 flex items-center justify-center hover:bg-secondary transition-colors" style={{ color: "var(--muted-foreground)" }}>
-            <Pencil size={13} />
-          </button>
-          <button title="Withdraw listing" disabled={isWithdrawing} onClick={onWithdraw}
-            className="w-7 h-7 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40" style={{ color: "var(--chart-4)" }}>
-            <Trash2 size={13} />
-          </button>
+          {["draft", "active"].includes(listing.status) && (
+            <>
+              <button
+                disabled={isActing}
+                onClick={onEdit}
+                aria-label={`Edit price for ${name}`}
+              >
+                <Pencil size={14} aria-hidden="true" />
+                Edit price
+              </button>
+              <button
+                disabled={isActing}
+                onClick={onWithdraw}
+                aria-label={`Withdraw ${name}`}
+              >
+                <Archive size={14} aria-hidden="true" />
+                {isBusy && busyAction === "withdraw"
+                  ? "Withdrawing…"
+                  : "Withdraw"}
+              </button>
+            </>
+          )}
+          {!["draft", "active"].includes(listing.status) && (
+            <span className="gm-inventory-muted">No actions available</span>
+          )}
         </div>
       </td>
     </tr>

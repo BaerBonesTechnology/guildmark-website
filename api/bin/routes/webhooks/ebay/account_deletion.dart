@@ -75,7 +75,7 @@ Future<Response> onRequest(RequestContext context) async {
     }
 
     // eBay expects a 200 response — any non-2xx triggers a retry.
-    return Response(statusCode: 200);
+    return Response();
   }
 
   return jsonError(405, 'METHOD_NOT_ALLOWED', 'GET or POST only');

@@ -8,24 +8,29 @@ import { validateImageFile } from "../services/productImageUpload.service";
 
 /** One image in the uploader — either uploading, uploaded, or failed. */
 export interface PhotoUploadItem {
-  id:         string;
-  fileName:   string;
-  previewUrl: string;   // object URL for the local preview ("" when invalid)
-  status:     "uploading" | "done" | "error";
-  url?:       string;   // remote view URL, once uploaded
-  error?:     string;
+  id: string;
+  fileName: string;
+  previewUrl: string; // object URL for the local preview ("" when invalid)
+  status: "uploading" | "done" | "error";
+  url?: string; // remote view URL, once uploaded
+  error?: string;
 }
 
 interface PhotoUploadOptions {
-  onChange:   (urls: string[]) => void;
+  onChange: (urls: string[]) => void;
   maxImages?: number;
 }
 
-export function usePhotoUploadViewModel({ onChange, maxImages = MAX_IMAGES_PER_LISTING }: PhotoUploadOptions) {
+export function usePhotoUploadViewModel({
+  onChange,
+  maxImages = MAX_IMAGES_PER_LISTING,
+}: PhotoUploadOptions) {
   const upload = useUploadProductImage();
 
   const [items, setItems] = useState<PhotoUploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,14 +44,16 @@ export function usePhotoUploadViewModel({ onChange, maxImages = MAX_IMAGES_PER_L
   // Effects — re-emit the committed URLs whenever the item set changes.
   useEffect(() => {
     onChangeRef.current(
-      items.filter((item) => item.status === "done" && item.url).map((item) => item.url!),
+      items
+        .filter((item) => item.status === "done" && item.url)
+        .map((item) => item.url!),
     );
   }, [items]);
 
   // Revoke every object URL on unmount so previews don't leak.
   useEffect(() => {
     return () => {
-      for (const item of items) {
+      for (const item of itemsRef.current) {
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
       }
     };
@@ -54,26 +61,40 @@ export function usePhotoUploadViewModel({ onChange, maxImages = MAX_IMAGES_PER_L
   }, []);
 
   // Handlers
-  const addFiles = useCallback((fileList: FileList | File[]) => {
-    const files = Array.from(fileList);
-    setItems((prev) => {
-      const slots = maxImages - prev.length;
-      const accepted = files.slice(0, Math.max(0, slots));
+  const addFiles = useCallback(
+    (fileList: FileList | File[]) => {
+      const accepted = Array.from(fileList).slice(
+        0,
+        Math.max(0, maxImages - itemsRef.current.length),
+      );
       const added: PhotoUploadItem[] = accepted.map((file) => {
-        const id = crypto.randomUUID();
         const error = validateImageFile(file);
-        if (error) {
-          return { id, fileName: file.name, previewUrl: "", status: "error", error };
-        }
-        upload.mutate(file, {
-          onSuccess: (res) => patchItem(id, { status: "done", url: res.url }),
-          onError:   (err) => patchItem(id, { status: "error", error: (err as Error).message }),
-        });
-        return { id, fileName: file.name, previewUrl: URL.createObjectURL(file), status: "uploading" };
+        return {
+          id: crypto.randomUUID(),
+          fileName: file.name,
+          previewUrl: error ? "" : URL.createObjectURL(file),
+          status: error ? "error" : "uploading",
+          error,
+        };
       });
-      return [...prev, ...added];
-    });
-  }, [maxImages, upload]);
+      itemsRef.current = [...itemsRef.current, ...added];
+      setItems((previous) => [...previous, ...added]);
+      // Per-call mutate callbacks can be replaced by a subsequent upload. Each
+      // promise owns its result, so selecting multiple files always settles all.
+      added.forEach((item, index) => {
+        if (item.status === "error") return;
+        upload.mutateAsync(accepted[index]).then(
+          (result) => patchItem(item.id, { status: "done", url: result.url }),
+          () =>
+            patchItem(item.id, {
+              status: "error",
+              error: "Upload failed. Remove this photo and try again.",
+            }),
+        );
+      });
+    },
+    [maxImages, upload],
+  );
 
   function handleDragLeave(event: DragEvent<HTMLElement>) {
     event.preventDefault();
@@ -93,7 +114,7 @@ export function usePhotoUploadViewModel({ onChange, maxImages = MAX_IMAGES_PER_L
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     if (event.target.files?.length) addFiles(event.target.files);
-    event.target.value = "";   // allow re-selecting the same file
+    event.target.value = ""; // allow re-selecting the same file
   }
 
   function openFilePicker() {
@@ -101,7 +122,9 @@ export function usePhotoUploadViewModel({ onChange, maxImages = MAX_IMAGES_PER_L
   }
 
   function patchItem(id: string, patch: Partial<PhotoUploadItem>) {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    );
   }
 
   function removeImage(id: string) {
