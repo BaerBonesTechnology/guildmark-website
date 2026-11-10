@@ -62,7 +62,7 @@ function Login() {
   return (
     <div className="gm-workspace min-h-screen grid place-items-center p-6">
       <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8">
-        <Link to="/workspaces" className="gm-wordmark">
+        <Link to="/" className="gm-wordmark">
           GuildMark<span>.</span>
         </Link>
         <ShieldCheck className="mt-8 text-blue-700" size={30} />
@@ -85,10 +85,10 @@ function Login() {
           <ArrowRight size={16} />
         </button>
         <Link
-          to="/workspaces"
+          to="/"
           className="mt-5 block text-center text-sm text-slate-600 underline"
         >
-          Back to workspaces
+          Back to GuildMark
         </Link>
       </div>
     </div>
@@ -228,8 +228,8 @@ function Guard() {
           Administrator access required
         </h1>
         <p className="mt-3">Your staff role does not include this workspace.</p>
-        <Link to="/workspaces" className="mt-5 inline-block underline">
-          All workspaces
+        <Link to="/" className="mt-5 inline-block underline">
+          GuildMark home
         </Link>
         <button className="ml-5 underline" onClick={logout}>
           Sign out
@@ -253,6 +253,14 @@ function Guard() {
     ...(access.can_edit_content
       ? [
           { label: "Blog articles", to: "/admin/content", icon: Mail },
+          { label: "Pages", to: "/admin/content/pages", icon: Mail },
+          { label: "FAQs", to: "/admin/content/faqs", icon: Mail },
+          {
+            label: "Banners & ads",
+            to: "/admin/content/placements",
+            icon: Mail,
+          },
+          { label: "Help articles", to: "/admin/content/help", icon: Mail },
           { label: "Media library", to: "/admin/media", icon: BarChart2 },
         ]
       : []),
@@ -340,6 +348,40 @@ export default function AdminPortal() {
             <Route index element={<Navigate to="/admin/analytics" replace />} />
             <Route path="content" element={<ContentPosts />} />
             <Route path="content/posts/:id" element={<ContentEditor />} />
+            <Route
+              path="content/pages"
+              element={<ContentPosts key="pages" kind="page" />}
+            />
+            <Route
+              path="content/pages/:id"
+              element={<ContentEditor key="page-editor" kind="page" />}
+            />
+            <Route
+              path="content/faqs"
+              element={<ContentPosts key="faqs" kind="faq" />}
+            />
+            <Route
+              path="content/faqs/:id"
+              element={<ContentEditor key="faq-editor" kind="faq" />}
+            />
+            <Route
+              path="content/help"
+              element={<ContentPosts key="help" kind="help" />}
+            />
+            <Route
+              path="content/help/:id"
+              element={<ContentEditor key="help-editor" kind="help" />}
+            />
+            <Route
+              path="content/placements"
+              element={<ContentPosts key="placements" kind="promotion" />}
+            />
+            <Route
+              path="content/placements/:id"
+              element={
+                <ContentEditor key="placement-editor" kind="promotion" />
+              }
+            />
             <Route path="media" element={<MediaLibrary />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="users" element={<UsersPage />} />

@@ -38,12 +38,18 @@ Requested November 4, 2026; explicitly scheduled for later. Build a custom orche
 
 ## Staff content management
 
-Confirmed November 4, 2026: staff-only CMS covering public pages, blog posts, FAQs and help articles. Milestone 1 (blog editor and media library) is implemented and verified in guildmark-dev as of November 5, 2026. Public pages, FAQs and help articles remain planned; production rollout is not included.
+Confirmed November 4, 2026: staff-only CMS covering public pages, blog posts, FAQs and help articles. Milestone 1 (blog editor and media library) is implemented and verified in guildmark-dev as of November 5, 2026. Public pages, FAQs and help articles are also implemented and verified in guildmark-dev as of November 10, 2026; production rollout is not included.
 
 - Add a Content workspace within the integrated admin portal. Reuse staff passkey authentication and enforce separate edit/review/publish capabilities on the API.
-- Start with structured page sections and a rich-text article editor, with reusable media, categories, slugs, SEO metadata, image alt text and internal links. Preserve GuildMark design components rather than allowing arbitrary HTML or scripts.
+- The current editor uses Markdown formatting controls and safe previews; richer page blocks can follow. Provide with reusable media, categories, slugs, SEO metadata, image alt text and internal links. Preserve GuildMark design components rather than allowing arbitrary HTML or scripts.
 - Support drafts, private previews, approval, publishing, unpublishing and immutable revision history with rollback. Detect conflicting edits and record actor/time for every publication.
 - Use Firestore for content and revisions, Firebase Storage for images and Cloud Run for authorized editorial APIs and published-content reads. Keep Cloud SQL deferred. Public responses expose only published revisions; preview responses require staff authorization and are not publicly cached.
 - Import existing markdown blog posts while preserving slugs and links. Migrate help/FAQs next, then selected landing-page sections. Published content should update without requiring a storefront code release; SEO rendering and cache invalidation must be decided in the technical design.
 - Keep listings, payment/pricing rules, verification decisions and customer/partner account administration in their existing product workflows. Legal-policy publication should retain explicit review and effective dates.
-- First delivery milestone: blog and media library through draft, preview, publish and rollback in guildmark-dev. Follow with pages/FAQs/help and editor usability checks on desktop and mobile. Production rollout remains separately authorized.
+- First delivery milestone: blog and media library through draft, preview, publish and rollback in guildmark-dev. Pages/FAQs/help and desktop/mobile workflow checks are now complete in dev. Production rollout remains separately authorized.
+
+
+### CMS placements and marketplace browsing (dev, November 10, 2026)
+- Implemented: Admin-managed banner/native creative drafts, previews, publishing permissions, UTC scheduling, priorities, media reuse, history and restore-as-draft; four named slots across marketplace, asset-owner home and editorial content.
+- Implemented: compact marketplace header/cards, quick categories, URL-synced price and minimum-quantity filters, grade tooltips and signed-in appearance preferences.
+- Follow-up: combined server-side multi-value/specification filtering and sorting beyond the current 100-result client window; campaign analytics/paid advertising operations require their own scope.

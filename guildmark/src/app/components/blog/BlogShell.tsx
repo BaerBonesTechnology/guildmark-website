@@ -1,21 +1,25 @@
+import { PromotionSlot } from "../PromotionSlot";
+import { PortalFooterLinks } from "../PortalFooterLinks";
 /** Shared chrome (header + footer) for the blog list and article views. */
 import { Link } from "react-router";
-import { ArrowLeft, Moon, Sun } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import logoLong from "../../../logo-long.svg";
 import { useTheme } from "../../hooks/useTheme";
 
 interface BlogShellProps {
+  sectionLabel?: string;
   backLabel?: string;
   backTo?: string;
   children: React.ReactNode;
 }
 
 export function BlogShell({
+  sectionLabel = "Blog",
   backLabel = "Back to home",
   backTo = "/",
   children,
 }: BlogShellProps) {
-  const { theme, toggleTheme } = useTheme();
+  useTheme();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,7 +34,7 @@ export function BlogShell({
               />
             </Link>
             <span className="text-xs font-mono tracking-widest text-muted-foreground border border-border px-2 py-0.5 hidden sm:block">
-              BLOG
+              {sectionLabel.toUpperCase()}
             </span>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -41,19 +45,15 @@ export function BlogShell({
               <ArrowLeft size={14} />
               {backLabel}
             </Link>
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="w-8 h-8 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-            >
-              {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
           </div>
         </div>
       </header>
 
       <main className="flex-1">{children}</main>
 
+      <div className="gm-container">
+        <PromotionSlot placement="content-banner" />
+      </div>
       <footer className="border-t border-border">
         <div className="max-w-screen-2xl mx-auto px-5 sm:px-8 md:px-20 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <p className="text-xs font-mono text-muted-foreground">
@@ -74,6 +74,9 @@ export function BlogShell({
               Terms of Service
             </a>
           </div>
+        </div>
+        <div className="px-5 sm:px-8 md:px-20 pb-8">
+          <PortalFooterLinks />
         </div>
       </footer>
     </div>

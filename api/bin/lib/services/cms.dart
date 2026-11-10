@@ -8,7 +8,21 @@ class CmsFailure implements Exception {
 }
 
 class Cms {
-  Cms(this.store);
+  Cms(this.store, {this.kind = 'blog'}) {
+    if (!kinds.contains(kind)) throw CmsFailure(404, 'Content type not found.');
+  }
+  static const kinds = {'blog', 'page', 'faq', 'help', 'promotion'};
+  final String kind;
+  String get postsTable => {
+    'blog': 'cms_posts',
+    'page': 'cms_pages',
+    'faq': 'cms_faqs',
+    'help': 'cms_help',
+    'promotion': 'cms_promotions',
+  }[kind]!;
+  String get revisionsTable =>
+      kind == 'blog' ? 'cms_revisions' : 'cms_${kind}_revisions';
+  String slugKey(String slug) => kind == 'blog' ? slug : '$kind--$slug';
   final FirebaseService store;
   static bool canEdit(String role) =>
       {'admin', 'superadmin', 'marketing'}.contains(role);
@@ -43,7 +57,7 @@ class Cms {
     }
   }
 
-  static Map<String, dynamic> fields(dynamic input) {
+  static Map<String, dynamic> fields(dynamic input, {String kind = 'blog'}) {
     if (input is! Map) throw CmsFailure(400, 'Article fields required.');
     final result = <String, dynamic>{};
     for (final entry in {
@@ -58,6 +72,16 @@ class Cms {
       'cover_id': 128,
       'cover_alt': 300,
       'date': 10,
+      if (kind == 'promotion') ...{
+        'placement': 40,
+        'cta_label': 60,
+        'target_url': 2000,
+        'disclosure': 20,
+        'sponsor': 100,
+        'starts_at': 30,
+        'ends_at': 30,
+        'priority': 4,
+      },
     }.entries) {
       final value = input[entry.key] ?? '';
       if (value is! String || value.length > entry.value)
@@ -85,6 +109,56 @@ class Cms {
     return result;
   }
 
+  static const placements = {
+    'marketplace-banner',
+    'marketplace-native',
+    'home-banner',
+    'content-banner',
+  };
+  static void validatePromotion(Map<String, dynamic> p) {
+    final target = p['target_url'] as String;
+    final uri = Uri.tryParse(target);
+    final internal = target.startsWith('/') && !target.startsWith('//');
+    if (!placements.contains(p['placement']) ||
+        !{'announcement', 'sponsored'}.contains(p['disclosure']) ||
+        (p['disclosure'] == 'sponsored' && (p['sponsor'] as String).isEmpty) ||
+        (p['cta_label'] as String).isEmpty ||
+        target.contains(RegExp(r'[\\\s]')) ||
+        uri == null ||
+        (!internal &&
+            (uri.scheme != 'https' ||
+                uri.host.isEmpty ||
+                uri.userInfo.isNotEmpty)))
+      throw CmsFailure(
+        400,
+        'Choose a placement, disclosure and valid HTTPS or site link. Sponsored content needs a sponsor.',
+      );
+    final priority = int.tryParse(p['priority'] as String);
+    if (priority == null || priority < 0 || priority > 1000)
+      throw CmsFailure(400, 'Priority must be between 0 and 1000.');
+    DateTime? start, end;
+    for (final key in ['starts_at', 'ends_at']) {
+      final value = p[key] as String;
+      if (value.isEmpty) continue;
+      final parsed = DateTime.tryParse(value);
+      if (parsed == null || !value.endsWith('Z'))
+        throw CmsFailure(400, 'Use a valid UTC schedule.');
+      if (key == 'starts_at')
+        start = parsed;
+      else
+        end = parsed;
+    }
+    if (start != null && end != null && !end.isAfter(start))
+      throw CmsFailure(400, 'End time must follow start time.');
+  }
+
+  static bool promotionActive(Map<String, dynamic> p, DateTime now) {
+    final start = DateTime.tryParse(p['starts_at'] as String? ?? '');
+    final end = DateTime.tryParse(p['ends_at'] as String? ?? '');
+    return (start == null || !now.isBefore(start)) &&
+        (end == null || now.isBefore(end));
+  }
+
   Future<Map<String, dynamic>> mutate(
     String id,
     AuthPrincipal actor,
@@ -103,7 +177,7 @@ class Cms {
     return store.tablesDB.transaction((tx) async {
       final employee = await tx.get('guildmark_employees', actor.userId);
       checkEmployee(employee, publish: publishing);
-      final previous = await tx.get('cms_posts', id);
+      final previous = await tx.get(postsTable, id);
       if (action == 'create' && previous != null)
         throw CmsFailure(409, 'This draft already exists. Refresh the list.');
       if (action != 'create' && previous == null)
@@ -116,17 +190,17 @@ class Cms {
         );
       Map<String, dynamic> draft;
       if (action == 'create' || action == 'save') {
-        draft = fields(body['draft']);
+        draft = fields(body['draft'], kind: kind);
       } else if (action == 'restore') {
         final revision = body['revision'];
         if (revision is! int || revision < 1)
           throw CmsFailure(400, 'Choose a revision.');
-        final old = await tx.get('cms_revisions', revisionId(id, revision));
+        final old = await tx.get(revisionsTable, revisionId(id, revision));
         if (old == null || old.data['post_id'] != id)
           throw CmsFailure(404, 'Revision not found.');
-        draft = fields(old.data['draft']);
+        draft = fields(old.data['draft'], kind: kind);
       } else {
-        draft = fields(previous!.data['draft']);
+        draft = fields(previous!.data['draft'], kind: kind);
       }
       final slug = draft['slug'] as String;
       if (previous != null && (previous.data['draft'] as Map)['slug'] != slug)
@@ -134,7 +208,7 @@ class Cms {
           400,
           'The article URL is permanent. Create a new article for a different URL.',
         );
-      final slugRow = await tx.get('cms_slugs', slug);
+      final slugRow = await tx.get('cms_slugs', slugKey(slug));
       if (slugRow != null && slugRow.data['post_id'] != id)
         throw CmsFailure(409, 'That article URL is already reserved.');
       Row? cover;
@@ -146,18 +220,26 @@ class Cms {
           throw CmsFailure(400, 'Cover image no longer exists.');
       }
       if (action == 'publish' &&
+          kind != 'promotion' &&
           ((draft['body'] as String).isEmpty ||
-              (draft['excerpt'] as String).isEmpty ||
-              (draft['author'] as String).isEmpty ||
-              (draft['category'] as String).isEmpty))
+              ({'blog', 'help'}.contains(kind) &&
+                  (draft['excerpt'] as String).isEmpty) ||
+              (kind == 'blog' && (draft['author'] as String).isEmpty) ||
+              ({'blog', 'help'}.contains(kind) &&
+                  (draft['category'] as String).isEmpty)))
         throw CmsFailure(
           400,
-          'Add an excerpt, category, author and article body before publishing.',
+          kind == 'blog'
+              ? 'Add an excerpt, category, author and article body before publishing.'
+              : kind == 'help'
+              ? 'Add a summary, category and body before publishing.'
+              : 'Add content before publishing.',
         );
       if (action == 'publish' &&
           cover != null &&
           (draft['cover_alt'] as String).isEmpty)
         throw CmsFailure(400, 'Describe the cover image before publishing.');
+      if (action == 'publish' && kind == 'promotion') validatePromotion(draft);
       final now = DateTime.now().toUtc().toIso8601String();
       final version = currentVersion + 1;
       final published = action == 'unpublish'
@@ -166,6 +248,7 @@ class Cms {
           ? {
               ...draft,
               'id': id,
+              'content_type': kind,
               'cover_url': cover?.data['url'],
               'date': (draft['date'] as String).isNotEmpty
                   ? draft['date']
@@ -176,6 +259,7 @@ class Cms {
           : previous?.data['published'];
       final data = <String, dynamic>{
         'draft': draft,
+        'content_type': kind,
         'version': version,
         'published': published,
         'published_visible': published != null,
@@ -187,13 +271,17 @@ class Cms {
         'updated_at': now,
         'updated_by': actor.userId,
       };
-      if (slugRow == null) tx.create('cms_slugs', slug, {'post_id': id});
+      if (slugRow == null)
+        tx.create('cms_slugs', slugKey(slug), {
+          'post_id': id,
+          'content_type': kind,
+        });
       if (previous == null) {
-        tx.create('cms_posts', id, data);
+        tx.create(postsTable, id, data);
       } else {
-        tx.update('cms_posts', id, data);
+        tx.update(postsTable, id, data);
       }
-      tx.create('cms_revisions', revisionId(id, version), {
+      tx.create(revisionsTable, revisionId(id, version), {
         'post_id': id,
         'version': version,
         'draft': draft,

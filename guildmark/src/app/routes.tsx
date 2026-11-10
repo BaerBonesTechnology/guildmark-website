@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Workspaces } from "./pages/Workspaces";
+import { ContentDirectory, ContentEntry } from "./pages/PublishedContent";
 import { createBrowserRouter, Navigate, useLocation } from "react-router";
 import { ExecutiveDashboard } from "./pages/ExecutiveDashboard";
 import { MarketCalculator } from "./pages/MarketCalculator";
@@ -45,7 +45,7 @@ import { ampsEnabled } from "./config";
 const AdminPortal = lazy(() => import("./portals/AdminPortal"));
 const PartnerPortal = lazy(() => import("./portals/PartnerPortal"));
 const workspaceRoutes = [
-  { path: "/workspaces", Component: Workspaces },
+  { path: "/workspaces", element: <Navigate to="/" replace /> },
   {
     path: "/admin/*",
     element: (
@@ -76,7 +76,28 @@ const workspaceRoutes = [
   },
 ];
 
-const blogRoutes = [
+const publicContentRoutes = [
+  {
+    path: "/pages",
+    element: <ContentDirectory key="page-directory" kind="page" />,
+  },
+  {
+    path: "/pages/:slug",
+    element: <ContentEntry key="page-entry" kind="page" />,
+  },
+  {
+    path: "/faqs",
+    element: <ContentDirectory key="faq-directory" kind="faq" />,
+  },
+  { path: "/faqs/:slug", element: <ContentEntry key="faq-entry" kind="faq" /> },
+  {
+    path: "/help",
+    element: <ContentDirectory key="help-directory" kind="help" />,
+  },
+  {
+    path: "/help/:slug",
+    element: <ContentEntry key="help-entry" kind="help" />,
+  },
   { path: "/blog", Component: Blog },
   { path: "/blog/:slug", Component: BlogArticle },
 ];
@@ -103,7 +124,7 @@ function LivePreviewRedirect() {
 
 export const router = createBrowserRouter([
   ...workspaceRoutes,
-  ...blogRoutes,
+  ...publicContentRoutes,
   { path: "/pre/*", Component: LivePreviewRedirect },
   {
     path: "/",
@@ -204,7 +225,7 @@ export const router = createBrowserRouter([
  */
 export const preLaunchRouter = createBrowserRouter([
   ...workspaceRoutes,
-  ...blogRoutes,
+  ...publicContentRoutes,
   {
     path: "/",
     Component: PreLaunchLayout,

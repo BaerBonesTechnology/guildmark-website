@@ -1,3 +1,4 @@
+import { PromotionSlot } from "../components/PromotionSlot";
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import { Link } from "react-router";
@@ -64,6 +65,7 @@ export function PreLaunch() {
         </div>
         <div className="gm-owner-hero-product"><ProductCapture view="estimate" hero /></div>
       </section>
+<div className="gm-container"><PromotionSlot placement="home-banner"/></div>
 
       <div className="gm-role-paths gm-container" aria-label="Choose your path"><p>One asset lifecycle.<br /><strong>Different roles.</strong></p><a href="#amps-workflow"><span>For asset owners</span>Explore AMPS <ArrowRight size={16} /></a><Link to="/pre/marketplace"><span>For procurement teams</span>Explore GuildMarket <ArrowRight size={16} /></Link><a href="#partner-network"><span>For service partners</span>See the intended handoff <ArrowRight size={16} /></a></div>
 

@@ -16,7 +16,7 @@ spec:
       containerConcurrency: 20
       timeoutSeconds: 60
       containers:
-        - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:b633f39db6e94918ae29290e8ea6fe4527595faedee395140b46233790d28c3f
+        - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:c2a5e75dd04dc3511ab5ca9083d0470a5ac9a68b9b0bf4c26be3e7bf66d01424
           ports:
             - containerPort: 8080
           resources:

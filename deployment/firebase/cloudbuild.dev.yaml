@@ -1,7 +1,7 @@
 steps:
   - name: gcr.io/cloud-builders/docker
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:cms-20261105-v2', '.']
-images: ['us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:cms-20261105-v2']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:marketplace-cms-20261110-v1', '.']
+images: ['us-central1-docker.pkg.dev/guildmark-dev/guildmark/api:marketplace-cms-20261110-v1']
 serviceAccount: projects/guildmark-dev/serviceAccounts/guildmark-build@guildmark-dev.iam.gserviceaccount.com
 options:
   logging: CLOUD_LOGGING_ONLY
