@@ -40,7 +40,8 @@ function Login() {
       if (!origin)
         throw new Error("Staff sign-in is not configured for this site.");
       const url = new URL("/login", origin);
-      if (url.protocol !== "https:")
+      const localDev = import.meta.env.DEV && window.location.hostname === "localhost" && url.hostname === "localhost" && url.protocol === "http:";
+      if (url.protocol !== "https:" && !localDev)
         throw new Error("Secure staff sign-in requires HTTPS.");
       const state = Array.from(
         crypto.getRandomValues(new Uint8Array(32)),

@@ -396,3 +396,24 @@ Public reads at `/api/content/promotions/{placement}` return only active publish
 Deployment is dev only: Cloud Build `7bc87d7e-43eb-411b-a4e8-8c6de96fc1a7`, API revision `guildmark-api-00016-znw`, image digest `sha256:c2a5e75dd04dc3511ab5ca9083d0470a5ac9a68b9b0bf4c26be3e7bf66d01424`. The dev billing job manifest uses the matching image; no reconciliation job execution was requested. Production remains untouched and source remains uncommitted.
 
 Verification: Vite production build and 27 CMS/emulator tests passed. Real dev HTTPS checks passed at 1440px desktop and 390px touch mobile for filters/reload, grade tooltips/Escape, OS theme changes and signed-in appearance controls. CMS checks exercised draft/media/preview, all four public placements, administrator-only publication (marketing publish denied), future scheduling, revision restore and unpublish on both viewports. Browser-only listing fixtures exercised populated layouts without creating marketplace transactions; the homepage test used a browser-only prelaunch flag override, with no Remote Config change. Evidence is in ignored `outputs/dev-marketplace-pass/`. Synthetic creatives are unpublished, QA staff access is restored, and no email/invoice/payment was created.
+
+
+## Local persona pack (port offset 10000)
+
+With the full emulator stack running at offset 10000, run `dart run tool/local_personas.dart` from `api/bin`. Both Firebase clients are hard-pinned to `demo-guildmark` at loopback Auth 19099 / Firestore 18085; the seed does not access cloud projects or payment providers. It creates fixtures without replacing existing accounts or resetting passwords. The standard launcher snapshot retains these records across restarts.
+
+| Email | Persona / tier |
+| --- | --- |
+| seller.free@guildmark.test | ClearDesk Resale · Free |
+| seller.starter@guildmark.test | Northstar IT Services · Starter |
+| seller.growth@guildmark.test | RenewFleet ITAD · Growth |
+| buyer.pro@guildmark.test | Summit Enterprise IT · Pro |
+| buyer.free@guildmark.test | Bright Start Studio · Free |
+| partner@guildmark.test | Approved SecureCycle partner with sample assignments |
+| superadmin@guildmark.test | Superadmin; normal passkey enrollment is required |
+
+Initial local-only password for this pack: `GuildMark-local-2026!`. These credentials must never be provisioned to a cloud project. Paid tiers are local subscription fixtures, with no Square subscription IDs or invoice generation. Marketplace seed adds 12 listings across the three sellers, and paid personas include sample fleet inventory. The existing basic buyer/seller/staff fixtures are retained.
+
+The launcher derives staff authentication and return URLs from the selected port offset and enables AMPS locally. HTTP staff handoff is accepted only by development builds where both the current host and configured destination are localhost; production builds retain the HTTPS requirement. Storefront/Admin/Partner Hub: `http://localhost:15173`; staff authentication: `http://localhost:13001`; Firebase emulator UI: `http://127.0.0.1:14000`.
+
+To restart the complete offline persona stack without Doppler or provider credentials: `./start-local.ps1 -LocalOnly -Personas -PortOffset 10000`. This starts all three frontends, API, ML, and Auth/Firestore/Storage emulators and reloads the saved snapshot. It generates ephemeral JWT/ML secrets in memory; real emails and provider payment/shipping operations remain unconfigured. Windows child services run without console windows.

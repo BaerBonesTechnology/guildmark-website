@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import shutil
 import signal
+import secrets
 import socket
 import subprocess
 import sys
@@ -58,7 +59,9 @@ def environments(source, ports):
     frontend = base_environment(source)
     frontend.update({k: v for k, v in source.items() if k in PUBLIC})
     frontend.update(GM_LOCAL_STACK='true', GM_LOCAL_API_TARGET=f"http://127.0.0.1:{ports['api']}",
-        VITE_API_URL='/api', VITE_IS_LAUNCH='true', VITE_IS_DEBUG='false', VITE_SQUARE_ENVIRONMENT='sandbox')
+        VITE_API_URL='/api', VITE_IS_LAUNCH='true', VITE_IS_DEBUG='false', VITE_SQUARE_ENVIRONMENT='sandbox',
+        VITE_ADMIN_AUTH_ORIGIN=f"http://localhost:{ports['devdash']}",
+        VITE_MAIN_SITE_URL=f"http://localhost:{ports['storefront']}", VITE_AMPS_ENABLED='true')
     ml = base_environment(source)
     ml.update({k: backend[k] for k in ('ML_SERVICE_TOKEN', 'ML_MODEL_DIR', 'ML_RETRAIN_CRON') if k in backend})
     return backend, frontend, ml
@@ -165,7 +168,7 @@ class Stack:
             command = [os.environ.get('COMSPEC', 'cmd.exe'), '/d', '/s', '/c', subprocess.list2cmdline(command)]
         process = subprocess.Popen(command, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
             stdout=handle, stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0,
+            creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW) if os.name == 'nt' else 0,
             start_new_session=os.name != 'nt')
         if self.job:
             self.job.add(process)
@@ -225,7 +228,18 @@ def main():
     parser.add_argument('--check-only', action='store_true')
     parser.add_argument('--smoke-test', action='store_true')
     parser.add_argument('--ephemeral', action='store_true')
+    parser.add_argument('--local-only', action='store_true', help='Generate ephemeral local secrets; do not load cloud/provider credentials')
+    parser.add_argument('--personas', action='store_true', help='Seed the seven-persona pack at port offset 10000')
     args = parser.parse_args()
+    if args.personas and args.port_offset != 10000:
+        raise RuntimeError('The optional persona pack requires --port-offset 10000.')
+    if args.local_only:
+        isolated = base_environment(os.environ)
+        isolated.update(JWT_ACCESS_SECRET=secrets.token_urlsafe(48), JWT_REFRESH_SECRET=secrets.token_urlsafe(48),
+            ML_SERVICE_TOKEN=secrets.token_urlsafe(48), JWT_ACCESS_TTL_SECONDS='900', JWT_REFRESH_TTL_SECONDS='2592000',
+            FIREBASE_WEB_API_KEY='local-emulator-key')
+        os.environ.clear()
+        os.environ.update(isolated)
     if not 0 <= args.port_offset <= 50000:
         raise RuntimeError('Port offset must be between 0 and 50000')
     tools = {name: shutil.which(name) for name in ('firebase', 'dart', 'dart_frog', 'node', 'java')}
@@ -242,7 +256,7 @@ def main():
     free_ports(ports)
     backend, frontend, ml = environments(os.environ, ports)
     if args.check_only:
-        print('Tools, Doppler variables, frontend dependencies, and ports are ready. No services started.')
+        print('Tools, local environment, frontend dependencies, and ports are ready. No services started.')
         return
     log_dir = ROOT / 'tmp/local-stack' / (time.strftime('%Y%m%d-%H%M%S') + f'-{os.getpid()}')
     log_dir.mkdir(parents=True)
@@ -274,6 +288,8 @@ def main():
         stack.start('ml', [sys.executable, '-m', 'uvicorn', 'main:app', '--host', '127.0.0.1',
             '--port', str(ports['ml']), '--reload'], ROOT / 'ml-qv', ml)
         stack.run('seed', [tools['dart'], 'run', 'tool/firebase_seed.dart', '--fixtures'], ROOT / 'api/bin', backend)
+        if args.personas:
+            stack.run('seed-personas', [tools['dart'], 'run', 'tool/local_personas.dart'], ROOT / 'api/bin', backend)
         if state:
             state.save()
             print(f'Local emulator data: {state.directory} (loaded on restart)', flush=True)
