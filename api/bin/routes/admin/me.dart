@@ -1,5 +1,6 @@
 import 'package:dart_frog/dart_frog.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/services/cms.dart';
 import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 import 'package:guildmark_api/services/business_verification.dart';
@@ -24,6 +25,10 @@ Future<Response> onRequest(RequestContext c) async {
     return Response.json(
       headers: {'Cache-Control': 'no-store'},
       body: {
+        'can_edit_content': Cms.canEdit(row.data['role'] as String? ?? ''),
+        'can_publish_content': Cms.canPublish(
+          row.data['role'] as String? ?? '',
+        ),
         'employee': {
           'id': row.$id,
           'email': row.data['email'],

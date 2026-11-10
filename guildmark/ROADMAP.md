@@ -36,9 +36,9 @@ Requested November 4, 2026; explicitly scheduled for later. Build a custom orche
 - Test with synthetic invoices and isolated provider accounts before any separately authorized production activation. Current Square payments, allocations and payouts are unchanged by this roadmap entry.
 
 
-## Planned separately: staff content management
+## Staff content management
 
-Confirmed November 4, 2026: staff-only CMS covering public pages, blog posts, FAQs and help articles. Planning only; no CMS implementation or provider provisioning is included in the current integration release.
+Confirmed November 4, 2026: staff-only CMS covering public pages, blog posts, FAQs and help articles. Milestone 1 (blog editor and media library) is implemented and verified in guildmark-dev as of November 5, 2026. Public pages, FAQs and help articles remain planned; production rollout is not included.
 
 - Add a Content workspace within the integrated admin portal. Reuse staff passkey authentication and enforce separate edit/review/publish capabilities on the API.
 - Start with structured page sections and a rich-text article editor, with reusable media, categories, slugs, SEO metadata, image alt text and internal links. Preserve GuildMark design components rather than allowing arbitrary HTML or scripts.

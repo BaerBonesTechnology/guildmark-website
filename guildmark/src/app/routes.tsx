@@ -45,9 +45,40 @@ import { ampsEnabled } from "./config";
 const AdminPortal = lazy(() => import("./portals/AdminPortal"));
 const PartnerPortal = lazy(() => import("./portals/PartnerPortal"));
 const workspaceRoutes = [
-  {path: "/workspaces", Component: Workspaces},
-  {path: "/admin/*", element: <Suspense fallback={<p role="status" className="p-8">Loading administration…</p>}><AdminPortal /></Suspense>},
-  {path: "/partners/*", element: <Suspense fallback={<p role="status" className="p-8">Loading partner hub…</p>}><PartnerPortal /></Suspense>},
+  { path: "/workspaces", Component: Workspaces },
+  {
+    path: "/admin/*",
+    element: (
+      <Suspense
+        fallback={
+          <p role="status" className="p-8">
+            Loading administration…
+          </p>
+        }
+      >
+        <AdminPortal />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/partners/*",
+    element: (
+      <Suspense
+        fallback={
+          <p role="status" className="p-8">
+            Loading partner hub…
+          </p>
+        }
+      >
+        <PartnerPortal />
+      </Suspense>
+    ),
+  },
+];
+
+const blogRoutes = [
+  { path: "/blog", Component: Blog },
+  { path: "/blog/:slug", Component: BlogArticle },
 ];
 
 // ── Shared compliance children ─────────────────────────────────────────────
@@ -62,11 +93,17 @@ const complianceChildren = [
 
 function LivePreviewRedirect() {
   const location = useLocation();
-  return <Navigate to={`${location.pathname.replace(/^\/pre(?=\/|$)/, "") || "/"}${location.search}${location.hash}`} replace />;
+  return (
+    <Navigate
+      to={`${location.pathname.replace(/^\/pre(?=\/|$)/, "") || "/"}${location.search}${location.hash}`}
+      replace
+    />
+  );
 }
 
 export const router = createBrowserRouter([
   ...workspaceRoutes,
+  ...blogRoutes,
   { path: "/pre/*", Component: LivePreviewRedirect },
   {
     path: "/",
@@ -87,30 +124,22 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: ExecutiveDashboard },
-        ],
+        children: [{ index: true, Component: ExecutiveDashboard }],
       },
       {
         path: "calculator",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: MarketCalculator },
-        ],
+        children: [{ index: true, Component: MarketCalculator }],
       },
       {
         path: "offload",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: OffloadWorkflow },
-        ],
+        children: [{ index: true, Component: OffloadWorkflow }],
       },
       {
         path: "my-listings",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: MyListings },
-        ],
+        children: [{ index: true, Component: MyListings }],
       },
       {
         path: "orders",
@@ -123,16 +152,12 @@ export const router = createBrowserRouter([
       {
         path: "offers",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: OfferInbox },
-        ],
+        children: [{ index: true, Component: OfferInbox }],
       },
       {
         path: "settings",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: AccountSettings },
-        ],
+        children: [{ index: true, Component: AccountSettings }],
       },
     ],
   },
@@ -143,26 +168,28 @@ export const router = createBrowserRouter([
   },
   // GM Pro / AMPS — feature-flagged off until the section is ready.
   ...(ampsEnabled
-    ? [{
-        path: "/amps",
-        element: <ProtectedRoute />,
-        children: [
-          // Pro signup — no sidebar, shown to free-tier users upgrading
-          { path: "pro-signup", Component: ProSignup },
-          {
-            path: "/amps",
-            Component: AMPSLayout,
-            children: [
-              { index: true, Component: PortfolioOverview },
-              { path: "assistant", Component: Assistant },
-              { path: "assets", Component: AssetInventory },
-              { path: "mdm", Component: MDMConnections },
-              { path: "invoices", Component: Invoices },
-              { path: "settings", Component: Settings },
-            ],
-          },
-        ],
-      }]
+    ? [
+        {
+          path: "/amps",
+          element: <ProtectedRoute />,
+          children: [
+            // Pro signup — no sidebar, shown to free-tier users upgrading
+            { path: "pro-signup", Component: ProSignup },
+            {
+              path: "/amps",
+              Component: AMPSLayout,
+              children: [
+                { index: true, Component: PortfolioOverview },
+                { path: "assistant", Component: Assistant },
+                { path: "assets", Component: AssetInventory },
+                { path: "mdm", Component: MDMConnections },
+                { path: "invoices", Component: Invoices },
+                { path: "settings", Component: Settings },
+              ],
+            },
+          ],
+        },
+      ]
     : []),
   {
     path: "*",
@@ -177,15 +204,17 @@ export const router = createBrowserRouter([
  */
 export const preLaunchRouter = createBrowserRouter([
   ...workspaceRoutes,
+  ...blogRoutes,
   {
     path: "/",
     Component: PreLaunchLayout,
     children: [
       { index: true, Component: PreLaunch },
-      { path: "blog", Component: Blog },
-      { path: "blog/:slug", Component: BlogArticle },
       // Market research is now a blog post rather than a drawer.
-      { path: "insights", element: <Navigate to="/blog/it-hardware-lifecycle-gap" replace /> },
+      {
+        path: "insights",
+        element: <Navigate to="/blog/it-hardware-lifecycle-gap" replace />,
+      },
       { path: "contact", Component: Contact },
     ],
   },
@@ -214,30 +243,22 @@ export const preLaunchRouter = createBrowserRouter([
       {
         path: "dashboard",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: ExecutiveDashboard },
-        ],
+        children: [{ index: true, Component: ExecutiveDashboard }],
       },
       {
         path: "calculator",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: MarketCalculator },
-        ],
+        children: [{ index: true, Component: MarketCalculator }],
       },
       {
         path: "offload",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: OffloadWorkflow },
-        ],
+        children: [{ index: true, Component: OffloadWorkflow }],
       },
       {
         path: "my-listings",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: MyListings },
-        ],
+        children: [{ index: true, Component: MyListings }],
       },
       {
         path: "orders",
@@ -250,41 +271,39 @@ export const preLaunchRouter = createBrowserRouter([
       {
         path: "offers",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: OfferInbox },
-        ],
+        children: [{ index: true, Component: OfferInbox }],
       },
-      
+
       {
         path: "settings",
         element: <ProtectedRoute />,
-        children: [
-          { index: true, Component: AccountSettings },
-        ],
+        children: [{ index: true, Component: AccountSettings }],
       },
     ],
   },
   // GM Pro / AMPS — feature-flagged off until the section is ready.
   ...(ampsEnabled
-    ? [{
-        path: "/pre/amps",
-        element: <ProtectedRoute />,
-        children: [
-          // Pro signup — no sidebar, shown to free-tier users upgrading
-          { path: "pro-signup", Component: ProSignup },
-          {
-            Component: AMPSLayout,
-            children: [
-              { index: true, Component: PortfolioOverview },
-              { path: "assistant", Component: Assistant },
-              { path: "assets", Component: AssetInventory },
-              { path: "mdm", Component: MDMConnections },
-              { path: "invoices", Component: Invoices },
-              { path: "settings", Component: Settings },
-            ],
-          },
-        ],
-      }]
+    ? [
+        {
+          path: "/pre/amps",
+          element: <ProtectedRoute />,
+          children: [
+            // Pro signup — no sidebar, shown to free-tier users upgrading
+            { path: "pro-signup", Component: ProSignup },
+            {
+              Component: AMPSLayout,
+              children: [
+                { index: true, Component: PortfolioOverview },
+                { path: "assistant", Component: Assistant },
+                { path: "assets", Component: AssetInventory },
+                { path: "mdm", Component: MDMConnections },
+                { path: "invoices", Component: Invoices },
+                { path: "settings", Component: Settings },
+              ],
+            },
+          ],
+        },
+      ]
     : []),
   {
     path: "*",
