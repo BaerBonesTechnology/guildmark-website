@@ -11,7 +11,6 @@ interface PlatformFees {
   seller_fee_pro:      number;
   buyer_fee:           number;
   deferral_fee:        number;
-  data_wipe_price:     number;
   payment_terms_enabled: boolean;
   updated_at:          string;
   updated_by:          string | null;
@@ -69,7 +68,6 @@ export function Pricing() {
     seller_fee_pro:     "3.00",
     buyer_fee:          "3.00",
     deferral_fee:       "1.30",
-    data_wipe_price:    "8.00",
   });
   // Feature flag — separate from the numeric fee fields.
   const [paymentTermsEnabled, setPaymentTermsEnabled] = useState(false);
@@ -88,7 +86,6 @@ export function Pricing() {
           seller_fee_pro:     String(pct(data.seller_fee_pro)),
           buyer_fee:          String(pct(data.buyer_fee)),
           deferral_fee:       String(pct(data.deferral_fee)),
-          data_wipe_price:    data.data_wipe_price.toFixed(2),
         });
         setPaymentTermsEnabled(data.payment_terms_enabled ?? false);
       })
@@ -106,7 +103,7 @@ export function Pricing() {
     setStatus("idle");
     try {
       // Parse all form strings to numbers before sending — the API expects
-      // fee rates as decimals (0.08 = 8%) and data_wipe_price as a dollar amount.
+      // Fee rates are decimals (0.08 = 8%). Partner service rates live in their catalog.
       const parse = (v: string) => parseFloat(v) || 0;
       const body = {
         seller_fee_free:    parse(form.seller_fee_free)    / 100,
@@ -115,7 +112,6 @@ export function Pricing() {
         seller_fee_pro:     parse(form.seller_fee_pro)     / 100,
         buyer_fee:          parse(form.buyer_fee)          / 100,
         deferral_fee:       parse(form.deferral_fee)       / 100,
-        data_wipe_price:    parse(form.data_wipe_price),
         payment_terms_enabled: paymentTermsEnabled,
         updated_by:         "admin",
       };
@@ -217,22 +213,7 @@ export function Pricing() {
         </div>
       </div>
 
-      {/* Service pricing */}
-      <div className="bg-slate-900 rounded-lg border border-slate-800 mb-8">
-        <div className="px-4 py-3 border-b border-slate-800">
-          <p className="text-xs font-mono text-slate-400 uppercase tracking-widest">Add-On Services</p>
-        </div>
-        <div className="px-4">
-          <FeeField
-            label="Data Wipe Service"
-            description="Per-unit price charged to seller opting in at listing creation"
-            suffix=""
-            prefix="$"
-            {...field("data_wipe_price")}
-          />
-        </div>
-      </div>
-
+      <div className="rounded-lg border border-slate-200 bg-white p-4 mb-8"><h2 className="text-sm font-medium">Partner service pricing</h2><p className="text-sm text-slate-500 mt-2">Partners set their own per-device rates in Services & pricing. Data wipe, reimaging and other service charges are quoted per job; existing agreed amounts are preserved.</p></div>
       {/* Save */}
       <div className="flex items-center gap-4">
         <button

@@ -1,4 +1,3 @@
-import { finishStaffSignIn } from "../lib/authHandoff";
 import { usePortalPath } from "../lib/portal";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -11,10 +10,7 @@ export function Login() {
   const { login, completePasskeyAuth, pendingChallenge } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const main = import.meta.env.VITE_MAIN_SITE_URL;
-    if (main && !new URLSearchParams(window.location.search).has("return_to")) window.location.replace(new URL("/admin/login", main).toString());
-  }, []);
+
 
   const [step, setStep]       = useState<Step>("credentials");
   const [username, setUsername] = useState("");
@@ -36,11 +32,11 @@ export function Login() {
     try {
       const result = await login(username, password);
       if (result.type === "authenticated") {
-        if (!await finishStaffSignIn(sessionStorage.getItem("devdash_token"))) navigate(portalPath("/"));
+        navigate(portalPath("/"));
       } else if (result.type === "passkey_required") {
         setStep("passkey");
       } else if (result.type === "setup_required") {
-        navigate(portalPath("/register-passkey") + window.location.search);
+        navigate(portalPath("/register-passkey"));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -72,7 +68,7 @@ export function Login() {
 
       if (!assertion) throw new Error("Passkey prompt was dismissed");
       await completePasskeyAuth(assertion);
-      if (!await finishStaffSignIn(sessionStorage.getItem("devdash_token"))) navigate(portalPath("/"));
+      navigate(portalPath("/"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Passkey verification failed";
       // NotAllowedError fires when the user cancels — keep them on the prompt

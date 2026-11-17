@@ -74,6 +74,22 @@ Future<Response> onRequest(RequestContext context, String id) async {
     );
   }
 
+  final linkedOrderId = assignment.data['order_id'] as String?;
+  Row? linkedOrder;
+  if (linkedOrderId != null) {
+    try {
+      linkedOrder = await db.getRow(
+        databaseId: '',
+        tableId: 'orders',
+        rowId: linkedOrderId,
+      );
+    } on DatastoreException catch (e) {
+      if (e.code != 404) rethrow;
+    }
+  }
+  final imagingOnly =
+      assignment.data['service_type'] == 'reimage_only' ||
+      linkedOrder?.data['service_requirement'] == 'reimage_only';
   final claimedAt = DateTime.now().toUtc().toIso8601String();
   try {
     await db.updateRow(
@@ -84,6 +100,10 @@ Future<Response> onRequest(RequestContext context, String id) async {
         'partner_id': principal.partnerId,
         'status': 'claimed',
         'claimed_at': claimedAt,
+        if (imagingOnly) ...{
+          'service_type': 'reimage_only',
+          'wipe_payout_cents': 0,
+        },
       },
     );
   } on DatastoreException catch (e) {
@@ -132,14 +152,15 @@ Future<Response> onRequest(RequestContext context, String id) async {
         'order_ref': r['order_ref'].toString(),
         'buyer_name': (r['buyer_name'] as String?) ?? '',
         'buyer_city': (r['buyer_city'] as String?) ?? '',
-        'service_type': r['service_type'].toString(),
+        'service_type': r['service_type'] as String? ?? 'wipe_and_reimage',
         'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
         'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
         'reimage_payout_cents':
             (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
         'status': (r['status'] as String?) ?? 'claimed',
-        'claimed_at':
-            DateTime.parse(r['claimed_at'] as String? ?? claimedAt).toString(),
+        'claimed_at': DateTime.parse(
+          r['claimed_at'] as String? ?? claimedAt,
+        ).toString(),
       },
     },
   );

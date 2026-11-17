@@ -53,3 +53,7 @@ Confirmed November 4, 2026: staff-only CMS covering public pages, blog posts, FA
 - Implemented: Admin-managed banner/native creative drafts, previews, publishing permissions, UTC scheduling, priorities, media reuse, history and restore-as-draft; four named slots across marketplace, asset-owner home and editorial content.
 - Implemented: compact marketplace header/cards, quick categories, URL-synced price and minimum-quantity filters, grade tooltips and signed-in appearance preferences.
 - Follow-up: combined server-side multi-value/specification filtering and sorting beyond the current 100-result client window; campaign analytics/paid advertising operations require their own scope.
+
+
+### Portal route plan
+Admin and Partner Hub live on the main site (`/admin/*`, `/partners/*`), including staff password/passkey sign-in. Standalone local servers are retired. Cloud dev rollout needs a passkey migration to the main-site RP domain before external auth hosting is retired.

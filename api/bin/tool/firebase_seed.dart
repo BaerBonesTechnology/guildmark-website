@@ -31,6 +31,18 @@ Future<void> main(List<String> args) async {
     String id,
     Map<String, dynamic> data,
   ) async {
+    // Preserve imported settings on restart, avoiding an expected create
+    // conflict and its noisy emulator stack trace.
+    try {
+      await service.tablesDB.getRow(
+        databaseId: '',
+        tableId: collection,
+        rowId: id,
+      );
+      return;
+    } on DatastoreException catch (error) {
+      if (error.code != 404) rethrow;
+    }
     try {
       await service.tablesDB.createRow(
         databaseId: '',
@@ -39,6 +51,7 @@ Future<void> main(List<String> args) async {
         data: data,
       );
     } on DatastoreException catch (error) {
+      // Another seed process may have created the row after our read.
       if (error.code != 409) rethrow;
     }
   }

@@ -41,7 +41,6 @@ Future<Response> onRequest(RequestContext context) async {
         'seller_fee_pro',
         'buyer_fee',
         'deferral_fee',
-        'data_wipe_price',
       ];
       for (final k in required) {
         if (body[k] == null) return badRequest('Missing field: $k');
@@ -62,7 +61,8 @@ Future<Response> onRequest(RequestContext context) async {
       final sellerFeePro = parse('seller_fee_pro')!;
       final buyerFee = parse('buyer_fee')!;
       final deferralFee = parse('deferral_fee')!;
-      final dataWipePrice = parse('data_wipe_price')!;
+      if (body.containsKey('data_wipe_price'))
+        return badRequest('Service pricing is managed by each partner.');
 
       // Guard against obviously wrong values.
       for (final v in [
@@ -79,9 +79,6 @@ Future<Response> onRequest(RequestContext context) async {
           );
         }
       }
-      if (dataWipePrice < 0) {
-        return badRequest('data_wipe_price must be non-negative');
-      }
 
       final updatedBy = (body['updated_by'] as String?)?.trim();
 
@@ -92,7 +89,6 @@ Future<Response> onRequest(RequestContext context) async {
         sellerFeePro: sellerFeePro,
         buyerFee: buyerFee,
         deferralFee: deferralFee,
-        dataWipePrice: dataWipePrice,
         paymentTermsEnabled: paymentTermsEnabled,
         updatedBy: updatedBy,
       );

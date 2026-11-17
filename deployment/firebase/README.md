@@ -416,4 +416,15 @@ Initial local-only password for this pack: `GuildMark-local-2026!`. These creden
 
 The launcher derives staff authentication and return URLs from the selected port offset and enables AMPS locally. HTTP staff handoff is accepted only by development builds where both the current host and configured destination are localhost; production builds retain the HTTPS requirement. Storefront/Admin/Partner Hub: `http://localhost:15173`; staff authentication: `http://localhost:13001`; Firebase emulator UI: `http://127.0.0.1:14000`.
 
-To restart the complete offline persona stack without Doppler or provider credentials: `./start-local.ps1 -LocalOnly -Personas -PortOffset 10000`. This starts all three frontends, API, ML, and Auth/Firestore/Storage emulators and reloads the saved snapshot. It generates ephemeral JWT/ML secrets in memory; real emails and provider payment/shipping operations remain unconfigured. Windows child services run without console windows.
+To restart the complete offline persona stack without Doppler or provider credentials: `./start-local.ps1 -LocalOnly -Personas -PortOffset 10000`. This starts the main frontend, API, ML, and Auth/Firestore/Storage emulators and reloads the saved snapshot. It generates ephemeral JWT/ML secrets in memory; real emails and provider payment/shipping operations remain unconfigured. Windows child services run without console windows.
+
+
+## Integrated portal routes (local, supersedes external portal sign-in)
+
+Active portal routes are on the main website: `/admin/login`, `/admin/register-passkey`, `/admin/analytics`, `/admin/content/*`, and `/partners/*`. Staff password/passkey authentication completes on the same origin. The frontend no longer uses an external sign-in handoff; the obsolete callback restarts sign-in. Audience separation, mandatory passkeys and server-side role checks are preserved.
+
+The local launcher starts only the main frontend (15173 at offset 10000), API, ML and Firebase emulators. Ports 13001 and 13002 are retired. Staff and partner origins match the main site. The `devdash`/`partners` packages remain shared-page dependencies; their standalone entrypoints redirect instead of rendering external workspaces. Existing local passkeys retain RP ID `localhost` and user data was preserved. Challenges issued before the origin change must be replaced by restarting password sign-in.
+
+Desktop and touch-mobile checks passed password → passkey → integrated Analytics/CMS and Partner Hub without off-origin navigation. Only dedicated local QA staff used virtual passkeys and was disabled afterward. Actual persona credentials were preserved. Evidence: ignored `outputs/integrated-portals/`.
+
+No cloud deployment was performed for this change. A future dev rollout must migrate/re-enroll staff passkeys from the legacy auth RP domain to the main dev domain before retiring cloud auth hosting; do not silently delete credentials. Production remains untouched.

@@ -39,20 +39,43 @@ Future<Response> onRequest(RequestContext context) async {
     offset += pageSize;
   }
 
-  final items = rows.map((row) {
-    final r = row.data;
-    return {
-      'id': row.$id,
-      'order_ref': r['order_ref'].toString(),
-      'buyer_name': (r['buyer_name'] as String?) ?? '',
-      'buyer_city': (r['buyer_city'] as String?) ?? '',
-      'service_type': r['service_type'].toString(),
-      'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
-      'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
-      'reimage_payout_cents': (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
-      'created_at': DateTime.parse(row.$createdAt).toString(),
-    };
-  }).toList();
+  final items = await Future.wait(
+    rows.map((row) async {
+      final r = row.data;
+      bool imagingOnly = r['service_type'] == 'reimage_only';
+      if (r['order_id'] is String) {
+        try {
+          final order = await db.getRow(
+            databaseId: '',
+            tableId: 'orders',
+            rowId: r['order_id'] as String,
+          );
+          imagingOnly =
+              imagingOnly ||
+              order.data['service_requirement'] == 'reimage_only';
+        } on DatastoreException catch (e) {
+          if (e.code != 404) rethrow;
+        }
+      }
+
+      return {
+        'id': row.$id,
+        'order_ref': r['order_ref'] as String? ?? 'Service ${row.$id}',
+        'buyer_name': (r['buyer_name'] as String?) ?? '',
+        'buyer_city': (r['buyer_city'] as String?) ?? '',
+        'service_type': imagingOnly
+            ? 'reimage_only'
+            : r['service_type'] as String? ?? 'wipe_and_reimage',
+        'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
+        'wipe_payout_cents': imagingOnly
+            ? 0
+            : (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
+        'reimage_payout_cents':
+            (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
+        'created_at': DateTime.parse(row.$createdAt).toString(),
+      };
+    }).toList(),
+  );
 
   return Response.json(body: {'items': items});
 }

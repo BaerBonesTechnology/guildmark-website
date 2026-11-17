@@ -1,3 +1,4 @@
+import { ServiceFiles } from "../components/ServiceFiles";
 import { useRef } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import {
@@ -182,6 +183,7 @@ function OrderDetailContent() {
         </section>
       )}
       <OrderTimeline order={order} />
+      <ServiceFiles path={`/orders/${order.id}/service-files`} audience="buyer" kind={vm.isBuyer ? "iso" : "certificate"} canUpload={vm.isBuyer && !["complete","cancelled","disputed"].includes(order.orderStatus)}/>
       <div className="gm-order-detail-grid">
         <div>
           <OrderPanel title="Order records">

@@ -1,4 +1,3 @@
-import { finishStaffSignIn } from "../lib/authHandoff";
 import { usePortalPath } from "../lib/portal";
 /**
  * RegisterPasskey — shown when an employee logs in for the first time and has
@@ -117,7 +116,7 @@ export function RegisterPasskey() {
 
       // Update the provider before the protected route renders.
       completePasskeySetup(data.access_token);
-      if (!await finishStaffSignIn(data.access_token)) navigate(portalPath("/"), { replace: true });
+      navigate(portalPath("/"), { replace: true });
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Registration failed");

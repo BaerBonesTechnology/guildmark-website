@@ -152,6 +152,8 @@ class CheckoutRepo {
       'offer_id': offerId,
       'listing_id': listingId,
       'asset_id': assetId,
+      'service_requirement': asset.data['service_requirement'],
+      'data_wipe_status': asset.data['data_wipe_status'],
       'seller_company_id': seller,
       'buyer_company_id': buyer,
       'quantity': quantity,

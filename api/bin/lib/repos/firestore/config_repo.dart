@@ -22,7 +22,9 @@ class ConfigRepo {
       );
     } on DatastoreException catch (e) {
       if (e.code == 404) {
-        throw StateError('platform_config row missing — bootstrap Firebase configuration');
+        throw StateError(
+          'platform_config row missing — bootstrap Firebase configuration',
+        );
       }
       rethrow;
     }
@@ -36,7 +38,6 @@ class ConfigRepo {
     required double sellerFeePro,
     required double buyerFee,
     required double deferralFee,
-    required double dataWipePrice,
     required bool paymentTermsEnabled,
     String? updatedBy,
   }) async {
@@ -53,15 +54,15 @@ class ConfigRepo {
           'seller_fee_pro': sellerFeePro,
           'buyer_fee': buyerFee,
           'deferral_fee': deferralFee,
-          // dollars → integer cents at the boundary
-          'data_wipe_price_cents': (dataWipePrice * 100).round(),
           'payment_terms_enabled': paymentTermsEnabled,
           'updated_by': updatedBy,
         },
       );
     } on DatastoreException catch (e) {
       if (e.code == 404) {
-        throw StateError('platform_config row missing — bootstrap Firebase configuration');
+        throw StateError(
+          'platform_config row missing — bootstrap Firebase configuration',
+        );
       }
       rethrow;
     }

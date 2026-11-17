@@ -25,8 +25,7 @@ from urllib.request import Request, urlopen
 from local_emulator_state import EmulatorState
 
 ROOT = Path(__file__).resolve().parent.parent
-BASE_PORTS = dict(api=8080, ml=8001, storefront=5173, devdash=3001,
-                  partners=3002, auth=9099, firestore=8085, storage=9199, ui=4000,
+BASE_PORTS = dict(api=8080, ml=8001, storefront=5173, auth=9099, firestore=8085, storage=9199, ui=4000,
                   hub=4400, logging=4500, websocket=9150)
 PUBLIC = {'VITE_SQUARE_APPLICATION_ID', 'VITE_SQUARE_LOCATION_ID', 'VITE_AMPS_ENABLED'}
 OS_ENV = {'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP',
@@ -51,16 +50,15 @@ def environments(source, ports):
         ML_SERVICE_URL=f"http://127.0.0.1:{ports['ml']}", ML_RETRAIN_CRON='off',
         ML_MODEL_DIR=str(ROOT / 'ml-qv/model_artifacts'),
         CORS_ORIGIN=f"http://localhost:{ports['storefront']}",
-        ADMIN_CORS_ORIGIN=f"http://localhost:{ports['devdash']}",
-        PARTNER_CORS_ORIGIN=f"http://localhost:{ports['partners']}",
+        ADMIN_CORS_ORIGIN=f"http://localhost:{ports['storefront']}",
+        PARTNER_CORS_ORIGIN=f"http://localhost:{ports['storefront']}",
         SQUARE_ENVIRONMENT='sandbox', SQUARE_API_URL='https://connect.squareupsandbox.com/v2',
         ESCROW_ENVIRONMENT='sandbox', ESCROW_API_URL='https://api.escrow-sandbox.com/2017-09-01',
         FEDEX_ENVIRONMENT='sandbox', FEDEX_API_URL='https://apis-sandbox.fedex.com')
     frontend = base_environment(source)
     frontend.update({k: v for k, v in source.items() if k in PUBLIC})
     frontend.update(GM_LOCAL_STACK='true', GM_LOCAL_API_TARGET=f"http://127.0.0.1:{ports['api']}",
-        VITE_API_URL='/api', VITE_IS_LAUNCH='true', VITE_IS_DEBUG='false', VITE_SQUARE_ENVIRONMENT='sandbox',
-        VITE_ADMIN_AUTH_ORIGIN=f"http://localhost:{ports['devdash']}",
+        VITE_API_URL='/api', VITE_IS_LAUNCH='false', VITE_IS_DEBUG='false', VITE_SQUARE_ENVIRONMENT='sandbox',
         VITE_MAIN_SITE_URL=f"http://localhost:{ports['storefront']}", VITE_AMPS_ENABLED='true')
     ml = base_environment(source)
     ml.update({k: backend[k] for k in ('ML_SERVICE_TOKEN', 'ML_MODEL_DIR', 'ML_RETRAIN_CRON') if k in backend})
@@ -107,7 +105,7 @@ def smoke_auth(ports):
     restored = post(origin + '/api/auth/refresh', {})
     if restored['user']['id'] != created['user']['id']:
         raise RuntimeError('Auth smoke test restored a different identity')
-    staff_origin = f"http://localhost:{ports['devdash']}"
+    staff_origin = f"http://localhost:{ports['storefront']}"
     post(staff_origin + '/api/admin/auth', account, 401, staff_origin)
     post(origin + '/api/auth/logout', {})
     post(origin + '/api/auth/refresh', {}, 401)
@@ -301,10 +299,10 @@ def main():
         stack.start('api', [tools['dart'], 'build/bin/server.dart'], ROOT / 'api/bin', backend)
         stack.ready('api', f"http://127.0.0.1:{ports['api']}/api/config/fees")
         stack.ready('ml', f"http://127.0.0.1:{ports['ml']}/openapi.json", headers={'Authorization': 'Bearer ' + backend['ML_SERVICE_TOKEN']})
-        for name, folder in [('storefront', 'guildmark'), ('devdash', 'devdash'), ('partners', 'partners')]:
+        for name, folder in [('storefront', 'guildmark')]:
             stack.start(name, [tools['node'], str(ROOT / folder / 'node_modules/vite/bin/vite.js'),
                 '--host', 'localhost', '--port', str(ports[name]), '--strictPort'], ROOT / folder, frontend)
-        for name in ('storefront', 'devdash', 'partners'):
+        for name in ('storefront',):
             stack.ready(name, f"http://localhost:{ports[name]}/")
             stack.ready(name + ' API proxy', f"http://localhost:{ports[name]}/api/config/fees")
         print(f"\nLocal stack ready. Firebase UI: http://127.0.0.1:{ports['ui']}\nLogs: {log_dir}\nCtrl+C stops this stack. Restart the launcher after Dart API changes.", flush=True)

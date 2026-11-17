@@ -18,7 +18,13 @@ function figmaAssetResolver() {
 
 export default defineConfig(({ command }) => ({
   // Dev traffic always goes through Vite, independent of stale Doppler URLs.
-  define: command === 'serve' ? { 'import.meta.env.VITE_API_URL': JSON.stringify('/api') } : undefined,
+  define: command === 'serve' ? {
+    'import.meta.env.VITE_API_URL': JSON.stringify('/api'),
+    // The seeded local demo opens on the pre-launch hero, with /pre previews.
+    ...(process.env.GM_LOCAL_STACK === 'true' ? {
+      'import.meta.env.VITE_IS_LAUNCH': JSON.stringify('false'),
+    } : {}),
+  } : undefined,
   envDir: process.env.GM_LOCAL_STACK === 'true' ? false : undefined,
   server: {
     fs: { allow: [path.resolve(__dirname, "..")] },

@@ -1,16 +1,16 @@
 /// Platform-wide fee configuration model.
 library;
+
 import 'package:json_annotation/json_annotation.dart';
 
 import 'package:guildmark_api/models/json_helpers.dart';
 
 part 'platform_config.g.dart';
 
-
 @JsonSerializable()
 class PlatformConfig {
-
-  factory PlatformConfig.fromJson(Map<String, dynamic> json) => _$PlatformConfigFromJson(json);
+  factory PlatformConfig.fromJson(Map<String, dynamic> json) =>
+      _$PlatformConfigFromJson(json);
   PlatformConfig({
     required this.sellerFeeFree,
     required this.sellerFeeStarter,
@@ -25,16 +25,16 @@ class PlatformConfig {
   });
 
   factory PlatformConfig.fromRow(Map<String, dynamic> row) => PlatformConfig(
-    sellerFeeFree:    numToDoubleOrNull(row['seller_fee_free'])    ?? 0.0,
+    sellerFeeFree: numToDoubleOrNull(row['seller_fee_free']) ?? 0.0,
     sellerFeeStarter: numToDoubleOrNull(row['seller_fee_starter']) ?? 0.0,
-    sellerFeeGrowth:  numToDoubleOrNull(row['seller_fee_growth'])  ?? 0.0,
-    sellerFeePro:     numToDoubleOrNull(row['seller_fee_pro'])     ?? 0.0,
-    buyerFee:         numToDoubleOrNull(row['buyer_fee'])          ?? 0.0,
-    deferralFee:      numToDoubleOrNull(row['deferral_fee'])       ?? 0.0,
-    dataWipePrice:    numToDoubleOrNull(row['data_wipe_price'])    ?? 0.0,
+    sellerFeeGrowth: numToDoubleOrNull(row['seller_fee_growth']) ?? 0.0,
+    sellerFeePro: numToDoubleOrNull(row['seller_fee_pro']) ?? 0.0,
+    buyerFee: numToDoubleOrNull(row['buyer_fee']) ?? 0.0,
+    deferralFee: numToDoubleOrNull(row['deferral_fee']) ?? 0.0,
+    dataWipePrice: numToDoubleOrNull(row['data_wipe_price']) ?? 0.0,
     paymentTermsEnabled: row['payment_terms_enabled'] as bool? ?? false,
-    updatedAt:        (row['updated_at'] as DateTime).toUtc().toIso8601String(),
-    updatedBy:        row['updated_by'] as String?,
+    updatedAt: (row['updated_at'] as DateTime).toUtc().toIso8601String(),
+    updatedBy: row['updated_by'] as String?,
   );
 
   final double sellerFeeFree;
@@ -52,13 +52,16 @@ class PlatformConfig {
   final String updatedAt;
   final String? updatedBy;
 
-  Map<String, dynamic> toJson() => _$PlatformConfigToJson(this);
+  Map<String, dynamic> toJson() => {
+    ...(_$PlatformConfigToJson(this)..remove('data_wipe_price')),
+    'service_pricing': 'partner',
+  };
 
   /// Seller fee for a given subscription plan name.
   double sellerFeeForPlan(String plan) => switch (plan) {
     'starter' => sellerFeeStarter,
-    'growth'  => sellerFeeGrowth,
-    'pro'     => sellerFeePro,
-    _         => sellerFeeFree,
+    'growth' => sellerFeeGrowth,
+    'pro' => sellerFeePro,
+    _ => sellerFeeFree,
   };
 }

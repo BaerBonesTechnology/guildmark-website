@@ -112,6 +112,7 @@ export function StatusBadge({ status }: { status: string }) {
 // ---------------------------------------------------------------------------
 
 export function Button({
+  type = "button",
   children,
   onClick,
   disabled,
@@ -120,6 +121,7 @@ export function Button({
   className = "",
 }: {
   children: ReactNode;
+  type?: "button" | "submit" | "reset";
   onClick?: () => void;
   disabled?: boolean;
   variant?: "primary" | "ghost" | "danger";
@@ -144,6 +146,7 @@ export function Button({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`inline-flex items-center justify-center rounded-lg font-medium transition-opacity ${

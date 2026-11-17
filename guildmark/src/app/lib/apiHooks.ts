@@ -649,7 +649,7 @@ export interface PlatformFees {
   seller_fee_pro:      number;
   buyer_fee:           number;
   deferral_fee:        number;
-  data_wipe_price:     number;
+  service_pricing?: "partner";
   updated_at:          string;
   updated_by:          string | null;
 }

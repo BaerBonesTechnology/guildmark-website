@@ -27,6 +27,7 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(frontend['VITE_SQUARE_APPLICATION_ID'], 'public-app')
         self.assertEqual(frontend['VITE_API_URL'], '/api')
         self.assertEqual(frontend['GM_LOCAL_STACK'], 'true')
+        self.assertEqual(frontend['VITE_IS_LAUNCH'], 'false')
 
     def test_backend_is_pinned_to_local_emulators_and_sandbox(self):
         ports = {k: v + 10000 for k, v in BASE_PORTS.items()}
@@ -41,7 +42,9 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(backend['SQUARE_API_URL'], 'https://connect.squareupsandbox.com/v2')
         self.assertEqual(backend['CORS_ORIGIN'], 'http://localhost:15173')
         self.assertEqual(frontend['GM_LOCAL_API_TARGET'], 'http://127.0.0.1:18080')
-        self.assertEqual(frontend['VITE_ADMIN_AUTH_ORIGIN'], 'http://localhost:13001')
+        self.assertNotIn('VITE_ADMIN_AUTH_ORIGIN', frontend)
+        self.assertEqual(backend['ADMIN_CORS_ORIGIN'], 'http://localhost:15173')
+        self.assertEqual(backend['PARTNER_CORS_ORIGIN'], 'http://localhost:15173')
         self.assertEqual(frontend['VITE_MAIN_SITE_URL'], 'http://localhost:15173')
         self.assertEqual(frontend['VITE_AMPS_ENABLED'], 'true')
         self.assertEqual(ml['ML_SERVICE_TOKEN'], 'private-ml')

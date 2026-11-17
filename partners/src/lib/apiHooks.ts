@@ -32,7 +32,7 @@ export interface WorkboardItem {
   order_ref: string;
   buyer_name: string;
   buyer_city: string;
-  service_type: "wipe_only" | "wipe_and_reimage";
+  service_type: "wipe_only" | "wipe_and_reimage" | "reimage_only";
   item_count: number;
   wipe_payout_cents: number;
   reimage_payout_cents: number;
@@ -40,11 +40,13 @@ export interface WorkboardItem {
 }
 
 export interface Assignment {
+  certificate_file_id?: string|null;
+  order_id?: string|null;
   id: string;
   order_ref: string;
   buyer_name: string;
   buyer_city: string;
-  service_type: "wipe_only" | "wipe_and_reimage";
+  service_type: "wipe_only" | "wipe_and_reimage" | "reimage_only";
   item_count: number;
   wipe_payout_cents: number;
   reimage_payout_cents: number;

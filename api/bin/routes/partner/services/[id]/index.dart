@@ -7,7 +7,7 @@ import 'package:guildmark_api/http_helpers.dart';
 
 // Valid status transitions: current → allowed next states.
 const _transitions = <String, List<String>>{
-  'claimed': ['wipe_in_progress'],
+  'claimed': ['wipe_in_progress', 'reimage_in_progress'],
   'wipe_in_progress': ['wipe_complete'],
   'wipe_complete': ['awaiting_cert', 'reimage_in_progress'],
   'reimage_in_progress': ['reimage_complete'],
@@ -62,6 +62,14 @@ Future<Response> onRequest(RequestContext context, String id) async {
   final currentStatus = (current.data['status'] as String?) ?? 'available';
   final serviceType = current.data['service_type'].toString();
 
+  if (currentStatus == 'claimed' &&
+      ((serviceType == 'reimage_only') != (newStatus == 'reimage_in_progress')))
+    return badRequest(
+      serviceType == 'reimage_only'
+          ? 'This job is imaging only; wiping is not required.'
+          : 'Complete the required wipe before reimaging.',
+    );
+
   // Validate transition.
   final allowed = _transitions[currentStatus] ?? [];
   if (!allowed.contains(newStatus)) {
@@ -81,12 +89,45 @@ Future<Response> onRequest(RequestContext context, String id) async {
     );
   }
 
-  // cert_uploaded requires a cert URL.
+  if (newStatus == 'reimage_complete' &&
+      (reimageOs == null || reimageOs.trim().isEmpty || reimageOs.length > 160))
+    return badRequest('Record the OS installed before completing reimaging.');
+  // Completion requires a private uploaded PDF owned by this assignment.
   if (newStatus == 'cert_uploaded') {
-    final resolvedCert = certUrl ?? current.data['cert_url'] as String?;
-    if (resolvedCert == null || resolvedCert.isEmpty) {
-      return badRequest('cert_url is required to move to cert_uploaded');
-    }
+    final fileId = current.data['certificate_file_id'] as String?;
+    if (fileId == null)
+      return badRequest('Upload a PDF certificate before submitting.');
+    final file = await db.getRow(
+      databaseId: '',
+      tableId: 'service_files',
+      rowId: fileId,
+    );
+    if (file.data['status'] != 'complete' ||
+        file.data['kind'] != 'certificate' ||
+        file.data['assignment_id'] != id ||
+        file.data['partner'] != principal.partnerId)
+      return badRequest('A completed PDF upload for this service is required.');
+  }
+  if (certUrl != null)
+    return badRequest('Upload a PDF certificate instead of supplying a URL.');
+  if (newStatus == 'reimage_in_progress' &&
+      current.data['order_id'] is String) {
+    await db.transaction((tx) async {
+      final assignment = await tx.get('partner_service_assignments', id);
+      final order = await tx.get('orders', current.data['order_id'] as String);
+      if (assignment?.data['partner_id'] != principal.partnerId ||
+          assignment?.data['status'] != currentStatus)
+        throw StateError('Service changed. Refresh before continuing.');
+      if (order != null) {
+        tx.update('orders', order.$id, {
+          'reimage_started_at': DateTime.now().toUtc().toIso8601String(),
+        });
+        tx.update('partner_service_assignments', id, {
+          'reimage_file_id': order.data['reimage_file_id'],
+          'status': newStatus,
+        });
+      }
+    });
   }
 
   // shipped requires tracking info.
@@ -117,8 +158,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
     'cert_url': ?certUrl,
     'tracking_number': ?trackingNumber,
     'carrier': ?carrier,
-    if (isComplete)
-      'completed_at': DateTime.now().toUtc().toIso8601String(),
+    if (isComplete) 'completed_at': DateTime.now().toUtc().toIso8601String(),
   };
 
   final Row updated;
@@ -144,7 +184,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
         'order_ref': r['order_ref'].toString(),
         'buyer_name': (r['buyer_name'] as String?) ?? '',
         'buyer_city': (r['buyer_city'] as String?) ?? '',
-        'service_type': r['service_type'].toString(),
+        'service_type': r['service_type'] as String? ?? 'wipe_and_reimage',
         'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
         'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
         'reimage_payout_cents':
@@ -152,6 +192,7 @@ Future<Response> onRequest(RequestContext context, String id) async {
         'wipe_method': r['wipe_method'] as String?,
         'reimage_os': r['reimage_os'] as String?,
         'cert_url': r['cert_url'] as String?,
+        'certificate_file_id': r['certificate_file_id'],
         'tracking_number': r['tracking_number'] as String?,
         'carrier': r['carrier'] as String?,
         'status': (r['status'] as String?) ?? 'available',

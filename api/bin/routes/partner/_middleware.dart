@@ -12,6 +12,7 @@ Handler middleware(Handler handler) {
     if (principal != null &&
         principal.status != 'active' &&
         !path.startsWith('/partner/auth/') &&
+        path != '/partner/catalog' &&
         !(path == '/partner/account' &&
             context.request.method == HttpMethod.get))
       return forbidden('Partner approval required for service work.');

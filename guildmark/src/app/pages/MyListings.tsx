@@ -1,3 +1,4 @@
+import { PartnerImports } from "../components/listings/PartnerImports";
 import { Plus, Search, Upload, Package } from "lucide-react";
 import { CreateListingDialog } from "../components/CreateListingDialog";
 import { EditListingDialog } from "../components/EditListingDialog";
@@ -12,6 +13,7 @@ export function MyListings() {
   return (
     <div className="gm-inventory gm-container">
       <VerificationPrompt />
+      <PartnerImports />
       <header className="gm-inventory-heading">
         <div>
           <h1>

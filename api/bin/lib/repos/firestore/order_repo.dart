@@ -350,6 +350,8 @@ class OrderRepo {
         'offer_id': offerId,
         'listing_id': listing.$id,
         'asset_id': assetId,
+        'service_requirement': asset.data['service_requirement'],
+        'data_wipe_status': asset.data['data_wipe_status'],
         'seller_company_id': callerCompanyId,
         'buyer_company_id': offer.data['buyer_company_id'],
         'quantity': quantity,

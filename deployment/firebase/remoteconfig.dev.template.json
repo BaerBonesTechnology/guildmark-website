@@ -2,7 +2,7 @@
   "parameters": {
     "launch_enabled": {
       "defaultValue": {
-        "value": "true"
+        "value": "false"
       },
       "valueType": "BOOLEAN",
       "description": "Storefront routing; not an authorization control"

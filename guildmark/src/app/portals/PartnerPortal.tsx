@@ -1,3 +1,5 @@
+import { BulkInventoryPage } from "../../../../partners/src/pages/BulkInventoryPage";
+import { ServicePricingPage } from "../../../../partners/src/pages/ServicePricingPage";
 import { useEffect, useMemo } from "react";
 import {
   Navigate,
@@ -44,9 +46,15 @@ function Session() {
             to: "/partners/workboard",
             icon: ClipboardList,
           },
+          {
+            label: "Bulk inventory",
+            to: "/partners/inventory",
+            icon: ClipboardList,
+          },
           { label: "Active services", to: "/partners/services", icon: Wrench },
         ]
       : []),
+    { label: "Services & pricing", to: "/partners/pricing", icon: Wrench },
     { label: "Account & earnings", to: "/partners/account", icon: Wallet },
   ];
   const shell = (
@@ -90,6 +98,24 @@ function Session() {
             )
           }
         />
+        <Route
+          path="inventory"
+          element={
+            partner && active ? (
+              shell
+            ) : (
+              <Navigate to="/partners/account" replace />
+            )
+          }
+        >
+          <Route index element={<BulkInventoryPage />} />
+        </Route>
+        <Route
+          path="pricing"
+          element={partner ? shell : <Navigate to="/partners/login" replace />}
+        >
+          <Route index element={<ServicePricingPage />} />
+        </Route>
         <Route
           element={
             !partner ? (
