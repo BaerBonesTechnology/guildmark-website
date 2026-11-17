@@ -1,9 +1,8 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show ID, Query;
-import 'package:dart_appwrite/models.dart' show Row;
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
@@ -11,9 +10,9 @@ import 'package:guildmark_api/http_helpers.dart';
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
   if (principal == null) return unauthorized();
-  if (principal.role != 'admin') return forbidden();
+  if (!principal.isStaffAdministrator) return forbidden();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -27,8 +26,8 @@ Future<Response> onRequest(RequestContext context) async {
       String? cursor;
       while (true) {
         final page = await db.listRows(
-          databaseId: Aw.databaseId,
-          tableId: Aw.guildmarkEmployees,
+          databaseId: Collections.databaseId,
+          tableId: Collections.guildmarkEmployees,
           queries: [
             Query.orderAsc(r'$createdAt'),
             Query.limit(100),
@@ -68,23 +67,42 @@ Future<Response> onRequest(RequestContext context) async {
         return badRequest('password must be at least 10 characters');
       }
 
-      const validRoles = ['superadmin', 'engineer', 'support', 'marketing'];
+      const validRoles = [
+        'superadmin',
+        'compliance',
+        'engineer',
+        'support',
+        'marketing',
+      ];
       if (!validRoles.contains(role)) return badRequest('Invalid role');
 
-      final hash = hashPassword(password);
+      final sessions = firebaseSessions(context);
+      final account = sessions == null
+          ? null
+          : await sessions.auth.signUp(email, password);
+      final hash = sessions == null ? hashPassword(password) : null;
       // A duplicate email hits the unique index (409) and propagates as a 500,
       // matching the old PG unique-violation behavior.
-      final row = await db.createRow(
-        databaseId: Aw.databaseId,
-        tableId: Aw.guildmarkEmployees,
-        rowId: ID.unique(),
-        data: {
-          'email': email,
-          'password_hash': hash,
-          'full_name': fullName,
-          'role': role,
-        },
-      );
+      late Row row;
+      try {
+        row = await db.createRow(
+          databaseId: Collections.databaseId,
+          tableId: Collections.guildmarkEmployees,
+          rowId: ID.unique(),
+          data: {
+            'email': email,
+            'password_hash': ?hash,
+            if (account != null) 'firebase_uid': account['localId'],
+            'full_name': fullName,
+            'role': role,
+          },
+        );
+      } catch (_) {
+        if (account != null) {
+          await sessions!.auth.deleteUser(account['localId'] as String);
+        }
+        rethrow;
+      }
       return Response.json(
         statusCode: 201,
         body: {

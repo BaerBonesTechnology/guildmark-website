@@ -1,0 +1,11 @@
+.git/
+.venv*/
+venv/
+__pycache__/
+**/__pycache__/
+.env*
+*.log
+*.md
+tests/
+model_artifacts/seen_queries.json
+model_artifacts/*.csv

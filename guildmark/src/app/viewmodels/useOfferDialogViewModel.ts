@@ -1,57 +1,137 @@
-/** ViewModel for the offer dialog: counter-input state + accept/counter/decline. */
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRespondToOffer } from "../lib/apiHooks";
+import { api } from "../lib/api";
+import {
+  canCreateOfferOrder,
+  isOfferActionable,
+  validateOfferTerms,
+} from "../services/offer.service";
+import type { OfferRole, SellerOffer } from "../models/offer";
+import type { Order } from "../models/order";
 
-export function useOfferDialogViewModel(offerIdent: string, onResolved: () => void) {
+type Action = "accept" | "reject" | "counter" | "order";
+export function useOfferDialogViewModel(
+  offer: SellerOffer,
+  mode: OfferRole,
+  stale: boolean,
+  refresh: () => Promise<boolean>,
+  onResolved: (text: string) => void,
+  onOrderCreated: (id: string) => void,
+) {
   const respond = useRespondToOffer();
-
-  const [counterPrice, setCounterPrice] = useState("");
-  const [isCountering, setIsCountering] = useState(false);
-
-  function accept() {
-    respond.mutate({ offerId: offerIdent, action: "accept" }, { onSuccess: finish });
+  const client = useQueryClient();
+  const createOrder = useMutation({
+    mutationFn: () => api.post<Order>("/orders", { offer_id: offer.id }),
+    retry: false,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["orders"] }),
+        client.invalidateQueries({ queryKey: ["my-listings"] }),
+        client.invalidateQueries({ queryKey: ["marketplace"] }),
+      ]);
+    },
+  });
+  const [action, setAction] = useState<Action | null>(null);
+  const [counterPrice, setCounterPrice] = useState(String(offer.offer_price));
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const lock = useRef(false);
+  const busy = respond.isPending || createOrder.isPending;
+  const blocked = stale || needsRefresh || refreshing;
+  function start(next: Action) {
+    if (busy || blocked) return;
+    setAction(next);
+    setFieldError(null);
+    setActionError(null);
   }
-
-  function cancelCounter() {
-    setIsCountering(false);
-    setCounterPrice("");
+  async function submit() {
+    if (!action || busy || blocked || lock.current) return;
+    if (
+      action === "order"
+        ? !canCreateOfferOrder(offer, mode)
+        : !isOfferActionable(offer, mode)
+    ) {
+      setActionError(
+        "These terms are no longer actionable. Refresh the offer to see its current status.",
+      );
+      setNeedsRefresh(true);
+      return;
+    }
+    if (action === "counter") {
+      const error = validateOfferTerms(counterPrice, String(offer.quantity));
+      if (error) {
+        setFieldError(error);
+        return;
+      }
+    }
+    lock.current = true;
+    setFieldError(null);
+    setActionError(null);
+    try {
+      if (action === "order") {
+        const result = await createOrder.mutateAsync();
+        if (!result?.id) throw new Error("Missing order record");
+        onOrderCreated(result.id);
+      } else {
+        await respond.mutateAsync({
+          offerId: offer.id,
+          action,
+          counter_price:
+            action === "counter" ? Number(counterPrice) : undefined,
+        });
+        onResolved(
+          action === "accept"
+            ? "Offer accepted. Review it to prepare an order."
+            : action === "counter"
+              ? "Counteroffer sent."
+              : "Offer declined.",
+        );
+      }
+    } catch {
+      setActionError(
+        action === "order"
+          ? "We couldn’t verify order creation. Check Orders, then refresh this offer before trying again."
+          : "We couldn’t verify your response. Your counter price is preserved. Refresh the offer before trying again.",
+      );
+      setNeedsRefresh(true);
+    } finally {
+      lock.current = false;
+    }
   }
-
-  function decline() {
-    respond.mutate({ offerId: offerIdent, action: "reject" }, { onSuccess: finish });
+  async function refreshOffer() {
+    setRefreshing(true);
+    try {
+      if (await refresh()) {
+        setNeedsRefresh(false);
+        setActionError(null);
+        respond.reset();
+        createOrder.reset();
+      }
+    } finally {
+      setRefreshing(false);
+    }
   }
-
-  function finish() {
-    reset();
-    onResolved();
-  }
-
-  function reset() {
-    setIsCountering(false);
-    setCounterPrice("");
-  }
-
-  function sendCounter() {
-    const amount = parseFloat(counterPrice);
-    if (Number.isNaN(amount) || amount <= 0) return;
-    respond.mutate({ offerId: offerIdent, action: "counter", counter_price: amount }, { onSuccess: finish });
-  }
-
-  function startCounter(seedPrice: string) {
-    setCounterPrice(seedPrice);
-    setIsCountering(true);
-  }
-
   return {
-    accept,
-    cancelCounter,
+    action,
+    start,
+    back: () => {
+      if (!busy) setAction(null);
+    },
     counterPrice,
-    decline,
-    isBusy: respond.isPending,
-    isCountering,
-    reset,
-    sendCounter,
-    setCounterPrice,
-    startCounter,
+    setCounterPrice: (value: string) => {
+      setCounterPrice(value);
+      setFieldError(null);
+    },
+    fieldError,
+    actionError,
+    busy,
+    blocked,
+    refreshing,
+    needsRefresh,
+    submit,
+    refreshOffer,
   };
 }

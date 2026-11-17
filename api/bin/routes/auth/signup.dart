@@ -1,17 +1,22 @@
+import 'package:guildmark_api/auth/firebase_sessions.dart';
+import 'package:guildmark_api/auth/firebase_routes.dart';
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/config.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/user_repo.dart';
+import 'package:guildmark_api/repos/firestore/user_repo.dart';
 import 'package:guildmark_api/services/square_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
+  if (firebaseSessions(context) != null) {
+    return firebaseAuthRoute(context, 'signup');
+  }
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
@@ -48,7 +53,7 @@ Future<Response> onRequest(RequestContext context) async {
     );
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -87,8 +92,8 @@ Future<Response> onRequest(RequestContext context) async {
             referenceId: user.companyId,
           );
           await aw.tablesDB.updateRow(
-            databaseId: Aw.databaseId,
-            tableId: Aw.companies,
+            databaseId: Collections.databaseId,
+            tableId: Collections.companies,
             rowId: user.companyId,
             data: {'square_customer_id': customerId},
           );
@@ -123,7 +128,7 @@ Future<Response> onRequest(RequestContext context) async {
       },
       headers: {
         'Set-Cookie':
-            'astech_refresh=$refreshPlain; Path=/auth; Max-Age=${cfg.refreshTokenTtl.inSeconds}; HttpOnly; SameSite=Strict; Secure',
+            'astech_refresh=$refreshPlain; Path=${cfg.publicApiPrefix}/auth; Max-Age=${cfg.refreshTokenTtl.inSeconds}; HttpOnly; SameSite=Strict; Secure',
       },
     );
   } catch (e, st) {

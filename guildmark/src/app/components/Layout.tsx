@@ -1,4 +1,5 @@
-import { Outlet } from "react-router";
+import { HashScroll } from "./HashScroll";
+import { Outlet, ScrollRestoration } from "react-router";
 import { GMNavbar } from "./widgets/NavigationBar";
 import { GMFooter } from "./widgets/Footer";
 import { CompareProvider } from "./CompareContext";
@@ -14,6 +15,8 @@ export function Layout() {
         </main>
         <GMFooter />
         <CompareDrawer />
+        <ScrollRestoration />
+        <HashScroll />
       </div>
     </CompareProvider>
   );

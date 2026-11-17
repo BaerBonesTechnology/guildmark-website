@@ -1,47 +1,15 @@
-import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link } from "react-router";
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { api, ApiError } from "../lib/api";
+import { useResetPasswordViewModel } from "../viewmodels/useResetPasswordViewModel";
 
 export function ResetPassword() {
-  const [searchParams]          = useSearchParams();
-  const token                   = searchParams.get("token") ?? "";
-  const navigate                = useNavigate();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm]   = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [isLoading, setLoading] = useState(false);
-  const [done, setDone]         = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await api.post("/auth/reset_password", { token, new_password: password }, { skipAuth: true });
-      setDone(true);
-      setTimeout(() => navigate("/login"), 3000);
-    } catch (err) {
-      const msg = err instanceof ApiError
-        ? err.message
-        : "Reset failed. The link may have expired — request a new one.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    confirm, done, error, handleSubmit, isLoading, password,
+    setConfirm, setPassword, setShowPw, showPw, token,
+  } = useResetPasswordViewModel();
 
   if (!token) {
     return (

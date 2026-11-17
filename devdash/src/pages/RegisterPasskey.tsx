@@ -1,3 +1,4 @@
+import { usePortalPath } from "../lib/portal";
 /**
  * RegisterPasskey — shown when an employee logs in for the first time and has
  * no passkey registered yet.
@@ -6,13 +7,13 @@
  *   1. Read setup_token + employee from sessionStorage (put there by /admin/auth)
  *   2. POST /admin/passkey/register/begin   → get challenge + RP options
  *   3. navigator.credentials.create()       → authenticator creates a key pair
- *   4. POST /admin/passkey/register/complete → verify + store → receive full JWT
- *   5. Store full JWT, redirect to /
+ *   4. POST /admin/passkey/register/complete → verify + store → receive session
+ *   5. Update shared auth state, redirect to /
  */
 
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import { base64urlToBuffer, bufferToBase64url } from "../hooks/useAuth";
+import { Navigate, useNavigate } from "react-router";
+import { useAuth, base64urlToBuffer, bufferToBase64url } from "../hooks/useAuth";
 
 const API = import.meta.env.VITE_API_URL ?? "https://api.guildmark.co";
 
@@ -32,7 +33,9 @@ interface RegisterOptions {
 }
 
 export function RegisterPasskey() {
+  const portalPath = usePortalPath();
   const navigate    = useNavigate();
+  const { token, completePasskeySetup } = useAuth();
   const [status, setStatus]   = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
   const [friendlyName, setFriendlyName] = useState("Work device");
@@ -42,10 +45,7 @@ export function RegisterPasskey() {
   const employee     = employeeJson ? JSON.parse(employeeJson) as { full_name: string; email: string } : null;
 
   // Redirect if there's no setup token — shouldn't land here otherwise
-  if (!setupToken) {
-    navigate("/login", { replace: true });
-    return null;
-  }
+  if (!setupToken) return <Navigate to={portalPath(token ? "/" : "/login")} replace />;
 
   async function handleRegister() {
     setStatus("busy");
@@ -81,7 +81,7 @@ export function RegisterPasskey() {
           })),
           authenticatorSelection: {
             residentKey:             opts.authenticator_selection?.resident_key   as ResidentKeyRequirement ?? "preferred",
-            userVerification:        opts.authenticator_selection?.user_verification as UserVerificationRequirement ?? "preferred",
+            userVerification:        "required",
             authenticatorAttachment: opts.authenticator_selection?.authenticator_attachment as AuthenticatorAttachment ?? "platform",
           },
           timeout:     opts.timeout     ?? 60000,
@@ -114,13 +114,9 @@ export function RegisterPasskey() {
       }
       const data = await completeRes.json() as { access_token: string };
 
-      // ── Step 4: store full token, clean up setup artifacts ─────────────
-      sessionStorage.setItem("devdash_token", data.access_token);
-      sessionStorage.removeItem("devdash_setup_token");
-      sessionStorage.removeItem("devdash_setup_employee");
-
-      setStatus("done");
-      setTimeout(() => navigate("/", { replace: true }), 800);
+      // Update the provider before the protected route renders.
+      completePasskeySetup(data.access_token);
+      navigate(portalPath("/"), { replace: true });
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Registration failed");
@@ -128,16 +124,16 @@ export function RegisterPasskey() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="text-xl font-mono text-white">
+          <p className="text-xl font-mono text-slate-900">
             Guild<span className="text-blue-500">Mark</span>
           </p>
-          <p className="text-xs text-slate-500 font-mono mt-1">DevDash · Admin Terminal</p>
+          <p className="text-xs text-slate-500 font-mono mt-1">Administration · Secure staff sign-in</p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 space-y-5">
+        <div className="bg-white border border-slate-300 rounded-xl p-6 space-y-5">
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
@@ -146,9 +142,9 @@ export function RegisterPasskey() {
                   d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
             </div>
-            <p className="text-sm font-mono text-white">Set up your passkey</p>
+            <p className="text-sm font-mono text-slate-900">Set up your passkey</p>
             {employee && (
-              <p className="text-xs text-slate-400 font-mono">{employee.full_name} · {employee.email}</p>
+              <p className="text-xs text-slate-600 font-mono">{employee.full_name} · {employee.email}</p>
             )}
             <p className="text-xs text-slate-500 font-mono leading-relaxed">
               Passkeys replace IP allowlisting as your second factor.
@@ -173,7 +169,7 @@ export function RegisterPasskey() {
           {/* Friendly name input */}
           {status !== "done" && (
             <div className="space-y-1">
-              <label className="text-xs text-slate-400 font-mono uppercase tracking-wide">
+              <label className="text-xs text-slate-600 font-mono uppercase tracking-wide">
                 Device name <span className="text-slate-600 normal-case">(optional)</span>
               </label>
               <input
@@ -182,7 +178,7 @@ export function RegisterPasskey() {
                 onChange={e => setFriendlyName(e.target.value)}
                 disabled={status === "busy"}
                 maxLength={64}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono text-slate-900 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
                 placeholder="Work MacBook"
               />
             </div>
@@ -203,7 +199,7 @@ export function RegisterPasskey() {
           {status === "error" && (
             <button
               onClick={() => { setStatus("idle"); setMessage(""); }}
-              className="w-full text-xs text-slate-500 hover:text-slate-300 font-mono py-1 transition-colors"
+              className="w-full text-xs text-slate-500 hover:text-slate-900 font-mono py-1 transition-colors"
             >
               Try again
             </button>

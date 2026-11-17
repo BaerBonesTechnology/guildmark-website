@@ -29,6 +29,7 @@ interface AuthCtx {
   pendingChallenge: PendingChallenge | null;
   login: (username: string, password: string) => Promise<LoginResult>;
   completePasskeyAuth: (credential: PublicKeyCredential) => Promise<void>;
+  completePasskeySetup: (accessToken: string) => void;
   logout: () => void;
 }
 
@@ -43,6 +44,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => sessionStorage.getItem("devdash_token")
   );
   const [pendingChallenge, setPendingChallenge] = useState<PendingChallenge | null>(null);
+
+  // Registration must update the same state observed by ProtectedRoute.
+  const completePasskeySetup = useCallback((accessToken: string) => {
+    if (!accessToken) throw new Error("Registration did not return a session");
+    sessionStorage.setItem("devdash_token", accessToken);
+    sessionStorage.removeItem("devdash_setup_token");
+    sessionStorage.removeItem("devdash_setup_employee");
+    setPendingChallenge(null);
+    setToken(accessToken);
+  }, []);
 
   // Step 1 — password check
   const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
@@ -111,6 +122,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [pendingChallenge]);
 
   const logout = useCallback(() => {
+    const current = sessionStorage.getItem("devdash_token");
+    if (current) void fetch(`${API}/admin/logout`, {
+      method: "POST", credentials: "include",
+      headers: { Authorization: `Bearer ${current}` },
+    }).catch(() => {});
     sessionStorage.removeItem("devdash_token");
     sessionStorage.removeItem("devdash_setup_token");
     sessionStorage.removeItem("devdash_setup_employee");
@@ -119,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ token, pendingChallenge, login, completePasskeyAuth, logout }}>
+    <Ctx.Provider value={{ token, pendingChallenge, login, completePasskeyAuth, completePasskeySetup, logout }}>
       {children}
     </Ctx.Provider>
   );

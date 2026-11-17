@@ -28,8 +28,9 @@ services:
     environment:
       ML_PORT:       ${ML_PORT:-8001}
       ML_MODEL_DIR:  /app/model_artifacts
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
     ports:
-      - "${ML_PORT:-8001}:8001"
+      - "127.0.0.1:${ML_PORT:-8001}:8001"
     volumes:
       - ./py/model_artifacts:/app/model_artifacts
     healthcheck:
@@ -53,6 +54,7 @@ services:
       JWT_ACCESS_TTL_SECONDS:    ${JWT_ACCESS_TTL_SECONDS:-900}
       JWT_REFRESH_TTL_SECONDS:   ${JWT_REFRESH_TTL_SECONDS:-2592000}
       ML_SERVICE_URL:            ${ML_SERVICE_URL:-}
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
       CORS_ORIGIN:               ${CORS_ORIGIN:-http://localhost:5173}
       GM_DEBUG:                  ${GM_DEBUG:-false}
       SQUARE_ACCESS_TOKEN:       ${SQUARE_ACCESS_TOKEN}

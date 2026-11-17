@@ -28,6 +28,8 @@ import type { PaginatedResponse } from "../models/pagination";
 import type { ValuationEstimateRequest, ValuationEstimateResponse } from "../models/valuation";
 import type { AssetValuationsResponse } from "../models/asset_valuation";
 import type { Order, OrdersResponse } from "../models/order";
+import { useAuth } from "../hooks/useAuth";
+import type { SubscriptionPaymentResult } from "../services/subscriptionPayment.service";
 
 // ---------------------------------------------------------------------------
 // Query key factory — centralizes cache key naming
@@ -169,6 +171,28 @@ export function useCreateListing() {
   });
 }
 
+/** A file uploaded to the product-images bucket, as returned by the API. */
+export interface UploadedImage {
+  file_id:   string;
+  bucket_id: string;
+  url:       string;
+}
+
+/**
+ * Uploads a single image to the `gm-product-images` bucket via the API
+ * (POST /seller/uploads/images) and returns its public view URL. The dialog
+ * collects these URLs into the listing's `product_images`.
+ */
+export function useUploadProductImage() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return api.upload<UploadedImage>("/seller/uploads/images", form);
+    },
+  });
+}
+
 export function useWithdrawListing() {
   const qc = useQueryClient();
   return useMutation({
@@ -176,6 +200,7 @@ export function useWithdrawListing() {
       api.patch<Listing>(`/seller/listings/${listingId}/withdraw`, {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.myListings() });
+      qc.invalidateQueries({ queryKey: queryKeys.marketplace() });
     },
   });
 }
@@ -226,7 +251,9 @@ export function useBuyListing(listingId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: {
-      source_id:      string;
+      source_id?:     string;
+      idempotency_key: string;
+      expected_total_cents: number;
       quantity?:      number;
       payment_terms?: string;
     }) =>
@@ -243,18 +270,20 @@ export function useBuyListing(listingId: string) {
 }
 
 /** Buyer-side inbox: offers this company placed, enriched with product context. */
-export function usePlacedOffers() {
+export function usePlacedOffers(enabled = true) {
   return useQuery({
     queryKey: queryKeys.myOffers(),
+    enabled,
     queryFn:  () => api.get<PlacedOffer[]>("/buyer/offers"),
     staleTime: 30 * 1000,
   });
 }
 
 /** Seller-side inbox: offers placed on this company's listings. */
-export function useSellerOffers() {
+export function useSellerOffers(enabled = true) {
   return useQuery({
     queryKey: queryKeys.sellerOffers(),
+    enabled,
     queryFn:  () => api.get<SellerOffer[]>("/seller/offers"),
     staleTime: 30 * 1000,
   });
@@ -263,6 +292,7 @@ export function useSellerOffers() {
 export function useRespondToOffer() {
   const qc = useQueryClient();
   return useMutation({
+    retry: false,
     mutationFn: ({
       offerId,
       action,
@@ -272,14 +302,21 @@ export function useRespondToOffer() {
       action:         "accept" | "reject" | "counter";
       counter_price?: number;
     }) =>
-      api.patch<BuyerOffer>(
+      api.patch<PlacedOffer>(
         `/seller/offers/${offerId}/${action}`,
         counter_price != null ? { counter_price } : {},
       ),
-    onSuccess: () => {
-      // Accepting auto-declines siblings server-side — refetch the whole inbox.
-      qc.invalidateQueries({ queryKey: queryKeys.sellerOffers() });
-      qc.invalidateQueries({ queryKey: queryKeys.myListings() });
+    onSuccess: async (result) => {
+      // Keep enriched product and buyer fields when mutation replies omit them.
+      for(const key of [queryKeys.sellerOffers(),queryKeys.myOffers()]) {
+        qc.setQueryData<SellerOffer[]>(key, previous => previous?.map(offer => offer.id === result.id ? {...offer,status:result.status,counter_price:result.counter_price} : offer));
+      }
+      await Promise.all([
+        qc.invalidateQueries({queryKey:queryKeys.sellerOffers()}),
+        qc.invalidateQueries({queryKey:queryKeys.myOffers()}),
+        qc.invalidateQueries({queryKey:queryKeys.myListings()}),
+        qc.invalidateQueries({queryKey:queryKeys.marketplace()}),
+      ]);
     },
   });
 }
@@ -300,8 +337,9 @@ export function useAssets(filters?: object) {
 // ---------------------------------------------------------------------------
 
 export function usePortfolioSummary() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: queryKeys.portfolio(),
+    queryKey: [...queryKeys.portfolio(), user?.company_id],
     queryFn:  () => api.get<PortfolioSummary>("/amps/portfolio"),
     staleTime: 5 * 60 * 1000,   // 5 minutes — updated nightly, no point polling hard
   });
@@ -314,13 +352,14 @@ export function useAmpsAssets(filters: {
   filter?:          string;   // e.g. "aging" for > 36 months
   page?:            number;
 } = {}) {
+  const { user } = useAuth();
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
     if (v !== undefined && v !== "") params.set(k, String(v));
   });
 
   return useQuery({
-    queryKey: queryKeys.ampsAssets(filters),
+    queryKey: [...queryKeys.ampsAssets(filters), user?.company_id],
     queryFn:  () =>
       api.get<PaginatedResponse<Asset>>(`/amps/assets?${params.toString()}`),
   });
@@ -501,8 +540,9 @@ export function useValuationEstimate(req: ValuationEstimateRequest | undefined) 
  * Pass `null` to disable (e.g. before a row is selected).
  */
 export function useAssetValuations(assetId: string | null) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: queryKeys.assetValuations(assetId ?? ""),
+    queryKey: [...queryKeys.assetValuations(assetId ?? ""), user?.company_id],
     queryFn:  () =>
       api.get<AssetValuationsResponse>(`/assets/${assetId}/valuations?limit=100`),
     enabled:   !!assetId,
@@ -532,13 +572,22 @@ export interface SubscriptionData {
   currentPeriodStart:   string | null;
   currentPeriodEnd:     string | null;
   invoices:             SubscriptionInvoice[];
+  catalog?: Record<string, { price_cents: number; asset_limit: number; seat_limit: number; valuation_limit: number }>;
+  limits?: { asset_limit: number; seat_limit: number; valuation_limit: number };
+  usage?: { asset_units: number; active_seats: number; valuation_used: number; valuation_reserved: number; valuation_remaining: number; period_start: string | null; period_end: string | null; over_asset_limit: boolean; over_seat_limit: boolean };
+  eligibility?: { paid: boolean; can_add_assets: boolean; can_value_assets: boolean; can_view_assets?: boolean };
+  launch_gates?: string[];
+  billing?: { recurring: boolean; cancel_at_period_end: boolean; provider_subscription_id: string | null };
 }
 
 export function useSubscription() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ["subscription"] as const,
+    queryKey: ["subscription", user?.company_id] as const,
     queryFn:  () => api.get<SubscriptionData>("/subscriptions/current"),
     staleTime: 60 * 1000,
+    enabled: !!user,
+    retry: false,
   });
 }
 
@@ -547,8 +596,11 @@ export function useSubscriptionCheckout() {
   return useMutation({
     mutationFn: (data: {
       plan:            string;
-      source_id:       string;
+      source_id?:      string;
+      idempotency_key: string;
+      expected_price_cents?: number;
       save_card?:      boolean;
+      recurring_consent?: boolean;
       cardholder_name?: string;
       billing_address?: {
         business_name?:  string;
@@ -559,7 +611,7 @@ export function useSubscriptionCheckout() {
         postal_code:     string;
       };
     }) =>
-      api.post<{ plan: string; status: string; invoice: SubscriptionInvoice }>(
+      api.post<SubscriptionPaymentResult>(
         "/subscriptions/checkout",
         data,
       ),
@@ -569,6 +621,11 @@ export function useSubscriptionCheckout() {
       qc.invalidateQueries({ queryKey: ["auth-user"] });
     },
   });
+}
+
+export function useReconcileSubscription() {
+  const qc = useQueryClient();
+  return useMutation({mutationFn: () => api.post<SubscriptionPaymentResult>("/subscriptions/reconcile", {}), onSuccess: () => qc.invalidateQueries({queryKey: ["subscription"]})});
 }
 
 export function useCancelSubscription() {
@@ -592,7 +649,7 @@ export interface PlatformFees {
   seller_fee_pro:      number;
   buyer_fee:           number;
   deferral_fee:        number;
-  data_wipe_price:     number;
+  service_pricing?: "partner";
   updated_at:          string;
   updated_by:          string | null;
 }

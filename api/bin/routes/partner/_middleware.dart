@@ -1,19 +1,33 @@
 import 'package:dart_frog/dart_frog.dart';
+import 'package:guildmark_api/auth/firebase_sessions.dart';
 
 import 'package:guildmark_api/auth/jwt.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/http_helpers.dart';
 
 Handler middleware(Handler handler) {
   return (context) async {
-    final principal = _extractPartnerPrincipal(context);
+    final principal = await _extractPartnerPrincipal(context);
+    final path = context.request.uri.path.replaceFirst(RegExp(r'^/api'), '');
+    if (principal != null &&
+        principal.status != 'active' &&
+        !path.startsWith('/partner/auth/') &&
+        path != '/partner/catalog' &&
+        !(path == '/partner/account' &&
+            context.request.method == HttpMethod.get))
+      return forbidden('Partner approval required for service work.');
     return handler(context.provide<PartnerPrincipal?>(() => principal));
   };
 }
 
-PartnerPrincipal? _extractPartnerPrincipal(RequestContext context) {
+Future<PartnerPrincipal?> _extractPartnerPrincipal(
+  RequestContext context,
+) async {
   final header = context.request.headers['authorization'];
   if (header == null || !header.startsWith('Bearer ')) return null;
   final token = header.substring('Bearer '.length);
+  final sessions = firebaseSessions(context);
+  if (sessions != null) return sessions.partner(token);
   final claims = context.read<PartnerJwtService>().verifyAccessToken(token);
   if (claims == null) return null;
   return PartnerPrincipal.fromClaims(claims);

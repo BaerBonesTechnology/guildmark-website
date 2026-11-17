@@ -11,11 +11,10 @@ import 'dart:io';
 
 import 'package:postgres/postgres.dart';
 
-import 'pool.dart';
+import 'package:guildmark_api/db/pool.dart';
 
 class MigrationRunner {
-  MigrationRunner(this._db, {String migrationsDir = '../migrations'})
-      : _migrationsDir = migrationsDir;
+  MigrationRunner(this._db, {this._migrationsDir = '../migrations'});
 
   final Db _db;
   final String _migrationsDir;

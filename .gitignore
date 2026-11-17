@@ -9,6 +9,7 @@
 **/dist/
 **/build/
 **/.venv/
+**/.venv-py312/
 **/.env
 **/.env.local
 **/.env.*.local
@@ -38,8 +39,41 @@ doppler.yaml
 # Appwrite secrets
 .env.appwrite
 /data/keyfile/
-GCP_Migration_Plan.md
-api/POSTGRES_TO_APPWRITE.md
-PLAN.md
 /api/bin/.dart_tool
-/.claude
+.claude/**
+**/.claude/**
+/graphify-out/
+
+*.md
+!README.md
+tmp/**
+output/**
+/**/.dart_tool/
+.dart_tool/
+/**/**/.dart_tool/
+/api/bin/.dart_tool
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+storage-debug.log
+/deployment/firebase/backend.env
+
+# Local emulator identities, sessions, uploaded files and snapshots
+/state/local-firebase/
+
+# Generated verification artifacts and local build output
+/outputs/
+
+# Firebase CLI upload caches
+/.firebase/
+
+# Product roadmap requested by the project owner
+!/guildmark/ROADMAP.md
+
+# Project documentation and durable design guidance
+!/PRODUCT.md
+!/guildmark/DESIGN.md
+!/guildmark/docs/business-verification.md
+# Local design-tool session caches
+.impeccable/questions/
+**/.impeccable/hook.cache.json

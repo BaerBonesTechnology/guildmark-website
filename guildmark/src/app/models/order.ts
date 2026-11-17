@@ -40,6 +40,11 @@ export interface Order {
   carrier:         string | null;
   trackingNumber:  string | null;
   createdAt:       string;
+  // Fee snapshots in the order response, when available.
+  sellerFee?: number | null;
+  buyerFee?: number | null;
+  deferralFee?: number | null;
+  escrowAmount?: number | null;
   // Escrow fields
   escrowTransactionId: string | null | undefined;
   escrowPaymentUrl:    string | null | undefined;

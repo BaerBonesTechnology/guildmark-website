@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/config_repo.dart';
-import 'package:guildmark_api/repos/appwrite/order_repo.dart';
-import 'package:guildmark_api/repos/appwrite/subscription_repo.dart';
+import 'package:guildmark_api/repos/firestore/config_repo.dart';
+import 'package:guildmark_api/repos/firestore/order_repo.dart';
+import 'package:guildmark_api/repos/firestore/subscription_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 import 'package:guildmark_api/services/escrow_service.dart';
 
@@ -27,7 +27,7 @@ Future<Response> onRequest(RequestContext context) async {
 // ---------------------------------------------------------------------------
 
 Future<Response> _list(RequestContext context, AuthPrincipal auth) async {
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -55,7 +55,7 @@ Future<Response> _create(RequestContext context, AuthPrincipal auth) async {
     return badRequest('offer_id is required');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -72,7 +72,7 @@ Future<Response> _create(RequestContext context, AuthPrincipal auth) async {
   final bFeePct = cfg.buyerFee;
 
   // Optional: buyer can select Net 30/60 payment terms.
-  final paymentTerms = (body?['payment_terms'] as String? ?? 'immediate');
+  final paymentTerms = body?['payment_terms'] as String? ?? 'immediate';
   final validTerms = {'immediate', 'net_30', 'net_60'};
   if (!validTerms.contains(paymentTerms)) {
     return badRequest(

@@ -62,6 +62,7 @@ services:
       JWT_ACCESS_TTL_SECONDS:  ${JWT_ACCESS_TTL_SECONDS:-900}
       JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-2592000}
       ML_SERVICE_URL:          ${ML_SERVICE_URL:-http://ml:8001}
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
       # Appwrite over guildmark-net (optional — API degrades when absent).
       APPWRITE_ENDPOINT:       ${APPWRITE_ENDPOINT:-http://appwrite/v1}
       APPWRITE_PROJECT_ID:     ${APPWRITE_PROJECT_ID:-}
@@ -142,13 +143,14 @@ services:
     environment:
       ML_PORT:      ${ML_PORT:-8001}
       ML_MODEL_DIR: /app/model_artifacts
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
       EBAY_APP_ID:  ${EBAY_APP_ID:-}
       EBAY_CERT_ID: ${EBAY_CERT_ID:-}
       RETRAIN:      ${RETRAIN:-0}
       # Daily in-app retrain (cron, UTC). "off" to disable. Default 03:00.
       ML_RETRAIN_CRON: ${ML_RETRAIN_CRON:-0 3 * * *}
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     volumes:
       - ./ml-qv/model_artifacts:/app/model_artifacts
     networks:

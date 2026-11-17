@@ -42,6 +42,11 @@ class Aw {
 
   /// `$id` of the single platform_config row (singleton table).
   static const String platformConfigRowId = 'config';
+
+  // ── Storage bucket IDs ──────────────────────────────────────────────────
+  /// Buyer-facing product images (listing photos). Public-read so the PLP/PDP
+  /// `<img>` tags can load files directly; writes go through the API key only.
+  static const String productImagesBucket = 'gm-product-images';
 }
 
 /// Postgres UUIDs contain hyphens, which are illegal in an Appwrite `$id`.

@@ -3,11 +3,11 @@
 FROM dart:3.12.1 AS build
 
 WORKDIR /app
-COPY pubspec.yaml .
+COPY pubspec.yaml pubspec.lock ./
 RUN dart pub get
 
 # Install dart_frog_cli to compile routes into a single entrypoint.
-RUN dart pub global activate dart_frog_cli
+RUN dart pub global activate dart_frog_cli 1.2.14
 
 COPY . .
 
@@ -17,6 +17,7 @@ RUN dart run build_runner build --delete-conflicting-outputs
 
 RUN /root/.pub-cache/bin/dart_frog build
 RUN dart compile exe build/bin/server.dart -o build/bin/server
+RUN dart compile exe tool/reconcile_billing.dart -o build/bin/billing-reconcile
 
 # Runtime image — distroless-ish, AOT binary only.
 FROM debian:bookworm-slim AS runtime
@@ -29,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 # ./api/migrations in docker-compose.
 WORKDIR /app/bin
 COPY --from=build /app/build/bin/server ./server
+COPY --from=build /app/build/bin/billing-reconcile ./billing-reconcile
 
 EXPOSE 8080
 CMD ["./server"]

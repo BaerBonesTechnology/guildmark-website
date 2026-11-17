@@ -1,16 +1,16 @@
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/context.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/config_repo.dart';
+import 'package:guildmark_api/repos/firestore/config_repo.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<AuthPrincipal?>();
   if (principal == null) return unauthorized();
-  if (principal.role != 'admin') return forbidden();
+  if (!principal.isStaffAdministrator) return forbidden();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -41,7 +41,6 @@ Future<Response> onRequest(RequestContext context) async {
         'seller_fee_pro',
         'buyer_fee',
         'deferral_fee',
-        'data_wipe_price',
       ];
       for (final k in required) {
         if (body[k] == null) return badRequest('Missing field: $k');
@@ -62,7 +61,8 @@ Future<Response> onRequest(RequestContext context) async {
       final sellerFeePro = parse('seller_fee_pro')!;
       final buyerFee = parse('buyer_fee')!;
       final deferralFee = parse('deferral_fee')!;
-      final dataWipePrice = parse('data_wipe_price')!;
+      if (body.containsKey('data_wipe_price'))
+        return badRequest('Service pricing is managed by each partner.');
 
       // Guard against obviously wrong values.
       for (final v in [
@@ -73,13 +73,12 @@ Future<Response> onRequest(RequestContext context) async {
         buyerFee,
         deferralFee,
       ]) {
-        if (v < 0 || v > 1)
+        if (v < 0 || v > 1) {
           return badRequest(
             'Fee rates must be between 0 and 1 (e.g. 0.08 for 8%)',
           );
+        }
       }
-      if (dataWipePrice < 0)
-        return badRequest('data_wipe_price must be non-negative');
 
       final updatedBy = (body['updated_by'] as String?)?.trim();
 
@@ -90,7 +89,6 @@ Future<Response> onRequest(RequestContext context) async {
         sellerFeePro: sellerFeePro,
         buyerFee: buyerFee,
         deferralFee: deferralFee,
-        dataWipePrice: dataWipePrice,
         paymentTermsEnabled: paymentTermsEnabled,
         updatedBy: updatedBy,
       );

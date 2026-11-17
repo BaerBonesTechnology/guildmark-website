@@ -1,8 +1,6 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show Query;
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -10,7 +8,7 @@ Future<Response> onRequest(RequestContext context) async {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'GET only');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -29,8 +27,8 @@ Future<Response> onRequest(RequestContext context) async {
   String? cursor;
   while (true) {
     final page = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.listings,
+      databaseId: Collections.databaseId,
+      tableId: Collections.listings,
       queries: [
         Query.equal('status', 'active'),
         Query.limit(100),
@@ -45,8 +43,8 @@ Future<Response> onRequest(RequestContext context) async {
         .toSet()
         .toList();
     final assets = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.assets,
+      databaseId: Collections.databaseId,
+      tableId: Collections.assets,
       queries: [Query.equal(r'$id', assetIds), Query.limit(assetIds.length)],
     );
     final quantityByAsset = {

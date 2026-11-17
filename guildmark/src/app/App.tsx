@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, preLaunchRouter } from "./routes";
 import { AuthProvider } from "./hooks/useAuth";
 import { CookieBanner } from "./components/CookieBanner";
-import { isLaunch, isDebug } from "./config";
+import { isLaunch } from "./config";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +25,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={preLaunchRouter} />
+        <RouterProvider router={isLaunch ? router : preLaunchRouter} />
         <CookieBanner />
       </AuthProvider>
     </QueryClientProvider>

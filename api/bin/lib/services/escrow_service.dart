@@ -17,18 +17,6 @@ import 'package:http/http.dart' as http;
 // ---------------------------------------------------------------------------
 
 class EscrowTransaction {
-  EscrowTransaction({
-    required this.id,
-    required this.status,
-    this.paymentUrl,
-  });
-
-  final String id;
-  final String status;
-
-  /// URL the buyer visits to fund the escrow on Escrow.com.
-  /// Falls back to the dashboard URL when the API doesn't return one.
-  final String? paymentUrl;
 
   factory EscrowTransaction.fromJson(Map<String, dynamic> json, {bool sandbox = true}) {
     final id = json['id']?.toString() ?? '';
@@ -55,6 +43,18 @@ class EscrowTransaction {
 
     return EscrowTransaction(id: id, status: status, paymentUrl: paymentUrl);
   }
+  EscrowTransaction({
+    required this.id,
+    required this.status,
+    this.paymentUrl,
+  });
+
+  final String id;
+  final String status;
+
+  /// URL the buyer visits to fund the escrow on Escrow.com.
+  /// Falls back to the dashboard URL when the API doesn't return one.
+  final String? paymentUrl;
 }
 
 // ---------------------------------------------------------------------------

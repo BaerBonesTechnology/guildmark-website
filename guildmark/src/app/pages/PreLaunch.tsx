@@ -1,580 +1,100 @@
-/**
- * Pre-launch hero — the canonical GuildMark landing experience.
- *
- * Three full-height audience panels (IT teams / supply side / partner
- * network), each with its own early-access form wired to the real
- * POST /waitlist endpoint. The backend stores `source` plus the extra
- * fields (company / role / services…) as notes, so every submission is
- * segmentable by audience.
- *
- * Design language: Barlow Condensed display, DM Sans body, JetBrains Mono
- * labels; sharp borders; layered section backgrounds (--section-1/2/3).
- */
+import { PromotionSlot } from "../components/PromotionSlot";
+import { useEffect, useState } from "react";
+import { ArrowDown, ArrowRight, ArrowUpRight, Check } from "lucide-react";
+import { Link } from "react-router";
+import { PreLaunchFooter } from "../components/preLaunch/PreLaunchFooter";
+import { PreLaunchHeader } from "../components/preLaunch/PreLaunchHeader";
+import { EarlyAccess } from "../components/preLaunch/EarlyAccess";
+import { PAID_PLANS, PLAN_CATALOG } from "../constants/planCatalog";
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { useTheme } from "../hooks/useTheme";
-import {
-  ArrowRight, CheckCircle2, Sun, Moon, BookOpen,
-  Server, RefreshCw, Users, BarChart3, ShieldCheck, Zap, Globe, Award,
-} from "lucide-react";
-import { apiUrl } from "../config";
-import { usePlatformFees, formatFeeRate } from "../lib/apiHooks";
-import logoLong from "../../logo-long.svg";
+const steps = [
+  { id: "inventory", number: "01", label: "Your inventory", title: "Start with the assets you actually have.", body: "Our sample workspace contains a record for 24 Lenovo ThinkPad T14 Gen 2 laptops, Grade B. Their quantity, purchase date and hardware specifications are recorded together for the next decision.", detail: "Physical quantities stay distinct from the number of records. Software and licenses do not use physical-device capacity.", alt: "Real AMPS sample inventory: Lenovo ThinkPad T14 Gen 2, 24 physical devices, Grade B, with recorded specifications." },
+  { id: "estimate", number: "02", label: "An informed estimate", title: "Request an estimate for the laptops you select.", body: "The same 24 sample laptops return an ML-assisted estimate of $563.57 per unit: $13,525.68 gross in total. The guided assistant accepts up to five selected laptop records per request.", detail: "This sample estimate excludes fees, shipping and service costs. Missing inputs stay visible; a sale price is not guaranteed.", alt: "Real AMPS result for 24 Lenovo ThinkPad T14 Gen 2 laptops: $563.57 estimated per unit and $13,525.68 gross total, with limitations." },
+  { id: "preview", number: "03", label: "Resale preparation", title: "Prepare it for resale.", body: "Prepare the same ThinkPad model, 24-device quantity and suggested unit price for resale in a listing preview. You review the details before taking the next step toward GuildMarket.", detail: "This is a review-only preview. The assistant does not publish listings, place orders or schedule services.", alt: "Real AMPS preview-only listing: Lenovo ThinkPad T14 Gen 2, 24 units, suggested unit price $563.57. Nothing published." },
+] as const;
 
-const DISPLAY = "'Barlow Condensed', sans-serif";
-const BODY = "'DM Sans', sans-serif";
-const MONO = "'JetBrains Mono', monospace";
-
-// ── Waitlist wiring ─────────────────────────────────────────────────────────
-
-interface WaitlistPayload {
-  email: string;
-  source: string;
-  company?: string;
-  partner_type?: string;
-}
-
-type Status = "idle" | "loading" | "success" | "error";
-
-function useWaitlist() {
-  const [status, setStatus] = useState<Status>("idle");
-  const [error, setError] = useState("");
-
-  async function submit(payload: WaitlistPayload) {
-    setStatus("loading");
-    setError("");
-    try {
-      const res = await fetch(`${apiUrl}/waitlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error ?? "Something went wrong. Please try again.");
-      }
-      setStatus("success");
-    } catch (err) {
-      setStatus("error");
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-    }
-  }
-
-  return { status, error, submit };
-}
-
-function SubmitSuccess({ audience }: { audience: string }) {
-  return (
-    <div className="border border-border p-5 flex items-start gap-4 mt-2" style={{ background: "var(--card)" }}>
-      <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
-      <div>
-        <p className="text-sm font-medium mb-1" style={{ fontFamily: BODY }}>You're on the list.</p>
-        <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY }}>
-          We'll reach out as {audience} access opens. Expect a short onboarding call.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-const fieldClass =
-  "w-full px-3 py-2.5 text-sm border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors";
-const fieldStyle = { fontFamily: BODY, background: "var(--input-background)" } as const;
-const labelClass = "block text-[10px] font-mono tracking-widest text-muted-foreground uppercase mb-2";
-
-function FormError({ msg }: { msg: string }) {
-  return <p className="text-xs text-destructive" style={{ fontFamily: BODY }}>{msg}</p>;
-}
-
-function SubmitButton({ status, label, filled = true }: { status: Status; label: string; filled?: boolean }) {
-  return (
-    <button
-      type="submit"
-      disabled={status === "loading"}
-      className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-60"
-      style={{
-        background: filled ? "var(--primary)" : "var(--secondary)",
-        color: filled ? "#fff" : "var(--foreground)",
-        fontFamily: BODY,
-      }}
-    >
-      {status === "loading" ? (
-        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-      ) : (
-        <>
-          {label}
-          <ArrowRight size={14} />
-        </>
-      )}
-    </button>
-  );
-}
-
-// ── Section 1 — IT Teams (waitlist) ─────────────────────────────────────────
-
-function ITTeamsSection() {
-  const [email, setEmail] = useState("");
-  const [org, setOrg] = useState("");
-  const [size, setSize] = useState("");
-  const { status, error, submit } = useWaitlist();
-  const { data: fees } = usePlatformFees();
-  const sellerFee = formatFeeRate(fees?.seller_fee_free);
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || status === "loading") return;
-    void submit({
-      email: email.trim(),
-      source: "waitlist",
-      company: org.trim() || undefined,
-      partner_type: size ? `Refresh size: ${size}` : undefined,
+type WorkflowView = typeof steps[number]["id"];
+function WorkflowShowcase({ view }: { view: WorkflowView }) {
+  const [displayed, setDisplayed] = useState<WorkflowView>(view);
+  const [imageError, setImageError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setImageError(false);
+    const loaded = new Promise<void>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => { void image.decode().catch(() => undefined).then(() => resolve()); };
+      image.onerror = () => reject(new Error("Sample image unavailable"));
+      image.src = `/img/amps-workflow/${view}-desktop-focus.jpg`;
     });
-  }
+    void loaded.then(() => {
+      if (!cancelled) setDisplayed(view);
+    }).catch(() => { if (!cancelled) setImageError(true); });
+    return () => { cancelled = true; };
+  }, [view, retry]);
+  return <div className="gm-amps-showcase" aria-busy={view !== displayed && !imageError}>
+    {steps.map(item => <figure key={item.id} className={`gm-showcase-layer${displayed === item.id ? " is-current" : ""}`} aria-hidden={displayed !== item.id}>
+      <img src={`/img/amps-workflow/${item.id}-desktop-focus.jpg`} alt={`Actual GuildMark AMPS workspace with its header and Starter tier. ${item.alt}`} />
+      <figcaption>Actual AMPS screen · Demo data. {item.id === "inventory" ? "24 sample devices; not stock for sale." : "Gross estimates exclude fees, shipping and services. Sale prices are not guaranteed."} {item.id === "preview" && "Preview only; nothing published."}</figcaption>
+    </figure>)}
+    {imageError && <p className="gm-showcase-error" role="alert">Sample image unavailable. <button type="button" onClick={() => setRetry(value => value + 1)}>Retry image</button></p>}
+  </div>;
+}
 
-  return (
-    <section className="flex flex-col" style={{ background: "var(--section-1)" }}>
-      <div className="flex-1 flex justify-items-center">
-        <div className="max-w-[1800px] mx-auto px-8 md:px-20 w-full py-24">
-          <div className="grid md:grid-cols-[3fr_2fr] gap-16 md:gap-24 items-center">
-            <div>
-              <h1 className="leading-[0.93] tracking-tight mb-7"
-                style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(3.2rem, 7.5vw, 6rem)" }}>
-                GuildMark helps you<br />
-                stop leaving money<br />
-                on the table when<br />
-                you refresh hardware.
-              </h1>
-              <p className="text-base leading-relaxed max-w-md mb-8"
-                style={{ color: "var(--muted-foreground)", fontFamily: BODY, fontWeight: 300 }}>
-                A direct path for IT teams to sell end-of-lease and surplus equipment at fair
-                market value — no brokers skimming margin, no spreadsheet chaos.
-              </p>
-              <div className="flex flex-col gap-2.5">
-                {[
-                  "Instant valuations against live market data",
-                  "Certified listings — graded, spec-disclosed",
-                  `${sellerFee} platform fee. $0 to list.`,
-                ].map((pt) => (
-                  <div key={pt} className="flex items-center gap-2.5">
-                    <div className="w-1 h-1 rounded-full shrink-0" style={{ background: "var(--primary)" }} />
-                    <span className="text-xs text-muted-foreground" style={{ fontFamily: BODY }}>{pt}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+function ProductCapture({ view, hero = false }: { view: typeof steps[number]["id"]; hero?: boolean }) {
+  const step = steps.find(item => item.id === view)!;
+  return <figure className={`gm-product-capture${hero ? " gm-product-capture-hero" : ""}`}>
+    <picture><source media="(max-width: 640px)" srcSet={`/img/amps-workflow/${view}-mobile-crop.jpg`} /><img src={`/img/amps-workflow/${view}-desktop-crop.jpg`} alt={step.alt} loading={hero ? "eager" : "lazy"} /></picture>
+    <figcaption>Actual product · Demo workspace. {view === "inventory" ? "Sample record details, not stock for sale." : "Gross estimates exclude fees, shipping and services. Sale prices are not guaranteed."} {view === "preview" && "Preview only; nothing published."}</figcaption>
+  </figure>;
+}
 
-            <div className="border border-border p-7" style={{ background: "var(--card)" }}>
-              <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-1"
-                style={{ color: "var(--primary)", fontFamily: MONO }}>Early Access</p>
-              <h2 className="text-2xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>Join the waitlist.</h2>
-              <p className="text-xs text-muted-foreground mb-6" style={{ fontFamily: BODY }}>
-                We're onboarding IT teams ahead of launch. Access is limited.
-              </p>
-              {status === "success" ? (
-                <SubmitSuccess audience="IT team" />
-              ) : (
-                <form onSubmit={onSubmit} className="space-y-4">
-                  <div>
-                    <label className={labelClass}>Work email</label>
-                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@company.com" className={fieldClass} style={fieldStyle} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Organization</label>
-                    <input type="text" value={org} onChange={(e) => setOrg(e.target.value)}
-                      placeholder="Company name" className={fieldClass} style={fieldStyle} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Estimated refresh size</label>
-                    <select value={size} onChange={(e) => setSize(e.target.value)}
-                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                      <option value="">Select range</option>
-                      <option>Under 50 units</option>
-                      <option>50 – 200 units</option>
-                      <option>200 – 1,000 units</option>
-                      <option>1,000+ units</option>
-                    </select>
-                  </div>
-                  {status === "error" && <FormError msg={error} />}
-                  <SubmitButton status={status} label="Request early access" />
-                </form>
-              )}
-            </div>
-          </div>
+export function PreLaunch() {
+  const [activeStep, setActiveStep] = useState(0);
+  const step = steps[activeStep];
+  return <div className="gm-public gm-home">
+    <PreLaunchHeader />
+    <main id="main-content">
+      <section className="gm-owner-hero gm-container" aria-labelledby="owner-hero-title">
+        <div className="gm-owner-hero-copy">
+          <p className="gm-overline">AMPS for IT asset owners</p>
+          <h1 id="owner-hero-title">Turn idle hardware into revenue.</h1>
+          <p className="gm-owner-lead">Recover value from the hardware your team no longer needs. Organize your assets in AMPS, request indicative ML-assisted estimates for supported laptops, and prepare them for resale on GuildMarket.</p>
+          <div className="gm-owner-actions"><a className="gm-button gm-button-primary" href="#amps-workflow">See the AMPS workflow <ArrowDown size={16} /></a><Link className="gm-owner-secondary" to="/pre/marketplace">Explore GuildMarket <ArrowUpRight size={16} /></Link></div>
+          <p className="gm-owner-note">Early access · Inventory, valuation and resale preparation</p>
         </div>
-      </div>
-    </section>
-  );
-}
+        <div className="gm-owner-hero-product"><ProductCapture view="estimate" hero /></div>
+      </section>
+<div className="gm-container"><PromotionSlot placement="home-banner"/></div>
 
-// ── Section 2 — Supply side ─────────────────────────────────────────────────
+      <div className="gm-role-paths gm-container" aria-label="Choose your path"><p>One asset lifecycle.<br /><strong>Different roles.</strong></p><a href="#amps-workflow"><span>For asset owners</span>Explore AMPS <ArrowRight size={16} /></a><Link to="/pre/marketplace"><span>For procurement teams</span>Explore GuildMarket <ArrowRight size={16} /></Link><a href="#partner-network"><span>For service partners</span>See the intended handoff <ArrowRight size={16} /></a></div>
 
-const SUPPLY_BENEFITS = [
-  { icon: Globe, title: "Reach verified buyers directly", body: "List once, reach hundreds of vetted IT teams actively looking for certified supply — no cold calls, no brokered leads." },
-  { icon: BarChart3, title: "Market-rate pricing intelligence", body: "GuildMark surfaces live comparable sales data so you list at the right price the first time, not the wrong one." },
-  { icon: ShieldCheck, title: "Certification builds buyer trust", body: "Our grading and disclosure standards give buyers confidence to transact without inspections or back-and-forth." },
-  { icon: Zap, title: "Bulk listings via CSV or MDM sync", body: "Upload your full inventory in minutes. GuildMark structures and publishes each listing with the right fields automatically." },
-];
-
-function SupplySection() {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [volume, setVolume] = useState("");
-  const { status, error, submit } = useWaitlist();
-  const { data: fees } = usePlatformFees();
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || status === "loading") return;
-    void submit({
-      email: email.trim(),
-      source: "supply",
-      partner_type: [role, volume && `Volume: ${volume}`].filter(Boolean).join(" · ") || undefined,
-    });
-  }
-
-  return (
-    <>
-      <section className="flex items-center border-t border-border" style={{ background: "var(--section-2)" }}>
-        <div className="max-w-[1800px] mx-auto px-8 md:px-20 w-full py-28">
-          <div className="grid md:grid-cols-[2fr_3fr] gap-16 md:gap-24 items-start">
-            <div>
-              <h2 className="leading-[0.95] tracking-tight mb-6"
-                style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.6rem, 5vw, 4.2rem)" }}>
-                GuildMark helps you<br />
-                list your supply and<br />
-                skip the middleman.
-              </h2>
-              <p className="text-sm leading-relaxed mb-8 max-w-sm"
-                style={{ color: "var(--muted-foreground)", fontFamily: BODY, fontWeight: 300 }}>
-                Early access for resellers, ITAD providers, and brokers to list inventory directly
-                on the GuildMark exchange ahead of public launch.
-              </p>
-              <div className="border border-border p-6" style={{ background: "var(--card)" }}>
-                <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-4 text-muted-foreground" style={{ fontFamily: MONO }}>
-                  Supply-Side Early Access
-                </p>
-                {status === "success" ? (
-                  <SubmitSuccess audience="supply-side" />
-                ) : (
-                  <form onSubmit={onSubmit} className="space-y-4">
-                    <div>
-                      <label className={labelClass}>Work email</label>
-                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@company.com" className={fieldClass} style={fieldStyle} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Your role</label>
-                      <select required value={role} onChange={(e) => setRole(e.target.value)}
-                        className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                        <option value="">Select your role</option>
-                        <option>MSR — Managed Service Reseller</option>
-                        <option>ITAD — IT Asset Disposition</option>
-                        <option>Broker / Independent reseller</option>
-                        <option>OEM / Manufacturer</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelClass}>Avg. monthly supply volume</label>
-                      <select value={volume} onChange={(e) => setVolume(e.target.value)}
-                        className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                        <option value="">Select range</option>
-                        <option>Under $25k</option>
-                        <option>$25k – $100k</option>
-                        <option>$100k – $500k</option>
-                        <option>Over $500k</option>
-                      </select>
-                    </div>
-                    {status === "error" && <FormError msg={error} />}
-                    <SubmitButton status={status} label="Apply for early access" />
-                  </form>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-0 divide-y divide-border border-t border-border">
-              {SUPPLY_BENEFITS.map(({ icon: Icon, title, body }) => (
-                <div key={title} className="py-6 flex gap-5 items-start">
-                  <div className="w-8 h-8 flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ border: "1px solid var(--border)", background: "var(--secondary)" }}>
-                    <Icon size={14} style={{ color: "var(--primary)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1.5" style={{ fontFamily: BODY }}>{title}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY, fontWeight: 300 }}>{body}</p>
-                  </div>
-                </div>
-              ))}
-              <div className="py-6">
-                <div className="grid grid-cols-4 gap-8 ">
-                  {[{ val: "$0", label: "To list" },
-                  { val: formatFeeRate(fees?.seller_fee_free), label: "On sale only" },
-                  { val: "NIST 800-08", label: "Data sanitization mid-transit*" },
-                  { val: "Audit Compliant", label: "Certified grading & disclosure*" },
-                  ].map((s) => (
-                    <div key={s.label} className="text-center">
-                      <div className="text-3xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>{s.val}</div>
-                      <div className="text-[10px] font-mono text-muted-foreground tracking-wider uppercase" style={{ fontFamily: MONO }}>{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div> 
-              <div className="justify-end flex mt-4">
-                <small className="text-[10px] font-mono">* When using Guildmark Network Services during sale or purchase</small>
-              </div>
-            </div>
-          </div>
+      <section id="amps-workflow" className="gm-workflow gm-container" aria-labelledby="workflow-title">
+        <div className="gm-editorial-heading"><div><p className="gm-overline">The asset-owner workflow</p><h2 id="workflow-title">Find value in the hardware you already own.</h2></div></div>
+        <div className="gm-workflow-layout">
+          <div className="gm-workflow-story"><div className="gm-workflow-choices" role="group" aria-label="Choose a workflow step">{steps.map((item,index) => <button key={item.id} type="button" aria-pressed={activeStep === index} aria-controls="workflow-detail" onClick={() => setActiveStep(index)}><span>{item.number}</span>{item.label}<ArrowRight size={16} /></button>)}</div><div id="workflow-detail" className="gm-workflow-description" aria-live="polite"><span className="gm-workflow-index">{step.number} / 03</span><h3>{step.title}</h3><p>{step.body}</p><p className="gm-workflow-boundary">{step.detail}</p></div></div>
+          <div className="gm-workflow-screen"><WorkflowShowcase view={step.id} /></div>
         </div>
       </section>
 
-    </>
-  );
-}
+      <section className="gm-ai-explanation" aria-labelledby="ai-title"><div className="gm-container gm-ai-grid"><div><p className="gm-overline">Where AI helps</p><h2 id="ai-title">An estimate with<br />its inputs in view.</h2><p>AMPS uses machine learning to help you assess supported laptops. The guided assistant puts recorded inputs and returned estimates together so you can review them in context.</p></div><dl><div><dt>Recorded asset details</dt><dd>Type, condition, purchase date and available CPU, RAM and storage specifications.</dd></div><div><dt>Visible limitations</dt><dd>Missing fields and unavailable results are called out. Gross estimates exclude marketplace fees, shipping and elected services.</dd></div><div><dt>Human control</dt><dd>You choose the records and review the preview. No automatic retirement decisions, publishing or service orders.</dd></div></dl></div></section>
 
-// ── Section 3 — Partner network ─────────────────────────────────────────────
+      <section className="gm-market-handoff gm-container" aria-labelledby="market-title"><div className="gm-editorial-heading"><div><p className="gm-overline">For procurement teams / GuildMarket</p><h2 id="market-title">Source hardware for<br />your next fleet or project.</h2></div><div><p>Compare listed models, specifications, condition, available quantities and unit prices in GuildMarket. Assess hardware for fleet replacements or project stock against your team's requirements before choosing what to buy.</p><Link className="gm-text-link" to="/pre/marketplace">Explore the market preview <ArrowUpRight size={16} /></Link></div></div><div className="gm-manifest-line"><span>Compare against your requirements</span><ul><li>Model &amp; specifications</li><li>Condition</li><li>Available quantity</li><li>Price per unit</li></ul></div></section>
 
-const PARTNER_PERKS = [
-  { icon: Award, title: "GuildMark Certified Partner badge", body: "Display your certification on your website, proposals, and email — buyers actively filter for Certified Partners." },
-  { icon: Users, title: "Inbound referral leads", body: "When IT teams need ITAD services on the platform, Certified Partners are presented first. No ad spend required." },
-  { icon: Server, title: "Co-branded pickup & processing", body: "Offer pickup, data destruction, and logistics as add-on services directly within GuildMark transactions." },
-  { icon: RefreshCw, title: "Closed-loop asset recovery", body: "Receive unsold inventory from the exchange for downstream remarketing, recycling, or parts — your choice." },
-];
+      <section id="partner-network" className="gm-partner-story" aria-labelledby="partner-title"><div className="gm-container gm-partner-grid"><div><p className="gm-overline">The intended partner handoff</p><h2 id="partner-title">The work beyond<br />the listing.</h2><p>Some devices need service before they move on. We’re developing a partner network for asset disposition, refurbishment and related work, with the scope and quote reviewed per job.</p><a className="gm-text-link" href="#early-access">Introduce your services <ArrowUpRight size={16} /></a></div><ol><li><span>01</span><div><h3>The selected partner quotes the work.</h3><p>Service scope and price come from the partner for the specific job. GuildMark’s elected-service fee is separate.</p></div></li><li><span>02</span><div><h3>Shipping has its own quote.</h3><p>FedEx determines carrier pricing separately from service work. Live quote coordination is planned, not an available automated workflow.</p></div></li><li><span>03</span><div><h3>The owner reviews the handoff.</h3><p>No service is elected by the assistant. Partner availability, job terms and handling requirements need confirmation before work begins.</p></div></li></ol></div></section>
 
-function PartnerNetworkSection() {
-  const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [company, setCompany] = useState("");
-  const [services, setServices] = useState("");
-  const [coverage, setCoverage] = useState("");
-  const [accepted, setAccepted] = useState(false);
+      <section id="amps-plans" className="gm-home-plans gm-container" aria-labelledby="plans-title"><div className="gm-editorial-heading"><div><p className="gm-overline">AMPS company plans</p><h2 id="plans-title">Choose the capacity<br />your inventory needs.</h2></div><p>Approved monthly USD pricing for early-access planning. Paid onboarding is still being prepared. All plans include one owner seat and the core guided workflow.</p></div><div className="gm-plan-columns">{PAID_PLANS.map(key => {const p = PLAN_CATALOG[key];return <article key={key}><h3>{p.label}</h3><p className="gm-plan-price">${p.price}<span>/ company / month</span></p><dl><div><dt>Active physical devices</dt><dd>{p.physicalDevices.toLocaleString()}</dd></div><div><dt>Fresh valuation credits / month</dt><dd>{p.valuationCredits.toLocaleString()}</dd></div><div><dt>Included owner seat</dt><dd>1</dd></div><div><dt>Marketplace seller fee</dt><dd>{Math.round(p.sellerFee*100)}%</dd></div></dl><p className="gm-plan-addon">Extra staff seat: ${p.additionalSeatPrice}/month.<br />Purchasing is not available yet.</p></article>;})}</div><p className="gm-plan-footnote"><Check size={15} /> Viewing and CSV export do not use valuation credits. No automatic usage overage charges.</p><a className="gm-text-link" href="#early-access">Discuss your asset-owner workspace <ArrowRight size={16} /></a></section>
 
-  const canApply = name.trim() !== "" && email.trim() !== "" && accepted;
+      <EarlyAccess />
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canApply) return;
-    // Hand off to the LOI flow — the partner reviews and signs the Letter of
-    // Intent, which POSTs /waitlist with loi_accepted: true on signature.
-    navigate("/compliance/partner-loi", {
-      state: {
-        name: name.trim(),
-        company: company.trim(),
-        partnerType: [services, coverage].filter(Boolean).join(" · "),
-        email: email.trim(),
-        phone: "",
-      },
-    });
-  }
-
-  return (
-    <section className="flex flex-col border-t border-border" style={{ background: "var(--section-3)" }}>
-      <div className="flex-1 flex items-center">
-        <div className="max-w-[1800px] mx-auto px-8 md:px-20 w-full py-28">
-          <div className="grid md:grid-cols-[1fr_auto] gap-6 items-end mb-14">
-            
-          </div>
-
-          <div className="grid md:grid-cols-[3fr_2fr] gap-16 md:gap-24 items-start">
-            
-            <div className="space-y-8">
-              <h2 className="leading-[0.93] tracking-tight"
-              style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(2.8rem, 6vw, 5rem)" }}>
-              GuildMark helps you<br />
-              advertise your services<br />
-              to buyers who are<br />
-              already looking.
-            </h2>
-            
-            <div className="grid sm:grid-cols-2 gap-px border border-border" style={{ background: "var(--border)" }}>
-              {PARTNER_PERKS.map(({ icon: Icon, title, body }) => (
-                <div key={title} className="p-6 flex flex-col gap-4" style={{ background: "var(--card)" }}>
-                  <div className="w-9 h-9 flex items-center justify-center"
-                    style={{ border: "1px solid var(--border)", background: "var(--secondary)" }}>
-                    <Icon size={15} style={{ color: "var(--primary)" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-2" style={{ fontFamily: BODY }}>{title}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY, fontWeight: 300 }}>{body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            </div>
-
-            <div className="p-6">
-              <div className="shrink-0 justify-self-end pb-1 max-w-fit mb-2">
-              <div className="shrink px-4 py-2 border text-xs font-mono tracking-widest"
-                style={{ borderColor: "var(--primary)", color: "var(--primary)", fontFamily: MONO }}>
-                PARTNER NETWORK
-              </div>
-            </div>
-              <div className="border border-border p-6" style={{ background: "var(--card)" }}>
-                <p className="text-[10px] font-mono tracking-[0.2em] uppercase mb-1 text-muted-foreground" style={{ fontFamily: MONO }}>
-                  Partner Application
-                </p>
-                <h3 className="text-xl mb-1" style={{ fontFamily: DISPLAY, fontWeight: 700 }}>Apply to the network.</h3>
-                <p className="text-xs text-muted-foreground mb-6" style={{ fontFamily: BODY }}>
-                  We review ITAD providers individually. Certified Partners are listed in the GuildMark
-                  directory and receive inbound referrals at launch.
-                </p>
-                <form onSubmit={onSubmit} className="space-y-4">
-                  <div>
-                    <label className={labelClass}>Contact name</label>
-                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
-                      placeholder="Full name" className={fieldClass} style={fieldStyle} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Work email</label>
-                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@itadcompany.com" className={fieldClass} style={fieldStyle} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Company name</label>
-                    <input type="text" value={company} onChange={(e) => setCompany(e.target.value)}
-                      placeholder="ITAD provider name" className={fieldClass} style={fieldStyle} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Services offered</label>
-                    <select value={services} onChange={(e) => setServices(e.target.value)}
-                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                      <option value="">Select primary service</option>
-                      <option>Full ITAD — pickup, wipe, resale</option>
-                      <option>Data destruction only</option>
-                      <option>Logistics & pickup</option>
-                      <option>Refurbishment & remarketing</option>
-                      <option>End-of-life recycling (R2/e-Stewards)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Geographic coverage</label>
-                    <select value={coverage} onChange={(e) => setCoverage(e.target.value)}
-                      className={`${fieldClass} appearance-none`} style={fieldStyle}>
-                      <option value="">Select coverage</option>
-                      <option>National</option>
-                      <option>Regional — Northeast</option>
-                      <option>Regional — Southeast</option>
-                      <option>Regional — Midwest</option>
-                      <option>Regional — West</option>
-                      <option>International</option>
-                    </select>
-                  </div>
-                  <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
-                    <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)}
-                      className="mt-0.5 shrink-0 accent-[var(--primary)]" style={{ width: 15, height: 15 }} />
-                    <span className="text-xs text-muted-foreground leading-relaxed" style={{ fontFamily: BODY }}>
-                      I have read  the <Link to='/compliance/terms' target="_blank"> Terms of Service </Link> and agree to review and sign the GuildMark Partner Letter of Intent
-                      before proceeding.
-                    </span>
-                  </label>
-                  <button type="submit" disabled={!canApply}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ background: "var(--primary)", color: "#fff", fontFamily: BODY }}>
-                    Continue to Letter of Intent
-                    <ArrowRight size={14} />
-                  </button>
-                </form>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-4 leading-relaxed px-1" style={{ fontFamily: BODY }}>
-                Partner listings are reviewed within 5 business days. We verify certifications
-                (R2, e-Stewards, NAID) and service capabilities before approval.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Header / footer (page owns its own chrome) ──────────────────────────────
-
-function PreLaunchHeader() {
-  const { theme, toggleTheme } = useTheme();
-  return (
-    <header className="border-b border-border sticky top-0 z-50" style={{ background: "var(--background)", backdropFilter: "blur(8px)" }}>
-      <div className="px-8 md:px-20 h-14 flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <img src={logoLong} className="h-6" alt="GuildMark" />
-          <span className="text-[9px] font-mono tracking-[0.15em] text-muted-foreground border border-border px-2 py-0.5 hidden sm:block" style={{ fontFamily: MONO }}>
-            IT ASSET MARKETPLACE
-          </span>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link to="/blog"
-            className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            style={{ fontFamily: BODY }}>
-            <BookOpen size={14} />
-            Blog
-          </Link>
-          <div className="w-px h-4 bg-border hidden md:block" />
-          <span className="text-[10px] font-mono tracking-widest items-center gap-1.5 hidden sm:flex" style={{ color: "var(--primary)", fontFamily: MONO }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--primary)" }} />
-            Early Access
-          </span>
-          <Link to="/pre/marketplace"
-            className="flex items-center gap-1.5 text-sm font-medium px-4 py-1.5 hover:opacity-90 transition-opacity"
-            style={{ background: "var(--primary)", color: "#fff", fontFamily: BODY }}>
-            Demo the platform
-            <ArrowRight size={13} />
-          </Link>
-          <button onClick={toggleTheme}
-            className="w-8 h-8 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-            aria-label="Toggle theme">
-            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function PreLaunchFooter() {
-  return (
-    <footer className="border-t border-border">
-      <div className="max-w-[1800px] mx-auto px-8 md:px-20 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-mono text-muted-foreground" style={{ fontFamily: MONO }}>
-            © {new Date().getFullYear()} Baerhous Media Group, LLC — GuildMark™
-          </p>
-          <div className="flex gap-5 mt-1">
-            <Link to="/blog" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
-              Blog
-            </Link>
-            <a href="/compliance/privacy-policy" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
-              Privacy Policy
-            </a>
-            <a href="/compliance/terms" className="text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors" style={{ fontFamily: MONO }}>
-              Terms of Service
-            </a>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link to="/pre/marketplace"
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-mono border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-            style={{ fontFamily: MONO }}>
-            Preview the marketplace
-            <ArrowRight size={12} />
-          </Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// ── Root ────────────────────────────────────────────────────────────────────
-
-export function PreLaunch() {
-  return (
-    <>
-      <PreLaunchHeader />
-      <div className="flex flex-col min-[3000px]:flex-row min-[3000px]:min-h-[calc(100vh-3rem) max-w-[5120] mx-auto">
-      <ITTeamsSection />
-      <SupplySection />
-      <PartnerNetworkSection />
-      </div>
-      <PreLaunchFooter />
-    </>
-  );
+      <section className="gm-home-faq gm-container" aria-labelledby="faq-title"><div><p className="gm-overline">A few practical questions</p><h2 id="faq-title">Know what<br />to expect.</h2></div><div>
+        <details><summary>What does the AI actually do?</summary><p>It requests ML-assisted estimates for supported laptop records using recorded condition, age and hardware inputs. The valuation service can use a trained model or a rules fallback; current responses do not identify which produced a result. An estimate is not a guaranteed sale price or a claim about the cause of that price. You review listing previews; the guided assistant does not publish listings or place orders.</p></details>
+        <details><summary>What counts toward a plan limit?</summary><p>Active physical-device quantities count toward asset capacity, rather than the number of inventory rows. Software and licenses do not use physical capacity. A successful fresh estimate for an asset record and model-input version uses a valuation credit; cached reuse and viewing do not. One owner seat is included. Extra-seat purchasing is not yet available and seat access does not automatically grant purchase or billing permissions.</p></details>
+        <details><summary>How do marketplace and service fees work?</summary><p>The approved schedule is 14% for Free and Starter sellers, 12% for Growth and 10% for Pro, plus a 2.8% hardware buyer fee. It also includes a separate 4% fee on elected partner services, calculated on the chosen partner’s service subtotal, excluding hardware and shipping. Service checkout and quote coordination are still being prepared. Partner service and FedEx shipping quotes are separate.</p></details>
+        <details><summary>Can I connect MDM or download invoice PDFs?</summary><p>Jamf and Intune connections are prototypes and do not sync live devices. Invoice drafts are also a prototype; PDF export is not available. We’ll distinguish those capabilities from the working inventory and guided-valuation flows during early access.</p></details>
+        <details><summary>Are the screens showing available hardware?</summary><p>No. The walkthrough shows the real AMPS product with a sanitized sample workspace. Its records and estimates demonstrate the workflow and are not offers of stock for sale. The market preview is a separate experience.</p></details>
+      </div></section>
+    </main>
+    <PreLaunchFooter />
+  </div>;
 }

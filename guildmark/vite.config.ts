@@ -16,7 +16,22 @@ function figmaAssetResolver() {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Dev traffic always goes through Vite, independent of stale Doppler URLs.
+  define: command === 'serve' ? {
+    'import.meta.env.VITE_API_URL': JSON.stringify('/api'),
+    // The seeded local demo opens on the pre-launch hero, with /pre previews.
+    ...(process.env.GM_LOCAL_STACK === 'true' ? {
+      'import.meta.env.VITE_IS_LAUNCH': JSON.stringify('false'),
+    } : {}),
+  } : undefined,
+  envDir: process.env.GM_LOCAL_STACK === 'true' ? false : undefined,
+  server: {
+    fs: { allow: [path.resolve(__dirname, "..")] },
+    proxy: {
+      '/api': { target: process.env.GM_LOCAL_API_TARGET ?? 'http://127.0.0.1:8080', changeOrigin: true },
+    },
+  },
   plugins: [
     figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if
@@ -25,6 +40,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
+    dedupe: ["react", "react-dom", "react-router", "@tanstack/react-query"],
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
@@ -33,4 +49,4 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
-})
+}))

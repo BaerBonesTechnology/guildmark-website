@@ -1,0 +1,17 @@
+{
+  "name": "projects/guildmark-dev/locations/us-central1/jobs/guildmark-billing-reconcile",
+  "schedule": "*/15 * * * *",
+  "timeZone": "UTC",
+  "attemptDeadline": "60s",
+  "retryConfig": {"retryCount": 3, "minBackoffDuration": "60s", "maxBackoffDuration": "300s"},
+  "httpTarget": {
+    "uri": "https://run.googleapis.com/v2/projects/guildmark-dev/locations/us-central1/jobs/guildmark-billing-reconcile:run",
+    "httpMethod": "POST",
+    "headers": {"Content-Type": "application/json"},
+    "body": "e30=",
+    "oauthToken": {
+      "serviceAccountEmail": "guildmark-billing-scheduler@guildmark-dev.iam.gserviceaccount.com",
+      "scope": "https://www.googleapis.com/auth/cloud-platform"
+    }
+  }
+}

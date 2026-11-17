@@ -1,11 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/mdm_repo.dart';
+import 'package:guildmark_api/repos/firestore/mdm_repo.dart';
 
 const _allowedTypes = {'jamf_pro', 'jamf_school', 'intune'};
 
@@ -32,7 +31,7 @@ Future<Response> onRequest(RequestContext context) async {
   final placeholderCipher = Uint8List(0);
   final placeholderNonce = Uint8List(12);
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }

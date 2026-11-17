@@ -98,7 +98,7 @@ function WorkboardCard({ item }: { item: WorkboardItem }) {
             <StatusBadge status="available" />
             <StatusBadge
               status={
-                item.service_type === "wipe_only" ? "wipe only" : "wipe + reimage"
+                item.service_type === "reimage_only" ? "imaging only — already wiped" : item.service_type === "wipe_only" ? "wipe only" : "wipe + reimage"
               }
             />
           </div>

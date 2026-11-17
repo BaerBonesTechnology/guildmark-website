@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
-import 'package:guildmark_api/repos/appwrite/mailing_list_repo.dart';
+import 'package:guildmark_api/repos/firestore/mailing_list_repo.dart';
 import 'package:guildmark_api/services/email_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -38,10 +38,12 @@ Future<Response> onRequest(RequestContext context) async {
   final phone = (body?['phone'] as String?)?.trim();
 
   if (name != null && name.length > 200) return badRequest('name is too long');
-  if (company != null && company.length > 200)
+  if (company != null && company.length > 200) {
     return badRequest('company is too long');
-  if (phone != null && phone.length > 50)
+  }
+  if (phone != null && phone.length > 50) {
     return badRequest('phone is too long');
+  }
   final loiAccepted = body?['loi_accepted'] == true;
 
   if (name != null ||
@@ -60,7 +62,7 @@ Future<Response> onRequest(RequestContext context) async {
     if (parts.isNotEmpty) notes = parts.join(' | ');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }

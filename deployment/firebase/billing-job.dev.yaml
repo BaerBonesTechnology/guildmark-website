@@ -1,0 +1,26 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: guildmark-billing-reconcile
+spec:
+  template:
+    spec:
+      taskCount: 1
+      parallelism: 1
+      template:
+        spec:
+          serviceAccountName: guildmark-billing-worker@guildmark-dev.iam.gserviceaccount.com
+          maxRetries: 2
+          timeoutSeconds: '600'
+          containers:
+            - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:c2a5e75dd04dc3511ab5ca9083d0470a5ac9a68b9b0bf4c26be3e7bf66d01424
+              command: ['/app/bin/billing-reconcile']
+              resources:
+                limits: {cpu: '1', memory: 512Mi}
+              env:
+                - {name: FIREBASE_PROJECT_ID, value: guildmark-dev}
+                - {name: SQUARE_ENVIRONMENT, value: sandbox}
+                - {name: SQUARE_RECURRING_ENABLED, value: 'true'}
+                - {name: SQUARE_LOCATION_ID, value: L95V6W1VC40PV}
+                - name: SQUARE_ACCESS_TOKEN
+                  valueFrom: {secretKeyRef: {name: guildmark-square-sandbox-token, key: latest}}

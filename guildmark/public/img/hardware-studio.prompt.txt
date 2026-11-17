@@ -1,0 +1,6 @@
+Generated using the built-in image_gen tool.
+Asset: hardware-studio.png
+Purpose: Illustrative homepage artwork, not a photograph of listed inventory.
+
+Prompt:
+Create one premium commercial studio still-life photograph for GuildMark, a business IT hardware resale marketplace. Landscape 3:2 composition. A realistic open unbranded graphite and silver 14-inch business laptop in the foreground at a tasteful three-quarter angle, two neatly stacked closed silver laptops slightly behind to the right, and one elegant slim desktop monitor further behind. Screen images are simple muted ice-blue abstract wallpaper, no UI, no lettering, no logos. Place objects on a seamless very pale cool gray studio surface, soft daylight from upper left, precise machined metal details, natural contact shadows, polished editorial product photography. Restrained palette white, graphite, brushed silver, faint ice blue. Products fill the middle 75 percent of the image with generous breathing room on every edge. Clean realistic geometry, no floating devices, no decorative shapes, no people, no words, no badges. This is a website marketing hardware illustration, not a screenshot or layout. Save as an image asset.

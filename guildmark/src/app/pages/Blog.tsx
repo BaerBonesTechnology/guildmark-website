@@ -1,10 +1,11 @@
 /** Blog — post list. Content is loaded from markdown via the blog data layer. */
 import { BlogPostCard } from "../components/blog/BlogPostCard";
 import { BlogShell } from "../components/blog/BlogShell";
-import { blogPosts } from "../lib/blog";
+import { usePublishedPosts } from "../hooks/usePublishedBlog";
 
 export function Blog() {
-  const [featured, ...rest] = blogPosts;
+  const query = usePublishedPosts();
+  const [featured, ...rest] = query.data ?? [];
 
   return (
     <BlogShell>
@@ -14,10 +15,24 @@ export function Blog() {
             GuildMark Blog
           </p>
           <h1 className="font-display font-extrabold tracking-tight leading-[0.93] text-5xl md:text-7xl">
-            Market intelligence.<br />Fleet strategy.<br />IT asset recovery.
+            Market intelligence.
+            <br />
+            Fleet strategy.
+            <br />
+            IT asset recovery.
           </h1>
         </div>
 
+        {query.isLoading && <p role="status">Loading articles…</p>}
+        {query.isError && (
+          <div role="alert">
+            <p>{query.error.message}</p>
+            <button onClick={() => query.refetch()}>Retry articles</button>
+          </div>
+        )}
+        {!query.isLoading && !query.isError && !featured && (
+          <p>No published articles yet.</p>
+        )}
         {featured && (
           <div className="mb-6">
             <BlogPostCard post={featured} featured />

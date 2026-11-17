@@ -1,10 +1,7 @@
-import 'package:dart_appwrite/dart_appwrite.dart' show Query;
-import 'package:dart_appwrite/models.dart';
 import 'package:dart_frog/dart_frog.dart';
-
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
 import 'package:guildmark_api/context.dart';
+import 'package:guildmark_api/firebase/collections.dart';
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -15,7 +12,7 @@ Future<Response> onRequest(RequestContext context) async {
   final principal = context.read<PartnerPrincipal?>();
   if (principal == null) return unauthorized();
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -35,15 +32,21 @@ Future<Response> onRequest(RequestContext context) async {
   var offset = 0;
   while (true) {
     final res = await db.listRows(
-      databaseId: Aw.databaseId,
-      tableId: Aw.partnerServiceAssignments,
+      databaseId: Collections.databaseId,
+      tableId: Collections.partnerServiceAssignments,
       queries: [
         Query.equal('partner_id', principal.partnerId),
         Query.or([
           Query.equal('status', [
-            'available', 'claimed', 'wipe_in_progress', 'wipe_complete',
-            'reimage_in_progress', 'reimage_complete', 'awaiting_cert',
-            'cert_uploaded', 'shipped',
+            'available',
+            'claimed',
+            'wipe_in_progress',
+            'wipe_complete',
+            'reimage_in_progress',
+            'reimage_complete',
+            'awaiting_cert',
+            'cert_uploaded',
+            'shipped',
           ]),
           Query.greaterThan('completed_at', cutoff),
         ]),
@@ -61,16 +64,18 @@ Future<Response> onRequest(RequestContext context) async {
     final r = row.data;
     return {
       'id': row.$id,
-      'order_ref': r['order_ref'].toString(),
+      'order_ref': r['order_ref'] as String? ?? 'Service ${row.$id}',
       'buyer_name': (r['buyer_name'] as String?) ?? '',
       'buyer_city': (r['buyer_city'] as String?) ?? '',
-      'service_type': r['service_type'].toString(),
+      'service_type': r['service_type'] as String? ?? 'wipe_and_reimage',
       'item_count': (r['item_count'] as num?)?.toInt() ?? 0,
       'wipe_payout_cents': (r['wipe_payout_cents'] as num?)?.toInt() ?? 0,
       'reimage_payout_cents': (r['reimage_payout_cents'] as num?)?.toInt() ?? 0,
       'wipe_method': r['wipe_method'] as String?,
       'reimage_os': r['reimage_os'] as String?,
       'cert_url': r['cert_url'] as String?,
+      'certificate_file_id': r['certificate_file_id'],
+      'order_id': r['order_id'],
       'tracking_number': r['tracking_number'] as String?,
       'carrier': r['carrier'] as String?,
       'status': (r['status'] as String?) ?? 'available',

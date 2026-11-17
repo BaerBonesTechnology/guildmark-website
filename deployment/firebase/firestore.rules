@@ -1,0 +1,7 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All authorization goes through the Dart API and its service account.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

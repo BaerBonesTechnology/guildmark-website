@@ -1,0 +1,68 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: guildmark-api
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '2'
+        run.googleapis.com/cpu-throttling: 'true'
+    spec:
+      serviceAccountName: guildmark-api@guildmark-dev.iam.gserviceaccount.com
+      containerConcurrency: 20
+      timeoutSeconds: 60
+      containers:
+        - image: us-central1-docker.pkg.dev/guildmark-dev/guildmark/api@sha256:c2a5e75dd04dc3511ab5ca9083d0470a5ac9a68b9b0bf4c26be3e7bf66d01424
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          env:
+            - {name: FIREBASE_PROJECT_ID, value: guildmark-dev}
+            - {name: AUTH_MODE, value: firebase}
+            - {name: WEBAUTHN_RP_ID, value: guildmark-dev-devdash.web.app}
+            - {name: WEBAUTHN_RP_NAME, value: GuildMark}
+            - {name: FIREBASE_REMOTE_CONFIG_ENABLED, value: 'true'}
+            - name: FIREBASE_WEB_API_KEY
+              valueFrom: {secretKeyRef: {name: guildmark-firebase-web-api-key, key: latest}}
+            - {name: FIRESTORE_DATABASE_ID, value: '(default)'}
+            - {name: FIREBASE_STORAGE_BUCKET, value: guildmark-dev.firebasestorage.app}
+            - {name: PUBLIC_API_PREFIX, value: /api}
+            - {name: CORS_ORIGIN, value: 'https://guildmark-dev.web.app'}
+            - {name: ADMIN_CORS_ORIGIN, value: 'https://guildmark-dev-devdash.web.app'}
+            - {name: PARTNER_CORS_ORIGIN, value: 'https://guildmark-dev-partners.web.app'}
+            - {name: GM_DEBUG, value: 'false'}
+            - name: RESEND_API_KEY
+              valueFrom: {secretKeyRef: {name: guildmark-resend-api-key, key: '1'}}
+            - {name: RESEND_API_URL, value: 'https://api.resend.com/emails'}
+            - {name: SQUARE_ENVIRONMENT, value: sandbox}
+            - {name: SQUARE_RECURRING_ENABLED, value: 'true'}
+            - {name: SQUARE_MERCHANT_ID, value: 'MLYMTMJTF74E0'}
+            - {name: SQUARE_WEBHOOK_URL, value: 'https://guildmark-dev.web.app/api/webhooks/square'}
+            - name: SQUARE_WEBHOOK_SIGNATURE_KEY
+              valueFrom: {secretKeyRef: {name: guildmark-square-webhook-signature, key: latest}}
+            - {name: SQUARE_PLAN_STARTER_MONTHLY, value: 'MPJDDCFDYVXXUSEKQVDCDQKZ'}
+            - {name: SQUARE_PLAN_GROWTH_MONTHLY, value: '2K6L62IWNHD6QQVY2CTUZACY'}
+            - {name: SQUARE_PLAN_PRO_MONTHLY, value: 'ADTH5PQPCHS2Q52RDYVRVL6B'}
+            - {name: SQUARE_API_URL, value: 'https://connect.squareupsandbox.com'}
+            - {name: SQUARE_APPLICATION_ID, value: 'sandbox-sq0idb-Fu4bCXvwb-JDcaKQAWfXbg'}
+            - {name: SQUARE_LOCATION_ID, value: 'L95V6W1VC40PV'}
+            - name: SQUARE_ACCESS_TOKEN
+              valueFrom: {secretKeyRef: {name: guildmark-square-sandbox-token, key: latest}}
+            - {name: ML_CLOUD_RUN_IAM, value: 'true'}
+            - name: ML_SERVICE_TOKEN
+              valueFrom: {secretKeyRef: {name: guildmark-ml-service-token, key: latest}}
+            - {name: JWT_ACCESS_TTL_SECONDS, value: '900'}
+            - {name: JWT_REFRESH_TTL_SECONDS, value: '2592000'}
+            - {name: ML_SERVICE_URL, value: 'https://guildmark-ml-qgpgyxcnja-uc.a.run.app'}
+            - {name: ML_CACHE_VERSION, value: 'dev-fc33b2310960424a'}
+            - name: JWT_ACCESS_SECRET
+              valueFrom: {secretKeyRef: {name: guildmark-jwt-access, key: latest}}
+            - name: JWT_REFRESH_SECRET
+              valueFrom: {secretKeyRef: {name: guildmark-jwt-refresh, key: latest}}

@@ -29,6 +29,18 @@ class EmailService {
   // Public send methods
   // ---------------------------------------------------------------------------
 
+  Future<bool> sendBusinessEmailCode({
+    required String toEmail,
+    required String code,
+  }) => _send(
+    to: toEmail,
+    subject: 'Confirm your GuildMark work email',
+    html:
+        '<p>Your GuildMark email confirmation code is <strong>$code</strong>.</p><p>It expires in 10 minutes. This confirms your email address; business approval is a separate review.</p>',
+    text:
+        'Your GuildMark email confirmation code is $code. It expires in 10 minutes. Business approval is a separate review.',
+  );
+
   /// Sends a waitlist confirmation to a newly-subscribed address.
   Future<bool> sendWaitlistConfirmation(String toEmail) => _send(
         to: toEmail,
@@ -127,12 +139,11 @@ class EmailService {
   Future<bool> sendOfferStatus({
     required String toEmail,
     required String productName,
-    required String status, // 'accepted' | 'rejected' | 'countered'
+    required String status, required String offersUrl, // 'accepted' | 'rejected' | 'countered'
     double? counterPrice,
-    required String offersUrl,
   }) => _send(
         to: toEmail,
-        subject: 'Your GuildMark offer on $productName has been ${status}',
+        subject: 'Your GuildMark offer on $productName has been $status',
         html: _offerStatusHtml(
           email: toEmail,
           productName: productName,
@@ -170,7 +181,7 @@ class EmailService {
               'to': [to],
               'subject': subject,
               'html': html,
-              if (text != null) 'text': text,
+              'text': ?text,
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -426,11 +437,10 @@ You're receiving this because $email signed up at guildmark.co
   String _newSubscriberHtml({
     required String subscriberEmail,
     required String source,
-    String? notes,
+    required DateTime signedUpAt, String? notes,
     String? message,
-    required DateTime signedUpAt,
   }) {
-    final ts = signedUpAt.toString().substring(0, 19) + ' UTC';
+    final ts = '${signedUpAt.toString().substring(0, 19)} UTC';
 
     // Parse structured partner fields out of the notes string.
     // Format: "Name: X | Company: Y | Type: Z | Phone: X | LOI: accepted YYYY-MM-DD"
@@ -456,7 +466,7 @@ You're receiving this because $email signed up at guildmark.co
             ? '#0369a1'
             : '#4f46e5';
 
-    String rows = '';
+    var rows = '';
     void row(String label, String? value) {
       if (value == null || value.isEmpty) return;
       rows += '''
@@ -521,8 +531,7 @@ You're receiving this because $email signed up at guildmark.co
     required String email,
     required String productName,
     required String status,
-    double? counterPrice,
-    required String offersUrl,
+    required String offersUrl, double? counterPrice,
   }) {
     final statusLabel = status == 'accepted'
         ? '✅ Accepted'

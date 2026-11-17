@@ -1,92 +1,25 @@
-import { useState } from "react";
+/**
+ * AddAssetDialog — manually add an asset to the AMPS inventory (View).
+ * Form state, validation, and asset construction live in useAddAssetViewModel.
+ * Presentation only.
+ */
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import type { LocalAsset } from "../pages/amps/AssetInventory";
+import { ADD_ASSET_TYPES } from "../constants/addAsset.constants";
+import type { LocalAsset } from "../models/localAsset";
+import { useAddAssetViewModel } from "../viewmodels/useAddAssetViewModel";
 
 interface AddAssetDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onAdd: (asset: LocalAsset) => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
-const ASSET_TYPES = [
-  "Laptop", "Desktop", "Server", "Phone",
-  "Tablet", "Monitor", "Networking", "Other",
-] as const;
-
-const empty = {
-  model: "",
-  type: "",
-  condition: "" as "A" | "B" | "C" | "",
-  quantity: "1",
-  age: "",
-  fairMarketValue: "",
-  bookValue: "",
-  serialNumber: "",
-  department: "",
-};
-
-export function AddAssetDialog({ open, onOpenChange, onAdd }: AddAssetDialogProps) {
-  const [form, setForm] = useState(empty);
-  const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
-
-  function set(field: keyof typeof empty, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-  }
-
-  function validate() {
-    const e: typeof errors = {};
-    if (!form.model.trim())        e.model        = "Required";
-    if (!form.type)                e.type         = "Required";
-    if (!form.condition)           e.condition    = "Required";
-    if (!form.age || isNaN(Number(form.age)) || Number(form.age) < 0)
-                                   e.age          = "Enter a valid age in months";
-    if (!form.fairMarketValue || isNaN(Number(form.fairMarketValue)))
-                                   e.fairMarketValue = "Enter a valid value";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
-
-  function handleSubmit() {
-    if (!validate()) return;
-    const fmv  = parseFloat(form.fairMarketValue);
-    const book = form.bookValue ? parseFloat(form.bookValue) : fmv;
-    const dep  = book > 0 ? parseFloat((((book - fmv) / book) * 100).toFixed(1)) : 0;
-    onAdd({
-      id:              crypto.randomUUID(),
-      model:           form.model.trim(),
-      type:            form.type,
-      condition:       form.condition as "A" | "B" | "C",
-      quantity:        parseInt(form.quantity) || 1,
-      age:             parseInt(form.age),
-      fairMarketValue: fmv,
-      bookValue:       book,
-      depreciation:    dep,
-      serialNumber:    form.serialNumber.trim() || null,
-      department:      form.department.trim() || null,
-      status:          dep >= 30 ? "At Risk" : "Active",
-      lastSync:        "Just now",
-      source:          "manual",
-    });
-    setForm(empty);
-    setErrors({});
-    onOpenChange(false);
-  }
-
-  function handleCancel() {
-    setForm(empty);
-    setErrors({});
-    onOpenChange(false);
-  }
-
-  const depPreview =
-    form.fairMarketValue && form.bookValue
-      ? (((parseFloat(form.bookValue) - parseFloat(form.fairMarketValue)) / parseFloat(form.bookValue)) * 100)
-      : null;
+export function AddAssetDialog({ onAdd, onOpenChange, open }: AddAssetDialogProps) {
+  const { depPreview, errors, form, handleCancel, handleSubmit, set } = useAddAssetViewModel(onAdd, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -124,7 +57,7 @@ export function AddAssetDialog({ open, onOpenChange, onAdd }: AddAssetDialogProp
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                {ASSET_TYPES.map((t) => (
+                {ADD_ASSET_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>{t}</SelectItem>
                 ))}
               </SelectContent>

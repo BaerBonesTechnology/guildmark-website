@@ -1,0 +1,22 @@
+{
+  "projects": {
+    "default": "guildmark-prod",
+    "dev": "guildmark-dev",
+    "prod": "guildmark-prod"
+  },
+  "targets": {
+    "guildmark-prod": {
+      "hosting": {
+        "storefront": [
+          "guildmark-prod"
+        ],
+        "devdash": [
+          "guildmark-prod-devdash"
+        ],
+        "partners": [
+          "guildmark-prod-partners"
+        ]
+      }
+    }
+  }
+}

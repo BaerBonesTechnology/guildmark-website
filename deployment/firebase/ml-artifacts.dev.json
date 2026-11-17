@@ -1,0 +1,8 @@
+{
+  "purpose": "guildmark-dev integration testing",
+  "provenance": "existing local artifacts; training provenance and market calibration not independently verified",
+  "sha256": {
+    "valuation.joblib": "fc33b2310960424ac136217afaf410174f4fa348ba4848df28ee2790ce35da9e",
+    "depreciation.joblib": "3141bda74c36887b72a03c5410629b6f14b096f9d7f6ca39614b6c3909a6ffb1"
+  }
+}

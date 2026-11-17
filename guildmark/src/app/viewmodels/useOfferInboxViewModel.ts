@@ -1,50 +1,81 @@
-/** ViewModel for the Offers page: tab state, data orchestration, selection. */
-import { useState } from "react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router";
 import { usePlacedOffers, useSellerOffers } from "../lib/apiHooks";
-import { pendingOfferCount } from "../services/offer.service";
+import {
+  effectiveOfferStatus,
+  offersPage,
+  pendingOfferCount,
+} from "../services/offer.service";
+import { useOfferClock } from "../hooks/useOfferClock";
 import type { OfferRole, SellerOffer } from "../models/offer";
-
+const EMPTY: SellerOffer[] = [];
 export function useOfferInboxViewModel() {
-  const placedQuery = usePlacedOffers();
-  const receivedQuery = useSellerOffers();
-
-  const [activeTab, setActiveTab] = useState<OfferRole>("received");
-  const [selectedIdent, setSelectedIdent] = useState<string | null>(null);
-
-  const placedOffers = placedQuery.data ?? [];
-  const receivedOffers = receivedQuery.data ?? [];
-
-  const activeOffers: SellerOffer[] = activeTab === "received" ? receivedOffers : placedOffers;
-  const activeError = activeTab === "received" ? receivedQuery.isError : placedQuery.isError;
-  const activeLoading = activeTab === "received" ? receivedQuery.isLoading : placedQuery.isLoading;
-  const pendingReceived = pendingOfferCount(receivedOffers);
-  // Re-read from the live list so an open dialog reflects status changes.
-  const selectedOffer = selectedIdent
-    ? activeOffers.find((offer) => offer.id === selectedIdent) ?? null
-    : null;
-
-  function clearSelection() {
-    setSelectedIdent(null);
+  const [params, setParams] = useSearchParams();
+  const activeTab: OfferRole =
+    params.get("tab") === "placed" ? "placed" : "received";
+  const placedQuery = usePlacedOffers(activeTab === "placed");
+  const receivedQuery = useSellerOffers(activeTab === "received");
+  const query = activeTab === "received" ? receivedQuery : placedQuery;
+  const activeOffers = query.data ?? EMPTY;
+  const now = useOfferClock(activeOffers);
+  const search = params.get("q") ?? "";
+  const candidate = params.get("status") ?? "all";
+  const status = [
+    "pending",
+    "accepted",
+    "countered",
+    "expired",
+    "rejected",
+  ].includes(candidate)
+    ? candidate
+    : "all";
+  const history = useMemo(
+    () => offersPage(activeOffers, search, status, params.get("page"), now),
+    [activeOffers, search, status, params, now],
+  );
+  function patch(key: string, value: string, replace = false) {
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        if (key !== "offer") next.delete("offer");
+        if (!["page", "offer"].includes(key)) next.delete("page");
+        return next;
+      },
+      { replace, preventScrollReset: true },
+    );
   }
-
-  function selectOffer(offer: SellerOffer) {
-    setSelectedIdent(offer.id);
-  }
-
-  function switchTab(nextTab: OfferRole) {
-    setActiveTab(nextTab);
-    setSelectedIdent(null);
-  }
-
   return {
-    activeError,
-    activeLoading,
+    ...query,
+    ...history,
     activeOffers,
     activeTab,
-    clearSelection,
-    pendingReceived,
-    selectedOffer,
-    selectOffer,
-    switchTab,
+    now,
+    search,
+    status,
+    selectedOffer:
+      activeOffers.find((offer) => offer.id === params.get("offer")) ?? null,
+    pendingCount: pendingOfferCount(activeOffers, now),
+    acceptedCount: activeOffers.filter(
+      (offer) => effectiveOfferStatus(offer, now) === "accepted",
+    ).length,
+    switchTab: (value: OfferRole) =>
+      patch("tab", value === "received" ? "" : value),
+    setSearch: (value: string) => patch("q", value, true),
+    setStatus: (value: string) => patch("status", value === "all" ? "" : value),
+    setPage: (value: number) => patch("page", value > 1 ? String(value) : ""),
+    selectOffer: (offer: SellerOffer) => patch("offer", offer.id),
+    clearSelection: () => patch("offer", "", true),
+    clearFilters: () =>
+      setParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          ["q", "status", "page", "offer"].forEach((key) => next.delete(key));
+          return next;
+        },
+        { preventScrollReset: true },
+      ),
+    refresh: async () => !(await query.refetch()).isError,
   };
 }

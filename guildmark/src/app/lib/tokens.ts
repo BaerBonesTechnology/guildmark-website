@@ -62,11 +62,11 @@ export type ConditionGrade = keyof typeof grades;
 // ---------------------------------------------------------------------------
 
 export const gmPro = {
-  accent:           '#7C3AED',
-  accentForeground: '#FFFFFF',
-  highlight:        '#8B5CF6',
+  accent:           'var(--amps-accent)',
+  accentForeground: 'var(--amps-accent-foreground)',
+  highlight:        'var(--amps-highlight)',
   /** Gradient string — always accent → highlight, left to right */
-  gradient:         'linear-gradient(to right, #7C3AED, #8B5CF6)',
+  gradient:         'linear-gradient(to right, var(--amps-accent), var(--amps-highlight))',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ export const gmPro = {
 
 /**
  * Ordered series colors for data visualizations.
- * Purple ramp for fleet/portfolio charts; brand blue for reference lines.
+ * Blue and slate ramp for fleet/portfolio charts.
  *
  * Usage:
  *   <Line stroke={chartColors.series[0]} />
@@ -83,10 +83,10 @@ export const gmPro = {
  */
 export const chartColors = {
   series: [
-    '#8B5CF6', // series 1 — primary (portfolio value)
-    '#A78BFA', // series 2
-    '#C4B5FD', // series 3
-    '#DDD6FE', // series 4
+    'var(--amps-accent)', // series 1 — primary (portfolio value)
+    '#5483C2', // series 2
+    '#91AFCF', // series 3
+    '#C4D3E4', // series 4
   ],
   /** Brand blue — used for reference lines (book value, target) */
   reference: '#3B82F6',

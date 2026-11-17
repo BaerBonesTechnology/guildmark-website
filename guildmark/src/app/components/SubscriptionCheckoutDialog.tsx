@@ -1,288 +1,46 @@
 /**
- * SubscriptionCheckoutDialog
+ * SubscriptionCheckoutDialog (View)
  *
  * Step 1 — confirm the plan + price
  * Step 2 — custom payment form (Square individual hosted fields + billing address)
  * Step 3 — success confirmation
  *
- * Square tokenises card number, CVV, and expiry in browser-hosted iframes so
- * raw card data never touches our servers. Billing fields are plain HTML inputs
- * sent alongside the Square payment nonce.
+ * Square SDK lifecycle, billing state, and the payment flow live in
+ * useSubscriptionCheckoutViewModel / square.service. Presentation only.
  */
-import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, CheckCircle2, AlertCircle, CreditCard, Sparkles } from "lucide-react";
-import { useSubscriptionCheckout, useTriggerValuation, usePlatformFees, formatFeeRate } from "../lib/apiHooks";
-import { squareApplicationId, squareLocationId, squareEnvironment } from "../config";
-import { useAuth } from "../hooks/useAuth";
+import { formatFeeRate, usePlatformFees } from "../lib/apiHooks";
+import { useSubscriptionCheckoutViewModel } from "../viewmodels/useSubscriptionCheckoutViewModel";
 
-// ---------------------------------------------------------------------------
-// Lazy-load Square SDK
-// ---------------------------------------------------------------------------
+export type { PaidPlan } from "../constants/subscriptionCheckout.constants";
 
-const SQUARE_SDK_URLS: Record<string, string> = {
-  production: "https://web.squarecdn.com/v1/square.js",
-  sandbox:    "https://sandbox.web.squarecdn.com/v1/square.js",
-};
-
-let squareSdkPromise: Promise<void> | null = null;
-
-function loadSquareSdk(): Promise<void> {
-  if (window.Square) return Promise.resolve();
-  if (squareSdkPromise) return squareSdkPromise;
-
-  squareSdkPromise = new Promise((resolve, reject) => {
-    const url = SQUARE_SDK_URLS[squareEnvironment] ?? SQUARE_SDK_URLS.sandbox;
-    const script = document.createElement("script");
-    script.src     = url;
-    script.onload  = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load Square SDK from ${url}`));
-    document.head.appendChild(script);
-  });
-
-  return squareSdkPromise;
-}
-
-// ---------------------------------------------------------------------------
-// Plan metadata
-// ---------------------------------------------------------------------------
-
-export type PaidPlan = "starter" | "growth" | "pro";
-
-const PLAN_META: Record<PaidPlan, {
-  label:       string;
-  price:       number;
-  sellerFee:   string;
-  devices:     string;
-  teamMembers: string;
-  color:       string;
-}> = {
-  starter: { label: "Starter", price: 49,  sellerFee: "6%", devices: "Up to 100 devices",  teamMembers: "2 team members",         color: "text-blue-500"   },
-  growth:  { label: "Growth",  price: 149, sellerFee: "5%", devices: "Up to 500 devices",  teamMembers: "5 team members",         color: "text-violet-500" },
-  pro:     { label: "Pro",     price: 349, sellerFee: "3%", devices: "Unlimited devices",  teamMembers: "Unlimited team members", color: "text-amber-500"  },
-};
-
-// ---------------------------------------------------------------------------
-// Square type shim — combined card form (payments.card() is the standard SDK API)
-// ---------------------------------------------------------------------------
-
-type SquareCardForm = {
-  attach:   (selector: string) => Promise<void>;
-  tokenize: () => Promise<{
-    status:  string;
-    token?:  string;
-    errors?: { message: string }[];
-  }>;
-  destroy:  () => Promise<void>;
-};
-
-declare global {
-  interface Window {
-    Square?: {
-      payments: (appId: string, locationId: string) => Promise<{
-        card: (options?: object) => Promise<SquareCardForm>;
-      }>;
-    };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared input styles
-// ---------------------------------------------------------------------------
+import type { PaidPlan } from "../constants/subscriptionCheckout.constants";
 
 const inputCls =
   "w-full rounded-md border border-input bg-input-background px-3 py-2 text-sm  " +
   "placeholder:text-black focus:outline-none focus:ring-1 focus:ring-ring " +
   "disabled:opacity-50";
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-type Step = "confirm" | "card" | "success";
-
 interface Props {
-  open:         boolean;
+  currentPlan: string;
   onOpenChange: (open: boolean) => void;
-  plan:         PaidPlan;
-  currentPlan:  string;
   /** Called after a successful payment, just before the dialog closes. */
-  onSuccess?:   () => void;
+  onSuccess?: () => void;
+  open: boolean;
+  plan: PaidPlan;
 }
 
-export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPlan, onSuccess }: Props) {
-  const meta           = PLAN_META[plan];
-  const checkout          = useSubscriptionCheckout();
-  const triggerValuation  = useTriggerValuation();
-  const { refreshUser }   = useAuth();
-  const { data: fees }    = usePlatformFees();
-
-  const [step,      setStep]      = useState<Step>("confirm");
-  const [cardError, setCardError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [saveCard,  setSaveCard]  = useState(true);
-
-  // Card detail fields
-  const [cardholderName, setCardholderName] = useState("");
-
-  // Billing address fields
-  const [bizName, setBizName] = useState("");
-  const [addr1,   setAddr1]   = useState("");
-  const [addr2,   setAddr2]   = useState("");
-  const [city,    setCity]    = useState("");
-  const [stateAb, setStateAb] = useState("");
-  const [zip,     setZip]     = useState("");
-
-  // Square card form ref (combined — handles card number, expiry, and CVV)
-  const cardRef = useRef<SquareCardForm | null>(null);
-  // Incrementing this forces the card form to fully re-mount (new nonce on retry).
-  const [cardInitKey, setCardInitKey] = useState(0);
-
-  // Mount Square card form when we reach the card step (or when cardInitKey bumps).
-  useEffect(() => {
-    if (step !== "card" || !open) return;
-    let cancelled = false;
-
-    async function initSquare() {
-      setCardError("");
-      try {
-        await loadSquareSdk();
-        if (!window.Square) throw new Error("Square SDK not available");
-
-        console.log('[Square] init appId=%s locationId=%s env=%s', squareApplicationId, squareLocationId, squareEnvironment);
-        const payments = await window.Square.payments(squareApplicationId, squareLocationId);
-        const card = await payments.card();
-
-        if (cancelled) {
-          await card.destroy().catch(() => {});
-          return;
-        }
-
-        cardRef.current = card;
-        await card.attach("#gm-square-card");
-      } catch (err) {
-        if (!cancelled) {
-          setCardError(err instanceof Error ? err.message : "Failed to load payment form");
-        }
-      }
-    }
-
-    initSquare();
-
-    return () => {
-      cancelled = true;
-      cardRef.current?.destroy().catch(() => {});
-      cardRef.current = null;
-    };
-  }, [step, open, cardInitKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Reset when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setStep("confirm");
-      setCardError("");
-      setIsLoading(false);
-      setCardInitKey(0);
-      setCardholderName("");
-      setBizName(""); setAddr1(""); setAddr2("");
-      setCity(""); setStateAb(""); setZip("");
-      checkout.reset();
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handlePay() {
-    // ── Sandbox shortcut ────────────────────────────────────────────────────
-    // In sandbox mode (VITE_SQUARE_ENVIRONMENT=sandbox) we bypass the SDK card
-    // form and use Square's static test nonce so we can verify backend config
-    // without needing a matching application ID on the frontend.
-    // Detect sandbox by env string OR by the sandbox- prefix on the application ID
-    const isSandbox = squareEnvironment === "sandbox" || squareApplicationId.startsWith("sandbox-");
-    if (isSandbox) {
-      setIsLoading(true);
-      setCardError("");
-      try {
-        await checkout.mutateAsync({
-          plan,
-          source_id:       "cnon:card-nonce-ok",
-          save_card:       saveCard,
-          cardholder_name: cardholderName.trim() || "Sandbox Test",
-          billing_address: {
-            address_line_1: addr1.trim() || "123 Test St",
-            city:           city.trim()  || "New York",
-            state:          stateAb.trim().toUpperCase() || "NY",
-            postal_code:    zip.trim()   || "10001",
-          },
-        });
-        setStep("success");
-      } catch (err) {
-        setCardError(err instanceof Error ? err.message : "Payment failed.");
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-    // ── Production flow (real SDK tokenization) ─────────────────────────────
-    if (!cardRef.current) {
-      setCardError("Payment form not ready — please wait.");
-      return;
-    }
-    if (!cardholderName.trim()) {
-      setCardError("Cardholder name is required.");
-      return;
-    }
-    if (!addr1.trim() || !city.trim() || !stateAb.trim() || !zip.trim()) {
-      setCardError("Please fill in all required billing address fields (marked *).");
-      return;
-    }
-
-    setIsLoading(true);
-    setCardError("");
-
-    try {
-      const result = await cardRef.current.tokenize();
-
-      if (result.status !== "OK" || !result.token) {
-        const msg = result.errors?.[0]?.message ?? "Card tokenisation failed";
-        setCardError(msg);
-        setIsLoading(false);
-        return;
-      }
-
-      await checkout.mutateAsync({
-        plan,
-        source_id:       result.token,
-        save_card:       saveCard,
-        cardholder_name: cardholderName.trim(),
-        billing_address: {
-          business_name:  bizName.trim() || undefined,
-          address_line_1: addr1.trim(),
-          address_line_2: addr2.trim() || undefined,
-          city:           city.trim(),
-          state:          stateAb.trim().toUpperCase(),
-          postal_code:    zip.trim(),
-        },
-      });
-
-      setStep("success");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Payment failed. Please try again.";
-      setCardError(msg);
-      // The nonce returned by tokenize() is single-use. After any server-side
-      // payment failure the card form must be re-initialized so the next
-      // attempt generates a fresh nonce rather than reusing the consumed one.
-      setCardInitKey(k => k + 1);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const isUpgrade =
-    currentPlan === "free" ||
-    (currentPlan === "starter" && (plan === "growth" || plan === "pro")) ||
-    (currentPlan === "growth"  && plan === "pro");
+export function SubscriptionCheckoutDialog({ currentPlan, onOpenChange, onSuccess, open, plan }: Props) {
+  const { data: fees } = usePlatformFees();
+  const {
+    addr1, addr2, bizName, cardError, cardholderName, city, handleDone, handlePay, isLoading,
+    isUpgrade, meta, saveCard, checkPayment, setAddr1, setAddr2, setBizName, setCardholderName, setCity,
+    setSaveCard, setStateAb, setStep, setZip, stateAb, step, zip,
+  } = useSubscriptionCheckoutViewModel(plan, currentPlan, open);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -290,7 +48,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
         <DialogHeader>
           <DialogTitle className=" flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amps-accent" />
-            {step === "success"
+            {step === "pending" ? "Payment confirmation pending" : step === "success"
               ? "You're all set!"
               : isUpgrade
               ? `Upgrade to ${meta.label}`
@@ -300,6 +58,7 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
             {step === "confirm" && `$${meta.price}/month, billed monthly. Cancel any time.`}
             {step === "card"    && "Enter your payment details to complete the subscription."}
             {step === "success" && `Your ${meta.label} plan is now active.`}
+            {step === "pending" && "Your plan has not been activated by this checkout. Check this payment before attempting another charge."}
           </DialogDescription>
         </DialogHeader>
 
@@ -327,17 +86,18 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                  {meta.sellerFee} marketplace seller fee (vs {formatFeeRate(fees?.seller_fee_free)} on Free)
+                  {formatFeeRate(fees?.[`seller_fee_${plan}`])} marketplace seller fee (vs {formatFeeRate(fees?.seller_fee_free)} on Free)
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                  Full AMPS asset management suite
+                  {meta.valuationCredits.toLocaleString()} fresh valuation credits / billing month
                 </li>
               </ul>
+              <p className="text-xs text-muted-foreground">Company plan. No annual commitment or automatic usage overages. Invoice drafts and MDM pages are prototypes; integrations, expanded reports and invitations are still being prepared.</p>
             </div>
             <div className="flex gap-2 pt-1">
               <Button
-                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white "
+                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground "
                 onClick={() => setStep("card")}
               >
                 Continue to payment
@@ -483,9 +243,9 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
                 disabled={isLoading}
               />
               <div>
-                <p className="text-sm ">Save card for future payments</p>
+                <p className="text-sm ">I authorize ${meta.price}/month recurring billing</p>
                 <p className="text-xs text-muted-foreground ">
-                  Your card is stored securely by Square — we never see or store your card number.
+                  Square will save this card and charge it monthly until you cancel. Cancel in Settings before renewal; paid access continues through the current period.
                 </p>
               </div>
             </label>
@@ -501,13 +261,13 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
             {/* Action buttons */}
             <div className="flex gap-2">
               <Button
-                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-white  gap-2"
+                className="flex-1 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground  gap-2"
                 onClick={handlePay}
-                disabled={isLoading}
+                disabled={isLoading || !saveCard}
               >
                 {isLoading
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
-                  : <><CreditCard className="w-4 h-4" /> Pay ${meta.price}</>
+                  : <><CreditCard className="w-4 h-4" /> Subscribe · ${meta.price}/mo</>
                 }
               </Button>
               <Button
@@ -535,30 +295,18 @@ export function SubscriptionCheckoutDialog({ open, onOpenChange, plan, currentPl
             <div className="space-y-1">
               <p className=" font-semibold">{meta.label} plan activated</p>
               <p className="text-sm text-muted-foreground ">
-                Your new features are available immediately. A receipt has been sent to your email.
+                Payment was verified for this plan. Review billing history for your payment record.
               </p>
             </div>
             <Button
-              className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-white "
-              onClick={async () => {
-                // Refresh the access token so the in-memory user picks up the
-                // new subscription_plan before TierGate checks it.
-                await refreshUser();
-                // Fire-and-forget: kick off background ML re-valuation for any
-                // existing listings so the user sees current values immediately
-                // rather than waiting for the next scheduled run.
-                // Only triggers if the company already has listings; otherwise
-                // the backend returns { status: "no_listings" } and the banner
-                // never appears.
-                triggerValuation.mutate();
-                onOpenChange(false);
-                onSuccess?.();
-              }}
+              className="mt-2 bg-amps-accent hover:bg-amps-accent/90 text-amps-accent-foreground "
+              onClick={() => handleDone(onOpenChange, onSuccess)}
             >
               Done
             </Button>
           </div>
         )}
+        {step === "pending" && <div className="space-y-4 py-4"><p className="text-sm text-muted-foreground">The provider or billing service has not supplied a verified completed payment. No new AMPS access is granted here. This attempt is retained in this browser session so checking again does not start another payment.</p>{cardError && <p role="alert" className="text-sm text-destructive">{cardError}</p>}<div className="flex gap-2"><Button onClick={checkPayment} disabled={isLoading}>{isLoading ? "Checking…" : "Check existing payment"}</Button><Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>Close</Button></div></div>}
       </DialogContent>
     </Dialog>
   );

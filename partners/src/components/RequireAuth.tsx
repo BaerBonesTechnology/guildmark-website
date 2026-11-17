@@ -1,3 +1,4 @@
+import { usePortalPath } from "../lib/portal";
 /**
  * Route guard — redirects to /login when the user is not authenticated.
  * Shows nothing while the silent refresh is in progress.
@@ -7,6 +8,7 @@ import { Navigate, Outlet } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 
 export function RequireAuth() {
+  const portalPath = usePortalPath();
   const { partner, isLoading } = useAuth();
 
   if (isLoading) {
@@ -18,7 +20,7 @@ export function RequireAuth() {
   }
 
   if (!partner) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={portalPath("/login")} replace />;
   }
 
   return <Outlet />;

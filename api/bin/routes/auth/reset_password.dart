@@ -5,24 +5,28 @@
 /// Side:    Marks token used, writes new bcrypt hash to users table.
 library;
 
+import 'package:guildmark_api/auth/firebase_sessions.dart';
+import 'package:guildmark_api/auth/firebase_routes.dart';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:dart_appwrite/dart_appwrite.dart' show Query;
+import 'package:guildmark_api/firebase/firestore.dart';
 import 'package:dart_frog/dart_frog.dart';
 
-import 'package:guildmark_api/appwrite/appwrite_client.dart';
-import 'package:guildmark_api/appwrite/collections.dart';
+import 'package:guildmark_api/firebase/collections.dart';
 import 'package:guildmark_api/auth/password.dart';
 import 'package:guildmark_api/http_helpers.dart';
 
 Future<Response> onRequest(RequestContext context) async {
+  if (firebaseSessions(context) != null) {
+    return firebaseAuthRoute(context, 'reset_password');
+  }
   if (context.request.method != HttpMethod.post) {
     return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
   }
 
-  final body        = await context.request.json() as Map<String, dynamic>?;
-  final token       = (body?['token'] as String?)?.trim();
+  final body = await context.request.json() as Map<String, dynamic>?;
+  final token = (body?['token'] as String?)?.trim();
   final newPassword = (body?['new_password'] as String?)?.trim();
 
   if (token == null || token.isEmpty) return badRequest('token is required');
@@ -30,7 +34,7 @@ Future<Response> onRequest(RequestContext context) async {
     return badRequest('new_password must be at least 8 characters');
   }
 
-  final aw = context.read<AppwriteService?>();
+  final aw = context.read<FirebaseService?>();
   if (aw == null) {
     return jsonError(503, 'DB_UNAVAILABLE', 'Datastore is not configured');
   }
@@ -43,8 +47,8 @@ Future<Response> onRequest(RequestContext context) async {
   // the read. Accepted risk (token is secret, single email recipient) — the
   // update below is the commit point and is idempotent.
   final rows = await db.listRows(
-    databaseId: Aw.databaseId,
-    tableId: Aw.passwordResetTokens,
+    databaseId: Collections.databaseId,
+    tableId: Collections.passwordResetTokens,
     queries: [
       Query.equal('token_hash', hash),
       Query.isNull('used_at'),
@@ -63,24 +67,24 @@ Future<Response> onRequest(RequestContext context) async {
   final userId = tokenRow.data['user_id'] as String;
 
   await db.updateRow(
-    databaseId: Aw.databaseId,
-    tableId: Aw.passwordResetTokens,
+    databaseId: Collections.databaseId,
+    tableId: Collections.passwordResetTokens,
     rowId: tokenRow.$id,
     data: {'used_at': now.toIso8601String()},
   );
 
   final newHash = hashPassword(newPassword);
   await db.updateRow(
-    databaseId: Aw.databaseId,
-    tableId: Aw.users,
+    databaseId: Collections.databaseId,
+    tableId: Collections.users,
     rowId: userId,
     data: {'password_hash': newHash},
   );
 
   // Revoke all existing refresh tokens so other sessions are invalidated.
   final live = await db.listRows(
-    databaseId: Aw.databaseId,
-    tableId: Aw.refreshTokens,
+    databaseId: Collections.databaseId,
+    tableId: Collections.refreshTokens,
     queries: [
       Query.equal('user_id', userId),
       Query.isNull('revoked_at'),
@@ -89,8 +93,8 @@ Future<Response> onRequest(RequestContext context) async {
   );
   for (final row in live.rows) {
     await db.updateRow(
-      databaseId: Aw.databaseId,
-      tableId: Aw.refreshTokens,
+      databaseId: Collections.databaseId,
+      tableId: Collections.refreshTokens,
       rowId: row.$id,
       data: {'revoked_at': now.toIso8601String()},
     );

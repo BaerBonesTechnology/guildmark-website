@@ -57,8 +57,12 @@ interface RequestOptions extends RequestInit {
 async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { skipAuth = false, ...fetchOptions } = options;
 
+  // FormData bodies must set their own multipart boundary — never force a
+  // JSON Content-Type or the browser can't frame the parts.
+  const isFormData = fetchOptions.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(fetchOptions.headers as Record<string, string> ?? {}),
   };
 
@@ -134,6 +138,9 @@ export const api = {
 
   post:   <T>(path: string, body: unknown, opts?: RequestOptions) =>
     apiFetch<T>(path, { method: "POST", body: JSON.stringify(body), ...opts }),
+
+  upload: <T>(path: string, formData: FormData, opts?: RequestOptions) =>
+    apiFetch<T>(path, { method: "POST", body: formData, ...opts }),
 
   put:    <T>(path: string, body: unknown, opts?: RequestOptions) =>
     apiFetch<T>(path, { method: "PUT", body: JSON.stringify(body), ...opts }),

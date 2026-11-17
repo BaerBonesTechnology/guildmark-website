@@ -1,9 +1,10 @@
+import { PortalFooterLinks } from "./PortalFooterLinks";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { ArrowLeft, Shield } from "lucide-react";
 
 export function ComplianceLayout() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -45,7 +46,8 @@ export function ComplianceLayout() {
       <footer className="border-t border-border px-6 py-4 mt-12">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <p className="text-xs text-muted-foreground font-sans">
-            © {new Date().getFullYear()} Baerhous Media Group, LLC. GuildMark™ is a trademark of Baerhous Media Group, LLC.
+            © {new Date().getFullYear()} Baerhous Media Group, LLC. GuildMark™
+            is a trademark of Baerhous Media Group, LLC.
           </p>
           <a
             href="mailto:legal@guildmark.co"
@@ -54,8 +56,10 @@ export function ComplianceLayout() {
             legal@guildmark.co
           </a>
         </div>
+        <div className="max-w-3xl mx-auto pt-5">
+          <PortalFooterLinks />
+        </div>
       </footer>
-
     </div>
   );
 }

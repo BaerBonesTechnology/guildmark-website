@@ -5,7 +5,7 @@
    Primary accent : #2D6EF0  (brighter blue)
    Dark base      : #0A0C10  (near-black, layered)
    Corners        : 0.25rem  (sharp)
-   Font           : Inter (body) · JetBrains Mono (data/code)
+   Font           : Inter and DM Sans (proportional throughout)
    Neutrals are intentionally cool-gray (not blue-tinted) and
    borders are hairline; section-1/2/3 give vertical rhythm.
    ============================================================ */
@@ -13,7 +13,7 @@
 :root {
   --font-size: 16px;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  --font-mono: var(--font-sans); /* Legacy utility name; proportional typography. */
 
   /* Surface */
   --background:          #f5f6f8;
@@ -83,12 +83,12 @@
   --info:                #3B82F6;
   --info-foreground:     #FFFFFF;
 
-  /* GM Pro palette (purple — distinguishes premium tier) */
-  --amps-accent:              #7C3AED;
+  /* AMPS palette — GuildMark blue and cool slate. */
+  --amps-accent:              #235BCE;
   --amps-accent-foreground:   #FFFFFF;
-  --amps-surface:             #F5F3FF;
+  --amps-surface:             #F2F5F9;
   --amps-surface-foreground:  #0F172A;
-  --amps-highlight:           #8B5CF6;
+  --amps-highlight:           #2F67C7;
   --amps-highlight-foreground:#FFFFFF;
 
   /* Charts */
@@ -178,12 +178,12 @@
   --info-foreground:     #FFFFFF;
 
   /* GM Pro palette */
-  --amps-accent:              #7C3AED;
-  --amps-accent-foreground:   #FFFFFF;
-  --amps-surface:             #323232;
+  --amps-accent:              #8AB4F8;
+  --amps-accent-foreground:   #10233E;
+  --amps-surface:             #142033;
   --amps-surface-foreground:  #F1F5F9;
-  --amps-highlight:           #8B5CF6;
-  --amps-highlight-foreground:#FFFFFF;
+  --amps-highlight:           #ADCFFF;
+  --amps-highlight-foreground:#10233E;
 
   /* Charts */
   --chart-1: #60A5FA;
@@ -281,7 +281,7 @@
   --font-family-mono: var(--font-mono);
   /* Brand type scale — exposed as Tailwind utilities: font-display / font-body
      / font-mono. Use these instead of inline fontFamily style objects. */
-  --font-display: 'Barlow Condensed', var(--font-sans);
+  --font-display: 'DM Sans', var(--font-sans);
   --font-body:    'DM Sans', var(--font-sans);
   /* Compact label step (10px) — exposed as the `text-2xs` utility so dense
      UI labels stay token-based instead of arbitrary text-[10px] values. */
@@ -301,7 +301,7 @@
   }
 
   .font-mono, code, pre, kbd, samp {
-    font-family: var(--font-mono);
+    font-family: inherit;
   }
 
   html {
